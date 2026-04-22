@@ -36,3 +36,9 @@ rand_chacha = "0.3"
 bls12_381 = { workspace = true }
 group = { workspace = true }
 pairing = { workspace = true }
+
+# JSON for importing external VK fixtures (Semaphore). Only reaches this
+# dep at build time when the `semaphore` subcommand is invoked; main
+# BN254/BLS12-381 paths don't touch it.
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

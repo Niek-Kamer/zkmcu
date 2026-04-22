@@ -69,7 +69,7 @@ fn u32_len(n: usize) -> [u8; 4] {
         .to_le_bytes()
 }
 
-fn encode_vk(vk: &ark_groth16::VerifyingKey<Bn254>) -> Vec<u8> {
+pub fn encode_vk(vk: &ark_groth16::VerifyingKey<Bn254>) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(&g1_to_eip197(&vk.alpha_g1));
     out.extend_from_slice(&g2_to_eip197(&vk.beta_g2));
