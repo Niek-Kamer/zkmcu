@@ -1,0 +1,27 @@
+[package]
+name = "bench-rp2350-m33-bls12"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bls12_381 = { workspace = true }
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7"
+critical-section = "1.2"
+embedded-alloc = { version = "0.7", features = ["llff"] }
+embedded-hal = "1.0"
+fugit = "0.3"
+group = { workspace = true }
+heapless = "0.9"
+pairing = { workspace = true }
+panic-halt = "1.0"
+rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
+usb-device = "0.3"
+usbd-serial = "0.2"
+zkmcu-verifier-bls12 = { path = "../zkmcu-verifier-bls12" }

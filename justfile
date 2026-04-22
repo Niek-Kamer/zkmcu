@@ -9,13 +9,21 @@ default:
 build:
     cargo build --release
 
-# Build the firmware for the Pico 2 W (Cortex-M33).
+# Build the firmware for the Pico 2 W (Cortex-M33, BN254).
 build-m33:
     cd crates/bench-rp2350-m33 && cargo build --release
 
-# Build the firmware for the Pico 2 W (Hazard3 RV32).
+# Build the firmware for the Pico 2 W (Cortex-M33, BLS12-381).
+build-m33-bls12:
+    cd crates/bench-rp2350-m33-bls12 && cargo build --release
+
+# Build the firmware for the Pico 2 W (Hazard3 RV32, BN254).
 build-rv32:
     cd crates/bench-rp2350-rv32 && cargo build --release
+
+# Build the firmware for the Pico 2 W (Hazard3 RV32, BLS12-381).
+build-rv32-bls12:
+    cd crates/bench-rp2350-rv32-bls12 && cargo build --release
 
 # Run every native test (cross-check: arkworks <-> substrate-bn).
 test:
@@ -31,7 +39,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-rv32
+lint: lint-host lint-m33 lint-m33-bls12 lint-rv32 lint-rv32-bls12
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -39,14 +47,20 @@ lint-host:
 lint-m33:
     cd crates/bench-rp2350-m33 && cargo clippy --release -- -D warnings
 
+lint-m33-bls12:
+    cd crates/bench-rp2350-m33-bls12 && cargo clippy --release -- -D warnings
+
 lint-rv32:
     cd crates/bench-rp2350-rv32 && cargo clippy --release -- -D warnings
+
+lint-rv32-bls12:
+    cd crates/bench-rp2350-rv32-bls12 && cargo clippy --release -- -D warnings
 
 # Everything that must pass before a commit.
 check: fmt-check lint test
 
-# Full gate including both firmware builds, used before cutting a benchmark run.
-check-full: check build-m33 build-rv32
+# Full gate including every firmware build, used before cutting a benchmark run.
+check-full: check build-m33 build-m33-bls12 build-rv32 build-rv32-bls12
 
 # Regenerate the committed test vectors.
 regen-vectors:
