@@ -4,7 +4,7 @@
   "type": "module",
   "description": "One-shot TypeScript helper that drives @semaphore-protocol/proof to emit a deterministic Groth16/BN254 Semaphore proof for the zkmcu benchmark. Pinned to Semaphore 4.14.2 so the trusted setup matches the VK we vendored in vendor/semaphore.",
   "scripts": {
-    "gen": "bun run gen.ts"
+    "gen": "node --experimental-strip-types gen.ts"
   },
   "dependencies": {
     "@semaphore-protocol/identity": "4.14.2",

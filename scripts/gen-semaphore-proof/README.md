@@ -30,8 +30,18 @@ importer wants — no rearrangement.
 
 ```bash
 bun install             # ~50 MB of node_modules, one-time
-bun run gen             # fetches snark-artifacts on first run, writes proof.json
+bun run gen             # → invokes node --experimental-strip-types gen.ts
 ```
+
+### Why Node for the runtime (not Bun)
+
+Bun is used as the package manager (fast install, lockfile),
+but snarkjs's proof generator spawns worker threads via the
+`web-worker` CJS polyfill, wich triggers a Bun 1.3.x EventTarget
+panic (known Bun regression, unrelated to this project). Node
+24+ runs snarkjs without issue and natively strips TypeScript
+types at runtime via `--experimental-strip-types`, so no build
+step or tsx dev-dep is needed.
 
 First run downloads the Semaphore snark-artifacts (wasm + zkey) for the
 configured depth from the Semaphore CDN; subsequent runs reuse the
