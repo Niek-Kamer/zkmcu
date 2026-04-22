@@ -1,51 +1,70 @@
 # zkmcu
 
-`no_std` Rust verifier for Groth16 / BN254 SNARKs, small enough to run on a microcontroller. Built on top of `substrate-bn`, wire format is EIP-197 compatible so proofs generated with `arkworks` verify bit-for-bit.
+`no_std` Rust family of SNARK verifiers for microcontrollers. Currently supports Groth16 over BN254 (EIP-197 wire format, on `substrate-bn`) and Groth16 over BLS12-381 (EIP-2537 wire format, on `bls12_381`). Same parser shape for both, same API, different curve.
 
-First target is the Raspberry Pi Pico 2 W. RP2350 is a fun chip because it has **both** an ARM Cortex-M33 and a RISC-V Hazard3 core on the same die at the same clock, so I can run the same Rust source on both and compare without changing anything else.
+First target is the Raspberry Pi Pico 2 W. RP2350 is a fun chip because it has **both** an ARM Cortex-M33 and a RISC-V Hazard3 core on the same die at the same clock, wich makes the cross-ISA comparison drama-free. One Rust source tree, two ISAs, same binary build pipeline.
 
-## First numbers (no hand-tuning, `substrate-bn` 0.6)
+## Headline
 
-Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32:
+Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32. Every iteration `ok=true`, variance under 0.07 % on both cores for both curves. No hand-tuning, stock upstream crypto crates (`substrate-bn` 0.6 for BN254, zkcrypto `bls12_381` 0.8 for BLS12-381).
+
+| verify (1 public input) | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
+|---|---:|---:|---:|
+| Groth16 / BN254      | **962 ms**   | 1,341 ms | 1.39× |
+| Groth16 / BLS12-381  | **2,015 ms** | 5,151 ms | 2.56× |
+
+Both curves fit on the **128 KB SRAM tier** during verify (~97 KB total RAM on M33 either way), wich is the tier of most hardware-wallet-grade silicon: `nRF52832`, `STM32F405`, Ledger ST33, Infineon SLE78. The BN254 path was the first public no_std Groth16 verifier for Cortex-M I could find, BLS12-381 is genuinely the first at all. Full gap analysis in `research/prior-art/main.typ`.
+
+## Per-op breakdown, BN254 (EIP-197)
 
 | op | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
 |---|---:|---:|---:|
 | G1 scalar mul (typical) | 110 ms | **72 ms** | 0.65× |
 | G2 scalar mul (typical) | **210 ms** | 284 ms | 1.35× |
 | pairing | **533 ms** | 707 ms | 1.33× |
-| **Groth16 verify (1 public input)** | **962 ms** | 1341 ms | 1.39× |
+| **Groth16 verify** | **962 ms** | 1,341 ms | 1.39× |
 
-Every iteration returns `ok=true` and iteration-to-iteration variance stays under 0.07%. Ofcourse this is a baseline, not an optimized number.
+## Per-op breakdown, BLS12-381 (EIP-2537)
 
-There is still a lot of room. The M33 has DSP intrinsics (`SMLAL`, `UMAAL`) for Montgomery reduction that `substrate-bn` doesn't touch, and Hazard3 has the `Zbb`/`Zba`/`Zbc` bit-manip extensions just sitting there unused. First guess is ~200 ms for M33 with intrinsics, idk if RV32 catches up but the bit-manip should close some of the pairing gap.
+| op | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
+|---|---:|---:|---:|
+| G1 scalar mul | **847 ms** | 1,427 ms | 1.69× |
+| G2 scalar mul | **523 ms** | 1,003 ms | 1.92× |
+| pairing | **607 ms** | 1,975 ms | 3.26× |
+| **Groth16 verify** | **2,015 ms** | 5,151 ms | 2.56× |
 
-### Memory
+Ofcourse these are baselines, not optimized numbers. There is still a lot of room: the M33 has DSP intrinsics (`SMLAL`, `UMAAL`) for Montgomery reduction that neither `substrate-bn` nor `bls12_381` touch, and Hazard3 has the `Zbb`/`Zba`/`Zbc` bit-manip extensions sitting there unused. First guess for the M33 with intrinsics is roughly half of both verify times, idk if RV32 catches up but the bit-manip should close some of the pairing gap.
 
-Directly measured on-device (stack painting + a tracking heap wrapper):
+## Memory
 
-| | Cortex-M33 | Hazard3 RV32 |
-|-|---:|---:|
-| `.text` | 73 KB | 72 KB |
-| peak stack during verify | 15,604 B | 15,708 B |
-| peak heap during verify | 81,280 B | (pending) |
-| heap arena (confirmed sufficient) | **96 KB** | 256 KB |
-| total RAM during verify | **~111 KB** | ~272 KB |
+Directly measured on-device via stack painting + a tracking heap wrapper. Both arenas tuned to comfortably fit peak + 17 % margin (BN254 M33 has been confirmed at 96 KB, BLS12 M33 is still running with the 256 KB first-bring-up arena, heap-tuned rebuild is a follow-up).
 
-So the M33 build fits in ~111 KB of SRAM, wich puts it on the 128 KB tier of MCUs and secure elements (`nRF52832`, `STM32F405`, Ledger ST33, Infineon SLE78, most hardware-wallet-grade silicon). Getting into 64 KB would require either avoiding `pairing_batch` (serial pairings, ~2× verify cost) or switching to a non-pairing verifier like Nova. Not going there yet.
+| | BN254 M33 | BN254 RV32 | BLS12 M33 | BLS12 RV32 |
+|-|---:|---:|---:|---:|
+| peak stack during verify | 15,604 B | 15,708 B | 19,360 B | 20,588 B |
+| peak heap during verify  | 81,280 B | (pending) | **79,360 B** | (pending) |
+| heap arena (configured)  | **96 KB** | 256 KB | 256 KB | 256 KB |
+| total RAM during verify  | **~111 KB** | ~272 KB | ~116 KB | ~277 KB |
+
+The interesting bit: BLS12-381 on zkcrypto actually uses *less* heap than BN254 on substrate-bn (79 KB vs 81 KB) because zkcrypto keeps Miller-loop line coefficients in stack-allocated `G2Prepared` where substrate-bn heap-allocates an Fq12 polynomial workspace. Total RAM shifts a bit more to stack, but the aggregate is within 5 KB across both curves. Both fit the 128 KB tier.
 
 ## Why
 
 The thing that annoyed me into building this is that every existing "ZK on embedded" project I could find either runs under Linux on something like a Pi Zero, or it's a paper with no code. `ZPiE` (2021) is the closest published thing and it needs a full OS. For actual hardware-wallet-class devices (128 KB SRAM, no MMU, no Linux), there was nothing. So yeah I wrote it.
 
-I also wanted to see for myself whether Cortex-M33 or Hazard3 RV32 wins on pairing-grade arithmetic. As far as I can tell nobody had published that comparison on identical silicon before. Turns out M33 wins overall by about 28% on verify, but Hazard3 wins on G1 scalar mul by ~35%. See `research/prior-art/main.typ` for the full survey.
+Adding BLS12-381 was mostly about proving the approach generalizes across curves and ecosystems (BN254 for older Ethereum, Semaphore, Tornado-era circuits; BLS12-381 for Zcash, Ethereum sync-committee, Filecoin).
+
+## The cross-ISA surprise, revisited
+
+The BN254 bench found Hazard3 runs G1 scalar mul **35 % faster** than Cortex-M33 (the "RISC-V surprise" in the prior-art doc). Turns out **that does not generalize to BLS12-381**. On BLS12 Hazard3 loses on every primitive and loses worse (G1 mul: 69 % slower). Most likely cause is Cortex-M33's `UMAAL` instruction winning big on BLS12's 12-word Fp where it didn't matter as much on BN254's 8-word Fp. Moral: **cross-ISA conclusions on pairing-friendly curves are prime-size-dependent, not algorithm-dependent.** Full writeup in `research/reports/2026-04-22-bls12-381-results.typ`.
 
 ## Repository layout
 
 ```
 bindings/
-├── crates/         Rust source (library + host tool + firmware)
+├── crates/         Rust source (libraries + host tool + four firmware crates)
 ├── benchmarks/     raw + structured benchmark data, one dir per run
-├── research/       Typst sources → PDFs (whitepaper, prior-art, reports)
+├── research/       Typst sources → PDFs (whitepaper, prior-art, reports, notebook)
 ├── web/            public site (Next.js + Fumadocs + MDX), WIP
 └── justfile        top-level build tasks
 ```
@@ -54,61 +73,87 @@ bindings/
 
 | crate | what | target |
 |-------|------|--------|
-| `zkmcu-verifier` | `no_std` Groth16/BN254 verifier over `substrate-bn` | any |
-| `zkmcu-vectors` | `no_std` test-vector loader, EIP-197 binary format | any |
-| `zkmcu-host-gen` | CLI, generates Groth16 proofs via `arkworks` | host (`std`) |
-| `bench-rp2350-m33` | firmware, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-rv32` | firmware, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
+| `zkmcu-verifier` | `no_std` Groth16 / BN254 verifier (EIP-197) | any |
+| `zkmcu-verifier-bls12` | `no_std` Groth16 / BLS12-381 verifier (EIP-2537) | any |
+| `zkmcu-vectors` | `no_std` test-vector loader, both curves | any |
+| `zkmcu-host-gen` | CLI, generates Groth16 proofs via `arkworks`, both curves | host (`std`) |
+| `bench-rp2350-m33` | firmware, BN254, Cortex-M33 | `thumbv8m.main-none-eabihf` |
+| `bench-rp2350-m33-bls12` | firmware, BLS12-381, Cortex-M33 | `thumbv8m.main-none-eabihf` |
+| `bench-rp2350-rv32` | firmware, BN254, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
+| `bench-rp2350-rv32-bls12` | firmware, BLS12-381, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
 
 ## Build
 
 ```bash
-just build          # host crates
-just test           # arkworks ↔ substrate-bn cross-check
-just regen-vectors  # regenerate crates/zkmcu-vectors/data/*.bin
-just build-m33      # firmware (Cortex-M33)
-just build-rv32     # firmware (Hazard3 RV32)
-just docs           # Typst → research/out/*.pdf
+just build                 # host crates
+just test                  # arkworks ↔ substrate-bn + arkworks ↔ bls12_381 cross-checks
+just regen-vectors         # regenerate crates/zkmcu-vectors/data/**
+just build-m33             # BN254 firmware (Cortex-M33)
+just build-m33-bls12       # BLS12-381 firmware (Cortex-M33)
+just build-rv32            # BN254 firmware (Hazard3 RV32)
+just build-rv32-bls12      # BLS12-381 firmware (Hazard3 RV32)
+just docs                  # Typst → research/out/*.pdf
+just check-full            # fmt + clippy + tests + all four firmware builds
 ```
 
 ## Flashing
 
-The Pico is connected over USB to a Raspberry Pi 5 I use as a flashing host, so the workflow is two hops:
+The Pico is connected over USB to a Raspberry Pi 5 I use as a flashing host, so the workflow is two hops. Pick whichever firmware (BN254 / BLS12, M33 / RV32) you want:
 
 1. Hold BOOTSEL on the Pico 2 W and replug. It enumerates as USB `2e8a:000f`.
 2. Ship the ELF to the Pi 5 and flash:
 
     ```bash
-    scp target/thumbv8m.main-none-eabihf/release/bench-rp2350-m33 pi:/tmp/bench-m33.elf
+    scp target/thumbv8m.main-none-eabihf/release/bench-rp2350-m33-bls12 pi:/tmp/bench.elf
     # on the Pi:
-    picotool load -v -x -t elf /tmp/bench-m33.elf
+    picotool load -v -x -t elf /tmp/bench.elf
     ```
 
 3. Read serial: `cat /dev/ttyACM0`, or `dd if=/dev/ttyACM0 bs=1 count=N` for a bounded capture (`stty` on the CDC can hang while a verify is in flight).
 
-## Wire format (EIP-197 compatible)
+## Wire formats
+
+Two flavors, parallel structure, not interchangeable. Identical container shape (VK / proof / public), different point sizes, and **opposite Fp2 byte orders**.
+
+**EIP-197** (BN254):
 
 | type | size | encoding |
 |------|------|----------|
 | `Fq` | 32 B | big-endian, < BN254 base modulus |
 | `Fr` | 32 B | big-endian, < BN254 scalar modulus (strict) |
-| `G1` | 64 B | `x ‖ y`, identity = `(0, 0)` |
+| `G1` | 64 B | `x ‖ y`, identity = all-zeros |
 | `G2` | 128 B | `x.c1 ‖ x.c0 ‖ y.c1 ‖ y.c0` |
+| proof total | 256 B | `A(G1) ‖ B(G2) ‖ C(G1)` |
 
-- Verifying key: `alpha(G1) ‖ beta(G2) ‖ gamma(G2) ‖ delta(G2) ‖ num_ic(u32 LE) ‖ ic[num_ic](G1)`
-- Proof: `A(G1) ‖ B(G2) ‖ C(G1)` = 256 B
+**EIP-2537** (BLS12-381):
+
+| type | size | encoding |
+|------|------|----------|
+| `Fp` | 64 B | 16 zero-pad + 48 big-endian, < BLS12-381 base modulus |
+| `Fr` | 32 B | big-endian, < BLS12-381 scalar modulus (strict) |
+| `G1` | 128 B | `x ‖ y`, identity = all-zeros |
+| `G2` | 256 B | `x.c0 ‖ x.c1 ‖ y.c0 ‖ y.c1` |
+| proof total | 512 B | `A(G1) ‖ B(G2) ‖ C(G1)` |
+
+Containers (same shape for both curves):
+
+- VK: `α(G1) ‖ β(G2) ‖ γ(G2) ‖ δ(G2) ‖ num_ic(u32 LE) ‖ ic[num_ic](G1)`
 - Public inputs: `count(u32 LE) ‖ input[count](Fr)`
 
-The `Fr` strictness is intentional. `substrate-bn` silently reduces non-canonical Fr encodings mod `r`, wich is fine for pairing correctness but lets an attacker mint multiple byte-distinct-but-equivalent nullifiers. Blocked at parse time, see `SECURITY.md`.
+Heads up: the Fp2 order is `(c1, c0)` on EIP-197 and `(c0, c1)` on EIP-2537. If you're porting code between `zkmcu-verifier` and `zkmcu-verifier-bls12`, check the Fp2 order first, that's the most common place things silently go wrong. Strict canonical encoding is enforced on `Fr` for both curves, and on `Fp`-padding for EIP-2537 specifically. See `SECURITY.md`.
 
 ## Documents
 
 Typst sources under `research/`, build with `just docs`, output lands in `research/out/` (gitignored):
 
-- `whitepaper.pdf` — canonical technical paper
-- `prior-art.pdf` — living survey of what else exists in embedded ZK
-- `2026-04-21-zkmcu-first-session.pdf` — master session report with the full M33 + RV32 numbers
-- `2026-04-21-groth16-baseline.pdf` — tight 1-page Cortex-M33 baseline
+- `whitepaper.pdf`: canonical technical paper.
+- `prior-art.pdf`: living survey of what else exists in embedded ZK.
+- `2026-04-21-zkmcu-first-session.pdf`: master session report, BN254 M33 + RV32 numbers.
+- `2026-04-21-groth16-baseline.pdf`: tight 1-page BN254 Cortex-M33 baseline.
+- `2026-04-22-bls12-381-prediction.pdf`: BLS12-381 predictions, written *before* any measurement (immutable).
+- `2026-04-22-bls12-381-results.pdf`: BLS12-381 measurements + prediction comparison, 2 of 3 falsification criteria fired.
+
+Phase 2 paper trail (predictions frozen before measurement, results compared against the frozen file) lives under `research/notebook/` and `benchmarks/runs/`. Main takeaway for grant readers: `2026-04-22-bls12-381-results.pdf`.
 
 ## License
 
