@@ -9,8 +9,12 @@ web/out/
 
 # Editor / local tooling
 .claude/
-.vscode
-.zed
+.zed/
+.vscode/
+**/.vscode/
+
+# Local spellcheck dictionary
+codebook.toml
 
 # Local agent scratch
 CLAUDE.md

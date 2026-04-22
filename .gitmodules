@@ -1,0 +1,3 @@
+[submodule "vendor/semaphore"]
+	path = vendor/semaphore
+	url = https://github.com/Niek-Kamer/semaphore.git
