@@ -93,3 +93,10 @@ const output = {
 
 writeFileSync("proof.json", JSON.stringify(output, null, 2) + "\n")
 console.error(`wrote proof.json (${JSON.stringify(output).length} bytes)`)
+
+// snarkjs (via ffjavascript) spawns persistent worker threads for parallel
+// FFT / MSM during proof gen, and doesn't expose a top-level terminate()
+// from @semaphore-protocol/proof's public API. Without this the Node event
+// loop stays pinned on the idle workers and the script never exits.
+// Force-exit is the right call here — the JSON is already on disk.
+process.exit(0)
