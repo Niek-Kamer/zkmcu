@@ -1,0 +1,99 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/zkmcu-verifier",
+    "crates/zkmcu-vectors",
+    "crates/zkmcu-host-gen",
+    "crates/bench-rp2350-m33",
+    "crates/bench-rp2350-rv32",
+]
+# Default build targets exclude the firmware crates, which need embedded targets.
+# Build them explicitly from inside their crate directories.
+default-members = [
+    "crates/zkmcu-verifier",
+    "crates/zkmcu-vectors",
+    "crates/zkmcu-host-gen",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/definiek/zkmcu"
+rust-version = "1.82"
+
+[workspace.lints.rust]
+future_incompatible          = { level = "warn", priority = -1 }
+let_underscore               = { level = "warn", priority = -1 }
+nonstandard_style            = { level = "warn", priority = -1 }
+rust_2018_idioms             = { level = "warn", priority = -1 }
+unused                       = { level = "warn", priority = -1 }
+unreachable_pub              = "warn"
+unused_must_use              = "deny"
+unsafe_op_in_unsafe_fn       = "deny"
+trivial_casts                = "warn"
+trivial_numeric_casts        = "warn"
+single_use_lifetimes         = "warn"
+unused_lifetimes             = "warn"
+meta_variable_misuse         = "warn"
+
+[workspace.lints.clippy]
+# Group-level opt-ins: start strict, walk back only what hurts.
+all       = { level = "warn", priority = -1 }
+pedantic  = { level = "warn", priority = -1 }
+nursery   = { level = "warn", priority = -1 }
+cargo     = { level = "warn", priority = -1 }
+
+# Hand-picked restrictions that matter for correctness-sensitive code.
+dbg_macro                    = "warn"
+todo                         = "warn"
+unimplemented                = "warn"
+panic                        = "warn"
+unwrap_used                  = "warn"
+indexing_slicing             = "warn"
+integer_division             = "warn"
+float_arithmetic             = "warn"
+mem_forget                   = "warn"
+print_stdout                 = "warn"
+print_stderr                 = "warn"
+undocumented_unsafe_blocks   = "warn"
+
+# Pedantic/nursery lints whose value is outweighed by their noise on this codebase.
+module_name_repetitions      = "allow"
+missing_errors_doc           = "allow"
+missing_panics_doc           = "allow"
+must_use_candidate           = "allow"
+multiple_crate_versions      = "allow"  # arkworks and friends pull duplicates
+cargo_common_metadata        = "allow"  # partial crate metadata on early crates
+negative_feature_names       = "allow"
+
+[workspace.dependencies]
+substrate-bn = { version = "0.6", default-features = false }
+
+# arkworks — used only by zkmcu-host-gen (host/std)
+ark-bn254 = "0.5"
+ark-ec = "0.5"
+ark-ff = "0.5"
+ark-groth16 = { version = "0.5", default-features = false, features = ["parallel"] }
+ark-r1cs-std = "0.5"
+ark-relations = "0.5"
+ark-serialize = "0.5"
+ark-std = "0.5"
+
+# Route every embedded-hal user (including transitive: rp235x-hal, embedded-hal-*)
+# through the maintainer's working fork. The fork stays at semver 1.0.0 so this is
+# a transparent swap from the compiler's perspective; it just lets us dogfood fixes
+# that are queued for upstream PR.
+[patch.crates-io]
+embedded-hal = { git = "https://github.com/Niek-Kamer/embedded-hal", branch = "main", package = "embedded-hal" }
+
+[profile.release]
+codegen-units = 1
+debug = 2
+lto = "fat"
+opt-level = "s"
+overflow-checks = false
+panic = "abort"
+
+# Host-side crate can benefit from default abort-less profile; override here if needed.
+[profile.release.package.zkmcu-host-gen]
+opt-level = 3

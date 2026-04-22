@@ -1,0 +1,29 @@
+zkmcu boot: heap=256K sys=150MHz core=hazard3
+[boot] stack_peak_verify: bytes=15708 paint_window=65536 ok=true
+loaded vector 'square': ic=2 public=1
+[1] g1mul start
+[1] g1mul: cycles=5075964 us=33839 ms=33
+[1] g2mul start
+[1] g2mul: cycles=21668865 us=144459 ms=144
+[1] pairing start
+[1] pairing: cycles=106001498 us=706676 ms=706
+[1] groth16_verify start
+[1] groth16_verify: cycles=201205861 us=1341372 ms=1341 ok=true
+[2] g1mul start
+[2] g1mul: cycles=5171475 us=34476 ms=34
+[2] g2mul start
+[2] g2mul: cycles=22072225 us=147148 ms=147
+[2] pairing start
+[2] pairing: cycles=105994386 us=706629 ms=706
+[2] groth16_verify start
+[2] groth16_verify: cycles=201158501 us=1341056 ms=1341 ok=true
+[3] g1mul start
+[3] g1mul: cycles=10028090 us=66853 ms=66
+[3] g2mul start
+[3] g2mul: cycles=43741126 us=291607 ms=291
+[3] pairing start
+[3] pairing: cycles=105939967 us=706266 ms=706
+[3] groth16_verify start
+[3] groth16_verify: cycles=201229765 us=1341531 ms=1341 ok=true
+(many more clean iterations — full capture includes iterations 4 through 27;
+trimmed here for brevity. Verify consistently 201.1–201.3 M cycles / 1341 ms / ok=true.)

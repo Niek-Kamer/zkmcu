@@ -1,0 +1,53 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"ark-groth16"    = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"embedded-hal"   = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"       = "0.9.2"
+"panic-halt"     = "1.0.0"
+"rp235x-hal"     = "0.4.0"
+
+[footprint]
+text_bytes = 73432
+data_bytes = 0
+bss_bytes  = 262188
+heap_bytes = 262144          # 256 KB arena — far larger than actually needed
+heap_peak_bytes = 81280      # measured directly on-device via TrackingHeap wrapper
+heap_base_bytes = 960        # already allocated when measurement starts (parsed vk/proof/public)
+stack_peak_bytes = 15604
+
+[bench.groth16_verify_square]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 7
+cycles_median = 144_389_292
+us_median     = 962_595
+heap_peak_bytes = 81280
+stack_peak_bytes = 15604
+result = "ok"
+
+[bench.groth16_verify_squares_5]
+circuit = "x_i^2 = y_i for i in 0..5"
+public_inputs = 5
+ic_size = 6
+iterations = 7
+cycles_median = 146_123_711
+us_median     = 974_158
+heap_peak_bytes = 81280      # identical to square — pairing_batch dominates
+stack_peak_bytes = 15604
+result = "ok"

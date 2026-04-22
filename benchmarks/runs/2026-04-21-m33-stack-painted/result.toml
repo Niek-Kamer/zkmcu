@@ -1,0 +1,59 @@
+[meta]
+date = "2026-04-21"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"ark-groth16"    = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"embedded-hal"   = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"       = "0.9.2"
+"panic-halt"     = "1.0.0"
+"rp235x-hal"     = "0.4.0"
+
+[footprint]
+text_bytes = 70324
+data_bytes = 0
+bss_bytes  = 262180
+heap_bytes = 262144
+stack_peak_bytes = 15604    # measured directly on device — the "fits in N KB" number
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 7
+cycles_median = 145_747_967
+cycles_min    = 145_684_257
+cycles_max    = 145_779_019
+us_median     = 971_653
+result = "ok"
+
+[bench.pairing]
+iterations = 7
+cycles_median = 80_285_113
+us_median     = 535_234
+
+[bench.g1_mul]
+iterations = 7
+cycles_typical = 9_300_000
+us_typical     = 62_000
+cycles_best    = 4_828_800
+us_best        = 32_192
+
+[bench.g2_mul]
+iterations = 7
+cycles_typical = 31_000_000
+us_typical     = 207_000
+cycles_best    = 16_238_270
+us_best        = 108_255

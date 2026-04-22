@@ -1,0 +1,68 @@
+[meta]
+date = "2026-04-21"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"ark-groth16"    = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"embedded-hal"   = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"       = "0.9.2"
+"panic-halt"     = "1.0.0"
+"rp235x-hal"     = "0.4.0"
+
+[footprint]
+text_bytes = 72972
+data_bytes = 0
+bss_bytes  = 262180
+heap_bytes = 262144
+stack_peak_bytes = 15604
+
+# ---- Circuit 1: square (1 public input) ----
+[bench.groth16_verify_square]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 6
+cycles_median = 145_051_124
+cycles_min    = 145_013_305
+cycles_max    = 145_054_653
+us_median     = 967_007
+stack_peak_bytes = 15604
+result = "ok"
+
+# ---- Circuit 2: squares-5 (5 public inputs, each small) ----
+[bench.groth16_verify_squares_5]
+circuit = "x_i^2 = y_i for i in 0..5 with small y_i (< 2^13)"
+public_inputs = 5
+ic_size = 6
+iterations = 6
+cycles_median = 146_861_050
+cycles_min    = 146_835_255
+cycles_max    = 146_885_723
+us_median     = 979_073
+stack_peak_bytes = 15604
+result = "ok"
+
+# ---- Derived scaling figures ----
+[bench.scaling]
+delta_cycles_per_4_inputs = 1_810_000
+delta_us_per_4_inputs     = 12_066
+cycles_per_extra_input    = 465_000          # (146.86M - 145.05M) / 4 with small public inputs
+us_per_extra_input        = 3_000
+# Caveat: public inputs in this test vector are small integers (< 2^13). A G1 scalar
+# mul with a random 256-bit scalar would cost ~10M cycles (~67ms); with a small
+# scalar the sliding-window NAF has few non-zero windows, so the mul is cheap.
+# Realistic circuits with Merkle-root-shaped public inputs should budget
+# ~10M cycles (~67ms) per additional public input; circuits with small counters
+# or sums should budget ~500K cycles (~3ms).

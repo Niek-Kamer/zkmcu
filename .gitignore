@@ -1,0 +1,17 @@
+# Build
+target/
+research/out/
+web/.next/
+web/node_modules/
+web/out/
+.DS_Store
+*.swp
+
+# Editor / local tooling
+.claude/
+.vscode
+.zed
+
+# Local agent scratch
+CLAUDE.md
+research/blog-drafts/

@@ -1,0 +1,99 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+---
+
+<StarlightPage frontmatter={{ title: '404 · not found', template: 'splash' }}>
+  <div class="notfound">
+    <h2 class="notfound-code">404</h2>
+    <p class="notfound-lead">That URL doesn't exist. Try one of these:</p>
+    <ul class="notfound-links">
+      <li><a href="/">Home</a> — headline numbers + use cases</li>
+      <li><a href="/getting-started/">Getting started</a> — add the crate, verify your first proof</li>
+      <li><a href="/benchmarks/">Benchmarks</a> — directly-measured numbers on silicon</li>
+      <li><a href="/architecture/">Architecture</a> — how the crates fit together</li>
+      <li><a href="/security/">Security</a> — threat model and known findings</li>
+      <li><a href="https://github.com/Niek-Kamer/zkmcu">GitHub repo</a></li>
+    </ul>
+  </div>
+</StarlightPage>
+
+<style>
+  .notfound {
+    max-width: 48ch;
+    margin-inline: auto;
+    padding-block: 3rem 4rem;
+  }
+
+  .notfound-code {
+    font-family: var(--sl-font-system-mono);
+    font-size: clamp(4rem, 14vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 0 0 1.5rem;
+    background: linear-gradient(
+      115deg,
+      var(--sl-color-accent-high) 0%,
+      var(--sl-color-gray-4) 65%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Light-mode gradient: accent (dark-enough to read) fading to mid-grey. */
+  :root[data-theme='light'] .notfound-code {
+    background: linear-gradient(
+      115deg,
+      var(--sl-color-accent) 0%,
+      var(--sl-color-gray-3) 65%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .notfound-links a {
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  :root[data-theme='light'] .notfound-links a {
+    color: var(--sl-color-accent);
+  }
+
+  .notfound-lead {
+    font-size: 1.1rem;
+    color: var(--sl-color-gray-2);
+    margin-bottom: 1.5rem;
+  }
+
+  .notfound-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .notfound-links li {
+    padding: 0.65rem 1rem;
+    background: var(--sl-color-gray-7);
+    border: 1px solid var(--sl-color-gray-6);
+    border-radius: 6px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .notfound-links li:hover {
+    border-color: var(--sl-color-accent);
+    transform: translateX(2px);
+  }
+
+  .notfound-links a {
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>

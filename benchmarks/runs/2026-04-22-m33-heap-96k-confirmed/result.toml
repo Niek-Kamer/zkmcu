@@ -1,0 +1,54 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"ark-groth16"    = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"embedded-hal"   = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"       = "0.9.2"
+"panic-halt"     = "1.0.0"
+"rp235x-hal"     = "0.4.0"
+
+[footprint]
+text_bytes = 73432
+data_bytes = 0
+bss_bytes  = 98348            # dropped from 262,188 in the baseline: -160 KB
+heap_bytes = 98304            # 96 KB — the confirmed-sufficient arena size
+heap_peak_bytes = 81280
+heap_base_bytes = 960
+stack_peak_bytes = 15604
+# Total RAM used during verify = 98,348 (bss) + 15,604 (stack) ≈ 113,952 B ≈ 111 KB.
+
+[bench.groth16_verify_square]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 6
+cycles_median = 144_398_895
+us_median     = 962_647
+heap_peak_bytes = 81280
+heap_arena_bytes = 98304
+result = "ok"
+
+[bench.groth16_verify_squares_5]
+circuit = "x_i^2 = y_i for i in 0..5"
+public_inputs = 5
+ic_size = 6
+iterations = 6
+cycles_median = 146_138_139
+us_median     = 974_254
+heap_peak_bytes = 81280
+heap_arena_bytes = 98304
+result = "ok"

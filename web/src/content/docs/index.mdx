@@ -1,0 +1,91 @@
+---
+title: zkmcu
+description: no_std Rust Groth16/BN254 verifier for ARM Cortex-M and RISC-V microcontrollers.
+hero:
+  tagline: |
+    A no_std Rust Groth16/BN254 verifier for ARM Cortex-M and RISC-V microcontrollers.
+    Same source runs on both ISAs. Measured directly on silicon.
+  actions:
+    - text: Get started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/Niek-Kamer/zkmcu
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Code, Aside, Badge } from '@astrojs/starlight/components';
+
+<div class="hero-badges">
+  <Badge text="v0.1.0" variant="success" />
+  <Badge text="no_std Rust" variant="note" />
+  <Badge text="MIT OR Apache-2.0" variant="tip" />
+  <Badge text="1.4 KB proof · 256 bytes" variant="note" />
+</div>
+
+## In five lines
+
+Bring in the crate, feed three EIP-197 byte buffers, get a `bool`.
+
+```rust
+use zkmcu_verifier::verify_bytes;
+
+let ok = verify_bytes(&vk_bytes, &proof_bytes, &public_bytes)?;
+assert!(ok, "proof failed to verify");
+```
+
+That's it for the one-shot API. See [Getting started](/getting-started/) for the reusable parser variant and the embedded-target integration.
+
+## Measured on silicon
+
+<CardGrid>
+  <Card title="972 ms" icon="rocket">
+    Full Groth16 / BN254 verify on the Raspberry Pi Pico 2 W's Cortex-M33 core at 150 MHz.
+  </Card>
+  <Card title="112 KB" icon="document">
+    Total RAM used during verification. 96 KB heap arena, 16 KB peak stack.
+  </Card>
+  <Card title="0.06 %" icon="approve-check-circle">
+    Iteration-to-iteration variance. Deterministic timing on an in-order pipeline.
+  </Card>
+  <Card title="2 ISAs" icon="puzzle">
+    One Rust source tree. Runs on ARM Cortex-M33 and RISC-V Hazard3 from the same code.
+  </Card>
+</CardGrid>
+
+<Aside type="note" title="Why this matters">
+  Every current ZK verifier ships for phones or servers. Hardware wallets, offline credential validators, IoT attestation tags — none of them run SNARK verification on-device today. zkmcu closes that gap on any 128 KB SRAM-class MCU.
+</Aside>
+
+## What it's for
+
+<CardGrid>
+  <Card title="Hardware wallets" icon="laptop">
+    Local ZK verification without trusting the USB host. Fits the 128 KB SRAM class: Ledger ST33, Infineon SLE78, nRF52832, STM32F405.
+  </Card>
+  <Card title="Offline credentials" icon="seti:lock">
+    Transit turnstiles, festivals, borders. No server round-trip needed to verify a privacy-preserving credential.
+  </Card>
+  <Card title="IoT attestation" icon="linux">
+    Small devices verifying each other's provenance and claims directly, without a cloud relay.
+  </Card>
+</CardGrid>
+
+## Where to next
+
+<CardGrid>
+  <Card title="Getting started" icon="rocket">
+    Add the crate, write a five-line verify. [Start here](/getting-started/).
+  </Card>
+  <Card title="Architecture" icon="open-book">
+    How the crates fit together and why `substrate-bn` is the backend. [Read more](/architecture/).
+  </Card>
+  <Card title="Benchmarks" icon="bars">
+    Directly-measured numbers on silicon. No emulation. [See results](/benchmarks/).
+  </Card>
+  <Card title="Security" icon="warning">
+    Threat model, what's tested, what's explicitly not yet. [Review scope](/security/).
+  </Card>
+</CardGrid>

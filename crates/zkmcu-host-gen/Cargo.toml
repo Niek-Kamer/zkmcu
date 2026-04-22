@@ -1,0 +1,30 @@
+[package]
+name = "zkmcu-host-gen"
+version = "0.1.0"
+description = "Generates Groth16/BN254 test vectors in EIP-197 format via arkworks, for use by zkmcu-vectors"
+keywords = ["zk-snark", "groth16", "bn254", "arkworks", "test-vectors"]
+categories = ["cryptography", "development-tools", "command-line-utilities"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ark-bn254 = { workspace = true }
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-groth16 = { workspace = true }
+ark-relations = { workspace = true }
+ark-serialize = { workspace = true }
+ark-snark = "0.5"
+ark-std = { workspace = true, features = ["std"] }
+# Pinned to the rand 0.8 ecosystem because arkworks 0.5 consumes rand_core 0.6
+# and ark-snark's `prove` signature requires traits from that version. Bump
+# together with arkworks when ark-groth16 0.6 releases.
+rand = "0.8"
+rand_chacha = "0.3"

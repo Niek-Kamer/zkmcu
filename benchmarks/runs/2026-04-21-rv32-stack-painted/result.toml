@@ -1,0 +1,61 @@
+[meta]
+date = "2026-04-21"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"ark-groth16"    = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"embedded-hal"   = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"       = "0.9.2"
+"panic-halt"     = "1.0.0"
+"rp235x-hal"     = "0.4.0"
+"riscv"          = "0.11"
+"riscv-rt"       = "0.12"
+
+[footprint]
+text_bytes = 71688
+data_bytes = 0
+bss_bytes  = 524288              # .bss + .stack (RV linker convention)
+heap_bytes = 262144
+stack_peak_bytes = 15708         # measured directly on device
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 26
+cycles_median = 201_205_861
+cycles_min    = 201_151_251
+cycles_max    = 201_273_890
+us_median     = 1_341_372
+result = "ok"
+
+[bench.pairing]
+iterations = 27
+cycles_median = 105_999_693
+us_median     = 706_664
+
+[bench.g1_mul]
+iterations = 27
+cycles_typical = 9_700_000
+us_typical     = 64_600
+cycles_best    = 5_072_763
+us_best        = 33_818
+
+[bench.g2_mul]
+iterations = 27
+cycles_typical = 42_500_000
+us_typical     = 283_300
+cycles_best    = 21_586_888
+us_best        = 143_912

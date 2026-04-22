@@ -1,0 +1,33 @@
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33
+[boot] vec=square ic=2 public=1 stack=15604 cycles=145048029 us=966986 ms=966 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15604 cycles=146850591 us=979003 ms=979 ok=true
+[1] g1mul start
+[1] g1mul: cycles=8888996 us=59259 ms=59
+[1] g2mul start
+[1] g2mul: cycles=30194062 us=201293 ms=201
+[1] pairing start
+[1] pairing: cycles=79214249 us=528094 ms=528
+[1] groth16_verify start
+[1] groth16_verify: cycles=145026982 us=966846 ms=966 ok=true
+[1] groth16_verify_sq5 start
+[1] groth16_verify_sq5: cycles=146885723 us=979238 ms=979 ok=true
+[2] g1mul: cycles=9175191 us=61167 ms=61
+[2] g2mul: cycles=31129649 us=207530 ms=207
+[2] pairing: cycles=79289745 us=528598 ms=528
+[2] groth16_verify: cycles=145013305 us=966755 ms=966 ok=true
+[2] groth16_verify_sq5: cycles=146861050 us=979073 ms=979 ok=true
+[3] g1mul: cycles=4617422 us=30782 ms=30
+[3] g2mul: cycles=16537257 us=110248 ms=110
+[3] pairing: cycles=79245790 us=528305 ms=528
+[3] groth16_verify: cycles=145051120 us=967007 ms=967 ok=true
+[3] groth16_verify_sq5: cycles=146835255 us=978901 ms=978 ok=true
+[4] g1mul: cycles=9160494 us=61069 ms=61
+[4] g2mul: cycles=31084696 us=207231 ms=207
+[4] pairing: cycles=79188611 us=527924 ms=527
+[4] groth16_verify: cycles=145054653 us=967031 ms=967 ok=true
+[4] groth16_verify_sq5: cycles=146865331 us=979102 ms=979 ok=true
+[5] g1mul: cycles=9073800 us=60492 ms=60
+[5] g2mul: cycles=30768991 us=205126 ms=205
+[5] pairing: cycles=79188748 us=527924 ms=527
+[5] groth16_verify: cycles=145051128 us=967007 ms=967 ok=true
+[5] groth16_verify_sq5: cycles=146842707 us=978951 ms=978 ok=true

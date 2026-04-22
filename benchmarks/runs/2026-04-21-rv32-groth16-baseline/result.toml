@@ -1,0 +1,65 @@
+[meta]
+date = "2026-04-21"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"    = "0.6.0"
+"ark-groth16"     = "0.5.0"
+"embedded-alloc"  = "0.7.0"
+"embedded-hal"    = "1.0.0 (git:Niek-Kamer/main@4c9dd643)"
+"heapless"        = "0.9.2"
+"panic-halt"      = "1.0.0"
+"rp235x-hal"      = "0.4.0"
+"riscv"           = "0.11"
+"riscv-rt"        = "0.12"
+
+[footprint]
+text_bytes = 71764
+data_bytes = 0
+# `size` reports .bss+.stack combined on RV32 because riscv-rt emits .stack
+# as a BSS-type section. Actual breakdown from llvm-objdump --section-headers:
+#   .bss   = 262208 B  (heap + uninit statics; comparable to M33)
+#   .stack = 262080 B  (rt reserves the remaining RAM as stack section)
+bss_bytes  = 524288
+heap_bytes = 262144
+stack_peak_bytes = 0
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 5
+cycles_median = 198_285_097
+cycles_min    = 198_260_543
+cycles_max    = 198_318_313
+us_median     = 1_321_900
+result = "ok"
+
+[bench.pairing]
+iterations = 6
+cycles_median = 105_133_620
+us_median     = 700_890
+
+[bench.g1_mul]
+iterations = 6
+cycles_typical = 10_830_000
+us_typical     = 72_200
+cycles_best    = 5_168_493
+us_best        = 34_456
+
+[bench.g2_mul]
+iterations = 6
+cycles_typical = 42_600_000
+us_typical     = 284_000
+cycles_best    = 21_678_872
+us_best        = 144_525

@@ -1,0 +1,567 @@
+/* ============================================================================
+ * zkmcu — Starlight theme overrides
+ *
+ * Theming philosophy: minimal chrome, monospace for numbers and structure,
+ * gradient accent on display text, everything else stays clean. No loaded
+ * fonts — the system stack at the right sizes looks fine and keeps the page
+ * fast.
+ *
+ * Single source of truth for the accent hue: --sl-color-accent below. Change
+ * that one hex value to re-theme the whole site.
+ * ========================================================================= */
+
+/* ----------------------------------------------------------------------------
+ * 1. Accent colour (emerald by default)
+ *    Alternatives to swap in: amber #f59e0b, rose #f43f5e, violet #8b5cf6
+ * ------------------------------------------------------------------------- */
+
+:root {
+	--sl-color-accent-low: #022c22;
+	--sl-color-accent: #10b981;
+	--sl-color-accent-high: #6ee7b7;
+}
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d1fae5;
+	--sl-color-accent: #059669;
+	--sl-color-accent-high: #064e3b;
+}
+
+/* ----------------------------------------------------------------------------
+ * 2. Monospace stack — slightly chunkier than the Starlight default so numbers
+ *    feel deliberate when they appear inline or in table headers
+ * ------------------------------------------------------------------------- */
+
+:root {
+	--sl-font-system-mono:
+		'JetBrains Mono', 'Berkeley Mono', ui-monospace, 'SF Mono', 'SFMono-Regular',
+		Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	letter-spacing: -0.02em;
+	font-weight: 700;
+}
+
+body {
+	font-feature-settings: 'ss01', 'cv05', 'cv11', 'zero';
+}
+
+/* ----------------------------------------------------------------------------
+ * 3. Hero block — big display, gradient headline, breathing tagline
+ * ------------------------------------------------------------------------- */
+
+.hero {
+	padding-block: 3rem 4rem;
+}
+
+.hero h1 {
+	font-size: clamp(2.75rem, 6vw, 4.75rem);
+	font-weight: 800;
+	letter-spacing: -0.035em;
+	line-height: 0.95;
+	background: linear-gradient(
+		115deg,
+		var(--sl-color-accent-high) 0%,
+		var(--sl-color-white) 55%
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+:root[data-theme='light'] .hero h1 {
+	background: linear-gradient(
+		115deg,
+		var(--sl-color-accent) 0%,
+		var(--sl-color-black) 55%
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+.hero .tagline {
+	font-size: clamp(1.1rem, 1.4vw, 1.35rem);
+	line-height: 1.55;
+	max-width: 62ch;
+	color: var(--sl-color-gray-2);
+	margin-top: 1.5rem;
+}
+
+.hero .actions a {
+	transition:
+		transform 0.15s ease,
+		border-color 0.15s ease,
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+.hero .actions a:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 20px -12px var(--sl-color-accent);
+}
+
+/* ----------------------------------------------------------------------------
+ * 4. Cards (CardGrid on landing, scattered throughout docs)
+ *    Deliberate emphasis on the big landing-page numbers — monospace, tight
+ * ------------------------------------------------------------------------- */
+
+.card {
+	border: 1px solid var(--sl-color-gray-5);
+	background: var(--sl-color-gray-7);
+	transition:
+		border-color 0.2s ease,
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.card::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		135deg,
+		transparent 55%,
+		var(--sl-color-accent) 200%
+	);
+	opacity: 0;
+	transition: opacity 0.2s ease;
+	pointer-events: none;
+}
+
+.card:hover {
+	border-color: var(--sl-color-accent);
+	transform: translateY(-2px);
+	box-shadow: 0 12px 40px -20px var(--sl-color-accent);
+}
+
+.card:hover::before {
+	opacity: 0.06;
+}
+
+.card .title,
+.card .card-title,
+.card h2 {
+	font-family: var(--sl-font-system-mono);
+	font-size: 1.85rem;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	line-height: 1;
+}
+
+/* ----------------------------------------------------------------------------
+ * 5. Section headings — left accent bar instead of the boring top border
+ * ------------------------------------------------------------------------- */
+
+.sl-markdown-content > h2 {
+	margin-block-start: 4rem;
+	padding-inline-start: 1rem;
+	border-left: 3px solid var(--sl-color-accent);
+	line-height: 1;
+}
+
+.sl-markdown-content > h2:first-of-type {
+	margin-block-start: 2rem;
+}
+
+/* ----------------------------------------------------------------------------
+ * 6. Code blocks — tighter borders, slight shadow in dark mode
+ * ------------------------------------------------------------------------- */
+
+.expressive-code,
+.sl-markdown-content pre,
+.sl-markdown-content .astro-code {
+	border-radius: 8px;
+	border: 1px solid var(--sl-color-gray-5);
+}
+
+:root[data-theme='dark'] .expressive-code,
+:root[data-theme='dark'] .sl-markdown-content pre {
+	box-shadow: 0 1px 0 var(--sl-color-gray-6) inset;
+}
+
+/* Inline code — accent colour, subtle background, monospace */
+.sl-markdown-content :not(pre) > code {
+	background: var(--sl-color-gray-6);
+	padding: 0.15em 0.45em;
+	border-radius: 4px;
+	font-size: 0.875em;
+	color: var(--sl-color-accent-high);
+	border: 1px solid var(--sl-color-gray-5);
+	font-weight: 500;
+}
+
+:root[data-theme='light'] .sl-markdown-content :not(pre) > code {
+	color: var(--sl-color-accent);
+	background: var(--sl-color-accent-low);
+	border-color: color-mix(in srgb, var(--sl-color-accent) 25%, transparent);
+}
+
+/* ----------------------------------------------------------------------------
+ * 7. Tables — clean web-native styling. Monospace font for numeric/code-ish
+ *    content inside cells (via `code` or explicit monospace), but headers
+ *    stay in the body font for readability.
+ * ------------------------------------------------------------------------- */
+
+.sl-markdown-content table {
+	/* display: table overrides Starlight's responsive display:block wrapper so
+	 * cells actually share the full table width instead of shrinking to content.
+	 * border-collapse: collapse lets cells share borders cleanly.
+	 * clip-path: inset(0 round 8px) clips cell backgrounds (including hover
+	 * state) inside the rounded border, which overflow:hidden alone doesn't
+	 * reliably do on <table> elements across browsers. */
+	display: table;
+	table-layout: auto;
+	border-collapse: collapse;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 8px;
+	clip-path: inset(0 round 8px);
+	width: 100%;
+	font-size: 0.95em;
+}
+
+/* Trailing column absorbs leftover space so cell backgrounds fill the rounded
+ * outer border even when content is narrower than the table width. */
+.sl-markdown-content table th:last-child,
+.sl-markdown-content table td:last-child {
+	width: 100%;
+}
+
+.sl-markdown-content table th {
+	background: var(--sl-color-gray-6);
+	color: var(--sl-color-text);
+	font-weight: 600;
+	padding: 0.75rem 1rem;
+	text-align: left;
+	border-bottom: 1px solid var(--sl-color-gray-5);
+	letter-spacing: -0.005em;
+}
+
+.sl-markdown-content table th[align='right'] {
+	text-align: right;
+}
+.sl-markdown-content table th[align='center'] {
+	text-align: center;
+}
+
+.sl-markdown-content table td {
+	padding: 0.6rem 1rem;
+	color: var(--sl-color-text);
+	border-top: 1px solid var(--sl-color-gray-6);
+	vertical-align: middle;
+}
+
+/* First row has no top border — the table's own outer border provides it */
+.sl-markdown-content table tbody tr:first-child td {
+	border-top: none;
+}
+
+.sl-markdown-content table tbody tr {
+	transition: background-color 0.12s ease;
+}
+
+.sl-markdown-content table tbody tr:hover {
+	background: color-mix(in srgb, var(--sl-color-accent) 7%, transparent);
+}
+
+/* Inline code inside table cells: monospace font to visually distinguish
+ * numeric/identifier content from prose, but no pill background because the
+ * cell already provides structure. Strong-weight colour in both themes. */
+.sl-markdown-content table :not(pre) > code {
+	background: transparent;
+	border: none;
+	padding: 0;
+	font-family: var(--sl-font-system-mono);
+	font-size: 0.92em;
+	color: var(--sl-color-text);
+	font-weight: 500;
+}
+
+/* Bold cells — e.g. "Groth16 verify" rows — use accent colour to draw the eye */
+.sl-markdown-content table strong,
+.sl-markdown-content table b {
+	color: var(--sl-color-accent-high);
+}
+:root[data-theme='light'] .sl-markdown-content table strong,
+:root[data-theme='light'] .sl-markdown-content table b {
+	color: var(--sl-color-accent);
+}
+
+/* ----------------------------------------------------------------------------
+ * 8. Blockquotes — left accent bar, subtle tint
+ * ------------------------------------------------------------------------- */
+
+.sl-markdown-content blockquote {
+	border-left: 3px solid var(--sl-color-accent);
+	padding: 0.75rem 1.25rem;
+	background: var(--sl-color-gray-7);
+	border-radius: 0 6px 6px 0;
+	color: var(--sl-color-gray-2);
+	margin-block: 1.5rem;
+}
+
+/* ----------------------------------------------------------------------------
+ * 9. Links in content — underline on hover with accent
+ * ------------------------------------------------------------------------- */
+
+.sl-markdown-content a:not(.card) {
+	color: var(--sl-color-accent-high);
+	text-decoration: underline;
+	text-decoration-color: color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+	text-underline-offset: 3px;
+	transition: text-decoration-color 0.15s ease;
+}
+
+.sl-markdown-content a:not(.card):hover {
+	text-decoration-color: var(--sl-color-accent);
+}
+
+:root[data-theme='light'] .sl-markdown-content a:not(.card) {
+	color: var(--sl-color-accent);
+}
+
+/* ----------------------------------------------------------------------------
+ * 10. Scrollbar — thin, accent on thumb (Firefox + webkit)
+ * ------------------------------------------------------------------------- */
+
+* {
+	scrollbar-color: var(--sl-color-gray-4) transparent;
+	scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: var(--sl-color-gray-5);
+	border-radius: 10px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--sl-color-accent);
+	background-clip: content-box;
+}
+
+/* ----------------------------------------------------------------------------
+ * 11. Kbd — for keyboard shortcuts in docs (tab, enter, etc)
+ * ------------------------------------------------------------------------- */
+
+.sl-markdown-content kbd {
+	background: var(--sl-color-gray-6);
+	border: 1px solid var(--sl-color-gray-5);
+	border-bottom-width: 2px;
+	border-radius: 4px;
+	padding: 0.15em 0.45em;
+	font-size: 0.85em;
+	font-family: var(--sl-font-system-mono);
+	color: var(--sl-color-text);
+	box-shadow: 0 1px 0 var(--sl-color-gray-6) inset;
+}
+
+/* ----------------------------------------------------------------------------
+ * 12. Selection — accent-coloured text highlight
+ * ------------------------------------------------------------------------- */
+
+::selection {
+	background: var(--sl-color-accent);
+	color: var(--sl-color-black);
+}
+:root[data-theme='dark'] ::selection {
+	background: var(--sl-color-accent-high);
+	color: var(--sl-color-black);
+}
+
+/* ----------------------------------------------------------------------------
+ * 13. Hero badges — pills under the landing title
+ * ------------------------------------------------------------------------- */
+
+.hero-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block: 1.25rem 0.5rem;
+}
+
+.hero-badges > * {
+	font-family: var(--sl-font-system-mono);
+	font-size: 0.72rem;
+	letter-spacing: 0.02em;
+	font-weight: 600;
+}
+
+/* ----------------------------------------------------------------------------
+ * 14. Background grid — very subtle dot-grid behind the hero. Adds depth
+ *     without being busy. Only on dark mode; light mode stays clean.
+ * ------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] .hero {
+	position: relative;
+	isolation: isolate;
+}
+
+:root[data-theme='dark'] .hero::before {
+	content: '';
+	position: absolute;
+	inset: -2rem -4rem;
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		var(--sl-color-gray-5) 1px,
+		transparent 0
+	);
+	background-size: 24px 24px;
+	mask-image: radial-gradient(
+		ellipse at center,
+		black 20%,
+		transparent 70%
+	);
+	-webkit-mask-image: radial-gradient(
+		ellipse at center,
+		black 20%,
+		transparent 70%
+	);
+	opacity: 0.5;
+	z-index: -1;
+	pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+ * 15. Starlight Aside component — style the four variants with accent
+ * ------------------------------------------------------------------------- */
+
+.starlight-aside {
+	border-left-width: 3px;
+	border-radius: 0 8px 8px 0;
+	padding-block: 1rem;
+	padding-inline: 1.25rem;
+	background: var(--sl-color-gray-7);
+}
+
+.starlight-aside__title {
+	font-family: var(--sl-font-system-mono);
+	font-size: 0.82rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	font-weight: 600;
+}
+
+.starlight-aside--note {
+	border-left-color: var(--sl-color-accent);
+}
+.starlight-aside--note .starlight-aside__title {
+	color: var(--sl-color-accent-high);
+}
+:root[data-theme='light'] .starlight-aside--note .starlight-aside__title {
+	color: var(--sl-color-accent);
+}
+
+.starlight-aside--tip {
+	border-left-color: var(--sl-color-accent-high);
+}
+.starlight-aside--caution {
+	border-left-color: #f59e0b; /* amber */
+}
+.starlight-aside--danger {
+	border-left-color: #ef4444; /* red */
+}
+
+/* ----------------------------------------------------------------------------
+ * 16. Code block filename chrome — subtle traffic-light dots in the corner
+ *     for a terminal/screenshot feel. Applied to every fenced code block.
+ * ------------------------------------------------------------------------- */
+
+.expressive-code .frame.is-terminal pre,
+.sl-markdown-content pre {
+	position: relative;
+	padding-top: 2.5rem;
+}
+
+.sl-markdown-content pre::before {
+	content: '';
+	position: absolute;
+	top: 0.85rem;
+	left: 1rem;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #ef4444;
+	box-shadow:
+		18px 0 0 #f59e0b,
+		36px 0 0 #10b981;
+}
+
+/* Don't double-apply chrome when expressive-code's own frame is already
+ * rendering a title bar */
+.sl-markdown-content .expressive-code pre::before {
+	display: none;
+}
+
+/* ----------------------------------------------------------------------------
+ * 17. Sidebar polish — readable active-link styling in both themes.
+ *     Uses the generic [aria-current="page"] selector so it survives any
+ *     Starlight class-name churn.
+ * ------------------------------------------------------------------------- */
+
+a[aria-current='page'] {
+	background: color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+	color: var(--sl-color-accent-high);
+	font-weight: 600;
+	border-radius: 4px;
+}
+
+:root[data-theme='light'] a[aria-current='page'] {
+	background: color-mix(in srgb, var(--sl-color-accent) 14%, transparent);
+	color: var(--sl-color-accent);
+}
+
+/* Make sure inactive sidebar links are readable too — sometimes Starlight's
+ * default --sl-color-gray-2 gets hard to pick out against --sl-color-gray-6
+ * on the sidebar. Bump the muted text one step brighter. */
+nav.sidebar a,
+aside.sidebar a,
+[data-has-sidebar] nav a {
+	color: var(--sl-color-text);
+}
+
+nav.sidebar a:hover,
+aside.sidebar a:hover,
+[data-has-sidebar] nav a:hover {
+	color: var(--sl-color-accent-high);
+}
+
+:root[data-theme='light'] nav.sidebar a:hover,
+:root[data-theme='light'] aside.sidebar a:hover,
+:root[data-theme='light'] [data-has-sidebar] nav a:hover {
+	color: var(--sl-color-accent);
+}
+
+/* ----------------------------------------------------------------------------
+ * 18. Top page header (title bar with search + theme + github)
+ *     Subtle bottom border + backdrop blur on scroll
+ * ------------------------------------------------------------------------- */
+
+header.header,
+header[data-astro-header] {
+	backdrop-filter: saturate(180%) blur(8px);
+	-webkit-backdrop-filter: saturate(180%) blur(8px);
+	background: color-mix(in srgb, var(--sl-color-bg) 82%, transparent);
+	border-bottom: 1px solid var(--sl-color-gray-6);
+}
+
+/* ----------------------------------------------------------------------------
+ * 19. Focus-visible — keyboard accessibility without spoiling the look
+ * ------------------------------------------------------------------------- */
+
+*:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+	border-radius: 3px;
+}

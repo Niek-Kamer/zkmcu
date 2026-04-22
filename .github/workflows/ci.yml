@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  host:
+    name: host (fmt + clippy + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+
+      - name: cargo clippy (host crates)
+        run: cargo clippy -p zkmcu-verifier -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
+
+      - name: cargo test
+        run: cargo test --release
+
+  firmware-m33:
+    name: firmware (Cortex-M33)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust + thumbv8m.main target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv8m.main-none-eabihf
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/bench-rp2350-m33"
+
+      - name: cargo clippy (firmware)
+        working-directory: crates/bench-rp2350-m33
+        run: cargo clippy --release -- -D warnings
+
+      - name: cargo build (firmware)
+        working-directory: crates/bench-rp2350-m33
+        run: cargo build --release
+
+  firmware-rv32:
+    name: firmware (Hazard3 RV32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust + riscv32imac target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: riscv32imac-unknown-none-elf
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/bench-rp2350-rv32"
+
+      - name: cargo clippy (firmware)
+        working-directory: crates/bench-rp2350-rv32
+        run: cargo clippy --release -- -D warnings
+
+      - name: cargo build (firmware)
+        working-directory: crates/bench-rp2350-rv32
+        run: cargo build --release
+
+  docs:
+    name: Typst PDFs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v3
+        with:
+          typst-version: "0.14.2"
+
+      - name: Build research PDFs
+        run: |
+          mkdir -p research/out
+          typst compile --root . research/prior-art/main.typ research/out/prior-art.pdf
+          typst compile --root . research/whitepaper/main.typ research/out/whitepaper.pdf
+          typst compile --root . research/reports/2026-04-21-groth16-baseline.typ research/out/2026-04-21-groth16-baseline.pdf
+          typst compile --root . research/reports/2026-04-21-zkmcu-first-session.typ research/out/2026-04-21-zkmcu-first-session.pdf

@@ -1,0 +1,21 @@
+[package]
+name = "zkmcu-verifier"
+version = "0.1.0"
+description = "no_std Groth16/BN254 zk-SNARK verifier for ARM Cortex-M and RISC-V microcontrollers"
+keywords = ["no-std", "zk-snark", "groth16", "bn254", "cryptography"]
+categories = ["cryptography", "embedded", "no-std"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+substrate-bn = { workspace = true }
+
+[dev-dependencies]
+proptest = "1.6"
