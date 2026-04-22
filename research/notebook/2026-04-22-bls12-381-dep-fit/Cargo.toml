@@ -1,0 +1,19 @@
+[package]
+name = "spike-bls12-381-dep-fit"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Standalone workspace so the parent's [patch.crates-io] (embedded-hal fork)
+# and member list don't interact with this spike. This is scratch / notebook
+# code — not part of the zkmcu workspace.
+[workspace]
+
+[dependencies]
+bls12_381 = { version = "0.8", default-features = false, features = ["groups", "pairings", "alloc"] }
+group     = { version = "0.13", default-features = false }
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
