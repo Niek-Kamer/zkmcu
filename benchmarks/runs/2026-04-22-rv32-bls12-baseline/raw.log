@@ -1,0 +1,109 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=hazard3 curve=bls12-381
+
+[boot] vec=square ic=2 public=1 stack=20588 cycles=772618992 us=5150793 ms=5150 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=20588 cycles=1630863146 us=10872420 ms=10872 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=214053207 us=1427021 ms=1427
+[1] g2mul start
+
+[1] g2mul: cycles=150378080 us=1002520 ms=1002
+[1] pairing start
+
+[1] pairing: cycles=296211054 us=1974740 ms=1974
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=772629189 us=5150861 ms=5150 ok=true
+[1] groth16_verify_sq5 start
+
+[1] groth16_verify_sq5: cycles=1630622293 us=10870815 ms=10870 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=214061493 us=1427076 ms=1427
+[2] g2mul start
+
+[2] g2mul: cycles=150368508 us=1002456 ms=1002
+[2] pairing start
+
+[2] pairing: cycles=296276768 us=1975178 ms=1975
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=772596780 us=5150645 ms=5150 ok=true
+[2] groth16_verify_sq5 start
+
+[2] groth16_verify_sq5: cycles=1630247144 us=10868314 ms=10868 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=214059739 us=1427064 ms=1427
+[3] g2mul start
+
+[3] g2mul: cycles=150381423 us=1002542 ms=1002
+[3] pairing start
+
+[3] pairing: cycles=296205762 us=1974705 ms=1974
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=772411094 us=5149407 ms=5149 ok=true
+[3] groth16_verify_sq5 start
+
+[3] groth16_verify_sq5: cycles=1630315766 us=10868771 ms=10868 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=214129724 us=1427531 ms=1427
+[4] g2mul start
+
+[4] g2mul: cycles=150526706 us=1003511 ms=1003
+[4] pairing start
+
+[4] pairing: cycles=296268318 us=1975122 ms=1975
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=772587248 us=5150581 ms=5150 ok=true
+[4] groth16_verify_sq5 start
+
+[4] groth16_verify_sq5: cycles=1630802066 us=10872013 ms=10872 ok=true
+[5] g1mul start
+
+[5] g1mul: cycles=214103897 us=1427359 ms=1427
+[5] g2mul start
+
+[5] g2mul: cycles=150393495 us=1002623 ms=1002
+[5] pairing start
+
+[5] pairing: cycles=296059338 us=1973728 ms=1973
+[5] groth16_verify start
+
+[5] groth16_verify: cycles=772568356 us=5150455 ms=5150 ok=true
+[5] groth16_verify_sq5 start
+
+[5] groth16_verify_sq5: cycles=1630362927 us=10869086 ms=10869 ok=true
+[6] g1mul start
+
+[6] g1mul: cycles=214044768 us=1426965 ms=1426
+[6] g2mul start
+
+[6] g2mul: cycles=150426465 us=1002843 ms=1002
+[6] pairing start
+
+[6] pairing: cycles=296103292 us=1974021 ms=1974
+[6] groth16_verify start
+
+[6] groth16_verify: cycles=772742646 us=5151617 ms=5151 ok=true
+[6] groth16_verify_sq5 start
+
+[6] groth16_verify_sq5: cycles=1630856909 us=10872379 ms=10872 ok=true
+[7] g1mul start
+
+[7] g1mul: cycles=214071977 us=1427146 ms=1427
+[7] g2mul start
+
+[7] g2mul: cycles=150377659 us=1002517 ms=1002
+[7] pairing start
+
+[7] pairing: cycles=296172620 us=1974484 ms=1974
+[7] groth16_verify start
+
+[7] groth16_verify: cycles=772666139 us=5151107 ms=5151 ok=true
+[7] groth16_verify_sq5 start
+<<capture Ctrl+C'd here; iter 7 sq5 still in flight>>

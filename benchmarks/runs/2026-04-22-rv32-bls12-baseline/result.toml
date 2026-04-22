@@ -1,0 +1,99 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"bls12_381"     = "0.8.0"
+"group"         = "0.13.0"
+"pairing"       = "0.23.0"
+"ark-bls12-381" = "0.5.0"
+"ark-groth16"   = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"riscv"         = "0.11"
+"riscv-rt"      = "0.12"
+"rp235x-hal"    = "0.4.0"
+
+[footprint]
+# Same caveat as the M33 run: .text / .data / .bss not extracted (no
+# riscv32-unknown-elf-size on the dev host). Heap peak is not available
+# on RV32 because the RV32 firmware uses the plain LlffHeap without the
+# TrackingHeap wrapper the M33 firmware has — this is consistent with
+# the BN254 RV32 baseline, which also lacks heap-peak. Follow-up
+# firmware work can port TrackingHeap if a heap measurement is needed.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # configured 256 KB arena
+heap_peak_bytes = 0                # not measured (see note above)
+stack_peak_bytes = 20588           # measured directly on-device via paint-and-scan
+
+# ---- Per-operation benchmarks ----
+
+[bench.g1_mul]
+iterations = 7
+cycles_median = 214_061_493
+cycles_min    = 214_044_768
+cycles_max    = 214_129_724
+us_median     = 1_427_076
+
+[bench.g2_mul]
+iterations = 7
+cycles_median = 150_381_423
+cycles_min    = 150_368_508
+cycles_max    = 150_526_706
+us_median     = 1_002_542
+
+[bench.pairing]
+iterations = 7
+cycles_median = 296_205_762
+cycles_min    = 296_059_338
+cycles_max    = 296_276_768
+us_median     = 1_974_705
+
+[bench.groth16_verify_square]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 7
+cycles_median = 772_596_780
+cycles_min    = 772_411_094
+cycles_max    = 772_742_646
+us_median     = 5_150_645
+stack_peak_bytes = 20588
+result = "ok"
+
+[bench.groth16_verify_squares_5]
+# Only 6 complete iterations captured before Ctrl+C during iteration 7 —
+# verify_sq5 is an ~11 s operation on RV32, so iteration 7 was still
+# in-flight when the capture ended. 6 samples is still enough for a stable
+# median (range 610 ms on a 10870 ms median = 0.06 %).
+circuit = "x_i^2 = y_i for i in 0..5"
+public_inputs = 5
+ic_size = 6
+iterations = 6
+cycles_median = 1_630_492_610      # avg of middle two (N=6): (1,630,362,927 + 1,630,622,293) / 2
+cycles_min    = 1_630_247_144
+cycles_max    = 1_630_856_909
+us_median     = 10_869_950
+stack_peak_bytes = 20588
+result = "ok"
+
+[bench.scaling]
+delta_cycles_per_4_inputs = 857_895_830
+delta_us_per_4_inputs     = 5_719_305
+cycles_per_extra_input    = 214_473_958
+us_per_extra_input        = 1_429_826
+# Compare to bench.g1_mul.cycles_median = 214,061,493 / us_median = 1,427,076.
+# Per-extra-public-input cost matches G1 scalar mul within 0.2 % —
+# identical algebraic pattern to the M33 run, confirming the algorithmic
+# contract is portable across both curves AND both ISAs.

@@ -1,0 +1,101 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"bls12_381"     = "0.8.0"
+"group"         = "0.13.0"
+"pairing"       = "0.23.0"
+"ark-bls12-381" = "0.5.0"
+"ark-groth16"   = "0.5.0"
+"embedded-alloc" = "0.7.0"
+"rp235x-hal"    = "0.4.0"
+
+[footprint]
+# .text / .data / .bss not extracted for this run (no arm-none-eabi-size on
+# the dev host). Heap/stack measurements below are direct on-device
+# readouts from the TrackingHeap GlobalAlloc wrapper and stack painting.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # configured arena (256 KB, deliberately oversized for first bring-up)
+heap_peak_bytes = 79360            # measured on-device during verify
+heap_base_bytes = 1024             # already-allocated when measurement starts (parsed vk/proof/public)
+stack_peak_bytes = 19360           # measured directly on-device via paint-and-scan
+
+# ---- Per-operation benchmarks ----
+
+[bench.g1_mul]
+# zkcrypto bls12_381's G1Affine * Scalar implementation is effectively
+# constant-time w.r.t. scalar Hamming weight at this measurement
+# resolution: cycle-count spread across 7 iterations is 110,160 cycles
+# on a ~127M median = 0.09 %. Distribution is unimodal; median is
+# meaningful on its own, no separate "typical" vs "best" split
+# (unlike substrate-bn on BN254 which sees a 2× Hamming-weight spread).
+iterations = 7
+cycles_median = 127_015_885
+cycles_min    = 126_965_037
+cycles_max    = 127_075_197
+us_median     = 846_772
+
+[bench.g2_mul]
+iterations = 7
+cycles_median = 78_515_501
+cycles_min    = 78_488_203
+cycles_max    = 78_560_405
+us_median     = 523_436
+
+[bench.pairing]
+iterations = 7
+cycles_median = 91_026_296
+cycles_min    = 90_903_020
+cycles_max    = 91_121_208
+us_median     = 606_841
+
+[bench.groth16_verify_square]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 7
+cycles_median = 302_207_402
+cycles_min    = 302_123_722
+cycles_max    = 302_316_696
+us_median     = 2_014_716
+heap_peak_bytes = 79360
+stack_peak_bytes = 19360
+result = "ok"
+
+[bench.groth16_verify_squares_5]
+circuit = "x_i^2 = y_i for i in 0..5"
+public_inputs = 5
+ic_size = 6
+iterations = 7
+cycles_median = 811_219_821
+cycles_min    = 811_001_200
+cycles_max    = 811_349_455
+us_median     = 5_408_132
+heap_peak_bytes = 79360            # identical to square — pairing_batch workspace dominates
+stack_peak_bytes = 19360
+result = "ok"
+
+[bench.scaling]
+# Δ between square (1 public input) and squares-5 (5 public inputs) normalised
+# by the 4 extra inputs. Gives us the per-extra-public-input verify cost.
+delta_cycles_per_4_inputs = 509_012_419
+delta_us_per_4_inputs     = 3_393_416
+cycles_per_extra_input    = 127_253_104
+us_per_extra_input        = 848_354
+# Compare to bench.g1_mul.cycles_median = 127,015,885 / us_median = 846,772.
+# Per-extra-public-input cost matches G1 scalar mul within 0.2 % — each
+# public input adds one G1 scalar mul to vk_x = IC[0] + Σ public[i] · IC[i+1],
+# no measurable overhead for the point addition.

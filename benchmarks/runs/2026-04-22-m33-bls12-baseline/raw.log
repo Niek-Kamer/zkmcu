@@ -1,0 +1,110 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 curve=bls12-381
+
+[boot] vec=square ic=2 public=1 stack=19360 heap_base=1024 heap_peak=79360 cycles=302300695 us=2015337 ms=2015 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=19360 heap_base=1024 heap_peak=79360 cycles=811303106 us=5408687 ms=5408 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=126965037 us=846433 ms=846
+[1] g2mul start
+
+[1] g2mul: cycles=78522227 us=523481 ms=523
+[1] pairing start
+
+[1] pairing: cycles=91067243 us=607114 ms=607
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=302211602 us=2014744 ms=2014 ok=true
+[1] groth16_verify_sq5 start
+
+[1] groth16_verify_sq5: cycles=811210766 us=5408071 ms=5408 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=127015885 us=846772 ms=846
+[2] g2mul start
+
+[2] g2mul: cycles=78502782 us=523351 ms=523
+[2] pairing start
+
+[2] pairing: cycles=91026296 us=606841 ms=606
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=302230060 us=2014867 ms=2014 ok=true
+[2] groth16_verify_sq5 start
+
+[2] groth16_verify_sq5: cycles=811219821 us=5408132 ms=5408 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=126981500 us=846543 ms=846
+[3] g2mul start
+
+[3] g2mul: cycles=78560405 us=523736 ms=523
+[3] pairing start
+
+[3] pairing: cycles=91121208 us=607474 ms=607
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=302123722 us=2014158 ms=2014 ok=true
+[3] groth16_verify_sq5 start
+
+[3] groth16_verify_sq5: cycles=811349455 us=5408996 ms=5408 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=127005720 us=846704 ms=846
+[4] g2mul start
+
+[4] g2mul: cycles=78507077 us=523380 ms=523
+[4] pairing start
+
+[4] pairing: cycles=91049405 us=606996 ms=606
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=302207402 us=2014716 ms=2014 ok=true
+[4] groth16_verify_sq5 start
+
+[4] groth16_verify_sq5: cycles=811226775 us=5408178 ms=5408 ok=true
+[5] g1mul start
+
+[5] g1mul: cycles=127054676 us=847031 ms=847
+[5] g2mul start
+
+[5] g2mul: cycles=78515501 us=523436 ms=523
+[5] pairing start
+
+[5] pairing: cycles=90924506 us=606163 ms=606
+[5] groth16_verify start
+
+[5] groth16_verify: cycles=302166539 us=2014443 ms=2014 ok=true
+[5] groth16_verify_sq5 start
+
+[5] groth16_verify_sq5: cycles=811221702 us=5408144 ms=5408 ok=true
+[6] g1mul start
+
+[6] g1mul: cycles=127029909 us=846866 ms=846
+[6] g2mul start
+
+[6] g2mul: cycles=78556578 us=523710 ms=523
+[6] pairing start
+
+[6] pairing: cycles=91020589 us=606803 ms=606
+[6] groth16_verify start
+
+[6] groth16_verify: cycles=302316696 us=2015444 ms=2015 ok=true
+[6] groth16_verify_sq5 start
+
+[6] groth16_verify_sq5: cycles=811096091 us=5407307 ms=5407 ok=true
+[7] g1mul start
+
+[7] g1mul: cycles=127075197 us=847167 ms=847
+[7] g2mul start
+
+[7] g2mul: cycles=78488203 us=523254 ms=523
+[7] pairing start
+
+[7] pairing: cycles=90903020 us=606020 ms=606
+[7] groth16_verify start
+
+[7] groth16_verify: cycles=302162855 us=2014419 ms=2014 ok=true
+[7] groth16_verify_sq5 start
+
+[7] groth16_verify_sq5: cycles=811001200 us=5406674 ms=5406 ok=true
