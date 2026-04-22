@@ -82,7 +82,7 @@ pub fn encode_vk(vk: &ark_groth16::VerifyingKey<Bn254>) -> Vec<u8> {
     out
 }
 
-fn encode_proof(proof: &ark_groth16::Proof<Bn254>) -> Vec<u8> {
+pub fn encode_proof(proof: &ark_groth16::Proof<Bn254>) -> Vec<u8> {
     let mut out = Vec::with_capacity(256);
     out.extend_from_slice(&g1_to_eip197(&proof.a));
     out.extend_from_slice(&g2_to_eip197(&proof.b));
@@ -90,7 +90,7 @@ fn encode_proof(proof: &ark_groth16::Proof<Bn254>) -> Vec<u8> {
     out
 }
 
-fn encode_public(public: &[Fr]) -> Vec<u8> {
+pub fn encode_public(public: &[Fr]) -> Vec<u8> {
     let mut out = Vec::with_capacity(4 + public.len() * 32);
     out.extend_from_slice(&u32_len(public.len()));
     for p in public {

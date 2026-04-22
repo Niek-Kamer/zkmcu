@@ -20,11 +20,12 @@ use std::fs;
 use std::path::Path;
 use std::str::FromStr;
 
-use ark_bn254::{Bn254, Fq, Fq2, G1Affine, G2Affine};
-use ark_groth16::VerifyingKey;
+use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
+use ark_ff::PrimeField;
+use ark_groth16::{Proof, VerifyingKey};
 use serde::Deserialize;
 
-use crate::bn254::encode_vk;
+use crate::bn254::{encode_proof, encode_public, encode_vk};
 
 // ---- JSON schema (snarkjs / Semaphore bundle) --------------------------
 
@@ -202,9 +203,137 @@ fn import_depth(out_root: &Path, depth: usize) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
-pub fn run(out_root: &Path, depths: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+/// Proof + public signals JSON produced by `scripts/gen-semaphore-proof/gen.ts`.
+/// Shape is frozen by that script's output; if either side changes, keep
+/// both in sync.
+#[derive(Deserialize)]
+struct ProofJson {
+    meta: ProofJsonMeta,
+    /// 8 decimal strings already in EVM / EIP-197 order:
+    ///   [A.x, A.y, B.x.c1, B.x.c0, B.y.c1, B.y.c0, C.x, C.y]
+    proof: [String; 8],
+    /// 4 decimal strings:
+    ///   [merkleRoot, nullifier, hash(message), hash(scope)]
+    public_signals: [String; 4],
+}
+
+#[derive(Deserialize)]
+struct ProofJsonMeta {
+    depth: u32,
+    semaphore_version: String,
+}
+
+fn parse_fr(s: &str) -> Result<Fr, Box<dyn std::error::Error>> {
+    Fr::from_str(s).map_err(|()| format!("invalid Fr decimal string: {s}").into())
+}
+
+fn g1_from_affine_xy(x_str: &str, y_str: &str) -> Result<G1Affine, Box<dyn std::error::Error>> {
+    let x = parse_fq(x_str)?;
+    let y = parse_fq(y_str)?;
+    let point = G1Affine::new_unchecked(x, y);
+    if !point.is_on_curve() {
+        return Err("Semaphore proof G1 point failed curve check".into());
+    }
+    Ok(point)
+}
+
+fn g2_from_eip197_order(
+    x_c1: &str,
+    x_c0: &str,
+    y_c1: &str,
+    y_c0: &str,
+) -> Result<G2Affine, Box<dyn std::error::Error>> {
+    let x = Fq2::new(parse_fq(x_c0)?, parse_fq(x_c1)?);
+    let y = Fq2::new(parse_fq(y_c0)?, parse_fq(y_c1)?);
+    let point = G2Affine::new_unchecked(x, y);
+    if !point.is_on_curve() {
+        return Err("Semaphore proof G2 point failed twist check".into());
+    }
+    Ok(point)
+}
+
+fn import_proof(
+    out_root: &Path,
+    depth: usize,
+    proof_json_path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let text = fs::read_to_string(proof_json_path)
+        .map_err(|e| format!("reading {}: {e}", proof_json_path.display()))?;
+    let pj: ProofJson = serde_json::from_str(&text)
+        .map_err(|e| format!("parsing {}: {e}", proof_json_path.display()))?;
+
+    let depth_u32 = u32::try_from(depth).expect("depth fits in u32");
+    if pj.meta.depth != depth_u32 {
+        return Err(format!(
+            "proof.json was generated for depth {}, but --depth {} was requested",
+            pj.meta.depth, depth
+        )
+        .into());
+    }
+
+    // Proof: 8 decimal strings → arkworks Proof<Bn254>.
+    let a = g1_from_affine_xy(&pj.proof[0], &pj.proof[1])?;
+    let b = g2_from_eip197_order(&pj.proof[2], &pj.proof[3], &pj.proof[4], &pj.proof[5])?;
+    let c = g1_from_affine_xy(&pj.proof[6], &pj.proof[7])?;
+    let proof = Proof::<Bn254> { a, b, c };
+
+    // Public signals: 4 decimal strings → [Fr; 4].
+    let public: Vec<Fr> = pj
+        .public_signals
+        .iter()
+        .map(|s| parse_fr(s))
+        .collect::<Result<Vec<_>, _>>()?;
+    if public.len() != 4 {
+        return Err(format!(
+            "Semaphore public signals must have length 4 (got {})",
+            public.len()
+        )
+        .into());
+    }
+
+    let proof_bytes = encode_proof(&proof);
+    let public_bytes = encode_public(&public);
+
+    let slug = format!("semaphore-depth-{depth}");
+    let dir = out_root.join(&slug);
+    fs::create_dir_all(&dir)?;
+    fs::write(dir.join("proof.bin"), &proof_bytes)?;
+    fs::write(dir.join("public.bin"), &public_bytes)?;
+
+    // Quick sanity: each Fr should deserialize back to the same decimal
+    // string we started with. Catches endianness / modulus mistakes before
+    // they reach the committed .bin files.
+    for (i, (s, f)) in pj.public_signals.iter().zip(public.iter()).enumerate() {
+        let round_trip = f.into_bigint();
+        if round_trip.to_string() != *s {
+            return Err(format!(
+                "Fr round-trip mismatch at public_signals[{i}]: input={s} parsed-to-bigint={round_trip}"
+            )
+            .into());
+        }
+    }
+
+    println!(
+        "wrote {slug}/proof.bin {} B + public.bin {} B (Semaphore {}, depth {})",
+        proof_bytes.len(),
+        public_bytes.len(),
+        pj.meta.semaphore_version,
+        depth
+    );
+
+    Ok(())
+}
+
+pub fn run(
+    out_root: &Path,
+    depths: &[usize],
+    proof_json_path: Option<&Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
     for d in depths {
         import_depth(out_root, *d)?;
+        if let Some(path) = proof_json_path {
+            import_proof(out_root, *d, path)?;
+        }
     }
     Ok(())
 }

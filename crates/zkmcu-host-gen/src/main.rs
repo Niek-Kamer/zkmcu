@@ -48,6 +48,21 @@ fn parse_depth(args: &[String]) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(depth)
 }
 
+/// Parse `--proof <path>` out of argv. If present, the Semaphore subcommand
+/// will also import proof.bin + public.bin from that JSON file (produced by
+/// scripts/gen-semaphore-proof/gen.ts). Without it, only vk.bin is written.
+fn parse_proof_arg(args: &[String]) -> Option<PathBuf> {
+    let mut iter = args.iter();
+    while let Some(a) = iter.next() {
+        if a == "--proof" {
+            if let Some(v) = iter.next() {
+                return Some(PathBuf::from(v));
+            }
+        }
+    }
+    None
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let out_root = vectors_data_dir();
@@ -69,7 +84,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if has_arg("semaphore") {
         let depth = parse_depth(&args)?;
-        semaphore::run(&out_root, &[depth])?;
+        let proof_path = parse_proof_arg(&args);
+        semaphore::run(&out_root, &[depth], proof_path.as_deref())?;
     }
 
     Ok(())
