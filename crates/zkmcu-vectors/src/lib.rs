@@ -24,6 +24,17 @@ static SQUARES_5_VK: &[u8] = include_bytes!("../data/squares-5/vk.bin");
 static SQUARES_5_PROOF: &[u8] = include_bytes!("../data/squares-5/proof.bin");
 static SQUARES_5_PUBLIC: &[u8] = include_bytes!("../data/squares-5/public.bin");
 
+// Imported from the vendored Semaphore fork (vendor/semaphore/...) by
+// `cargo run -p zkmcu-host-gen --release -- semaphore --depth 10 --proof ...`.
+// Real production Groth16/BN254 trusted setup, not a synthetic test vector.
+// 4 public inputs (merkle root, nullifier, hash(message), hash(scope)), IC
+// size = nPublic + 1 = 5. See crates/zkmcu-vectors/data/semaphore-depth-10/
+// for the bytes themselves and scripts/gen-semaphore-proof/ for the gen
+// pipeline.
+static SEMAPHORE_DEPTH_10_VK: &[u8] = include_bytes!("../data/semaphore-depth-10/vk.bin");
+static SEMAPHORE_DEPTH_10_PROOF: &[u8] = include_bytes!("../data/semaphore-depth-10/proof.bin");
+static SEMAPHORE_DEPTH_10_PUBLIC: &[u8] = include_bytes!("../data/semaphore-depth-10/public.bin");
+
 /// The "square" vector: proves knowledge of `x` such that `x^2 = y`, with `y` public.
 ///
 /// Smallest meaningful Groth16 circuit — one constraint, one public input. Useful as a
@@ -50,5 +61,28 @@ pub fn squares_5() -> Result<TestVector, Error> {
         vk: parse_vk(SQUARES_5_VK)?,
         proof: parse_proof(SQUARES_5_PROOF)?,
         public: parse_public(SQUARES_5_PUBLIC)?,
+    })
+}
+
+/// Real Semaphore (v4.14.2) Groth16/BN254 proof at Merkle tree depth 10.
+///
+/// Unlike [`square`] and [`squares_5`] wich use synthetic arkworks-generated
+/// trusted setups, this vector comes from the production Semaphore snark-
+/// artifacts via snarkjs. Public inputs are the canonical Semaphore
+/// 4-tuple: `[merkleTreeRoot, nullifier, hash(message), hash(scope)]`,
+/// all full 254-bit scalars.
+///
+/// Loading this vector at runtime proves end-to-end compatibility with
+/// real-world circuits deployed on Ethereum. For circuit designers it's
+/// also a more realistic verify-cost benchmark than `squares_5`, since
+/// Semaphore's big-scalar public inputs exercise the full G1 scalar-mul
+/// path in `vk_x = IC[0] + Σ public[i] · IC[i+1]` rather than substrate-
+/// bn's small-scalar shortcut.
+pub fn semaphore_depth_10() -> Result<TestVector, Error> {
+    Ok(TestVector {
+        name: "semaphore-depth-10",
+        vk: parse_vk(SEMAPHORE_DEPTH_10_VK)?,
+        proof: parse_proof(SEMAPHORE_DEPTH_10_PROOF)?,
+        public: parse_public(SEMAPHORE_DEPTH_10_PUBLIC)?,
     })
 }

@@ -150,6 +150,7 @@ fn main() -> ! {
 
     let test_vector = zkmcu_vectors::square().expect("square test vector parse");
     let squares_5 = zkmcu_vectors::squares_5().expect("squares-5 test vector parse");
+    let semaphore = zkmcu_vectors::semaphore_depth_10().expect("semaphore depth-10 parse");
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
@@ -178,6 +179,18 @@ fn main() -> ! {
         &squares_5.vk,
         &squares_5.proof,
         &squares_5.public,
+    );
+    boot_measure(
+        &mut usb_dev,
+        &mut serial,
+        timer,
+        sys_hz,
+        semaphore.name,
+        semaphore.vk.ic.len(),
+        semaphore.public.len(),
+        &semaphore.vk,
+        &semaphore.proof,
+        &semaphore.public,
     );
     let mut iter: u32 = 0;
 
@@ -262,6 +275,33 @@ fn main() -> ! {
                 &mut out,
                 "[{iter}] groth16_verify: cycles={c_verify} us={us} ms={} {verify_label}",
                 us / 1000,
+            );
+            write_line(&mut usb_dev, &mut serial, timer, out.as_bytes());
+        }
+
+        print_marker(
+            &mut usb_dev,
+            &mut serial,
+            timer,
+            iter,
+            b"groth16_verify_semaphore start\r\n",
+        );
+        let t0 = mcycle64();
+        let sem_result = zkmcu_verifier::verify(&semaphore.vk, &semaphore.proof, &semaphore.public);
+        let t1 = mcycle64();
+        let c_sem = t1.wrapping_sub(t0);
+        let sem_label = match sem_result {
+            Ok(true) => "ok=true",
+            Ok(false) => "ok=false",
+            Err(_) => "err",
+        };
+        let us_sem = c_sem.saturating_mul(1_000_000) / sys_hz;
+        {
+            let mut out: String<160> = String::new();
+            let _ = writeln!(
+                &mut out,
+                "[{iter}] groth16_verify_semaphore: cycles={c_sem} us={us_sem} ms={} {sem_label}",
+                us_sem / 1000,
             );
             write_line(&mut usb_dev, &mut serial, timer, out.as_bytes());
         }

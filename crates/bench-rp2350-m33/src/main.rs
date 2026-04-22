@@ -181,6 +181,7 @@ fn main() -> ! {
     // Parse the test vector once at startup so we don't time the parse or thrash the heap.
     let test_vector = zkmcu_vectors::square().expect("square test vector parse");
     let squares_5 = zkmcu_vectors::squares_5().expect("squares-5 test vector parse");
+    let semaphore = zkmcu_vectors::semaphore_depth_10().expect("semaphore depth-10 parse");
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
@@ -211,6 +212,18 @@ fn main() -> ! {
         &squares_5.vk,
         &squares_5.proof,
         &squares_5.public,
+    );
+    boot_measure(
+        &mut usb_dev,
+        &mut serial,
+        timer,
+        sys_hz,
+        semaphore.name,
+        semaphore.vk.ic.len(),
+        semaphore.public.len(),
+        &semaphore.vk,
+        &semaphore.proof,
+        &semaphore.public,
     );
     let mut iter: u32 = 0;
 
@@ -299,6 +312,19 @@ fn main() -> ! {
             &squares_5.vk,
             &squares_5.proof,
             &squares_5.public,
+            sys_hz,
+        );
+
+        // ---- Real-world data point: Semaphore depth-10 verify ----
+        loop_verify(
+            &mut usb_dev,
+            &mut serial,
+            timer,
+            iter,
+            "groth16_verify_semaphore",
+            &semaphore.vk,
+            &semaphore.proof,
+            &semaphore.public,
             sys_hz,
         );
 
