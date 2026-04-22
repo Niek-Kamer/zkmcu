@@ -98,3 +98,4 @@ jobs:
           typst compile --root . research/whitepaper/main.typ research/out/whitepaper.pdf
           typst compile --root . research/reports/2026-04-21-groth16-baseline.typ research/out/2026-04-21-groth16-baseline.pdf
           typst compile --root . research/reports/2026-04-21-zkmcu-first-session.typ research/out/2026-04-21-zkmcu-first-session.pdf
+          typst compile --root . research/reports/2026-04-22-bls12-381-prediction.typ research/out/2026-04-22-bls12-381-prediction.pdf

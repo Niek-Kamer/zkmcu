@@ -71,6 +71,8 @@ docs:
                                                          {{out}}/2026-04-21-groth16-baseline.pdf
     typst compile --root . research/reports/2026-04-21-zkmcu-first-session.typ \
                                                          {{out}}/2026-04-21-zkmcu-first-session.pdf
+    typst compile --root . research/reports/2026-04-22-bls12-381-prediction.typ \
+                                                         {{out}}/2026-04-22-bls12-381-prediction.pdf
 
 # Rebuild a single doc on change. `just docs-watch research/reports/…`.
 docs-watch path:
