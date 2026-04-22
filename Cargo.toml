@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/zkmcu-verifier",
+    "crates/zkmcu-verifier-bls12",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/bench-rp2350-m33",
@@ -11,6 +12,7 @@ members = [
 # Build them explicitly from inside their crate directories.
 default-members = [
     "crates/zkmcu-verifier",
+    "crates/zkmcu-verifier-bls12",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
 ]
@@ -68,6 +70,13 @@ negative_feature_names       = "allow"
 
 [workspace.dependencies]
 substrate-bn = { version = "0.6", default-features = false }
+
+# zkcrypto BLS12-381 stack, shared between zkmcu-verifier-bls12 (no_std) and
+# zkmcu-host-gen (host cross-check). `default-features = false` keeps it
+# no_std-clean; `alloc` is needed for the Vec-of-G1 used to hold `gamma_abc_g1`.
+bls12_381 = { version = "0.8", default-features = false, features = ["groups", "pairings", "alloc"] }
+group = { version = "0.13", default-features = false }
+pairing = "0.23"
 
 # arkworks — used only by zkmcu-host-gen (host/std)
 ark-bn254 = "0.5"

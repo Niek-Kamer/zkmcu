@@ -1,0 +1,20 @@
+[package]
+name = "zkmcu-verifier-bls12"
+version = "0.1.0"
+description = "no_std Groth16/BLS12-381 zk-SNARK verifier for ARM Cortex-M and RISC-V microcontrollers (EIP-2537 wire format)"
+keywords = ["no-std", "zk-snark", "groth16", "bls12-381", "cryptography"]
+categories = ["cryptography", "embedded", "no-std"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bls12_381 = { workspace = true }
+group = { workspace = true }
+pairing = { workspace = true }

@@ -27,7 +27,7 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy (host crates)
-        run: cargo clippy -p zkmcu-verifier -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
+        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
 
       - name: cargo test
         run: cargo test --release
@@ -47,6 +47,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: "crates/bench-rp2350-m33"
+
+      - name: cargo check (zkmcu-verifier-bls12 on Cortex-M33)
+        run: cargo check -p zkmcu-verifier-bls12 --release --target thumbv8m.main-none-eabihf
 
       - name: cargo clippy (firmware)
         working-directory: crates/bench-rp2350-m33
@@ -71,6 +74,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: "crates/bench-rp2350-rv32"
+
+      - name: cargo check (zkmcu-verifier-bls12 on Hazard3 RV32)
+        run: cargo check -p zkmcu-verifier-bls12 --release --target riscv32imac-unknown-none-elf
 
       - name: cargo clippy (firmware)
         working-directory: crates/bench-rp2350-rv32

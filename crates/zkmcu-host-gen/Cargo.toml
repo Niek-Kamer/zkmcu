@@ -33,6 +33,6 @@ rand_chacha = "0.3"
 # zkcrypto stack, used only for the host-side EIP-2537 cross-check of
 # BLS12-381 vectors. This catches wire-format bugs (Fp padding, Fp2 byte
 # order) before committed .bin files hit zkmcu-vectors.
-bls12_381 = { version = "0.8", default-features = false, features = ["groups", "pairings", "alloc"] }
-group = { version = "0.13", default-features = false }
-pairing = "0.23"
+bls12_381 = { workspace = true }
+group = { workspace = true }
+pairing = { workspace = true }
