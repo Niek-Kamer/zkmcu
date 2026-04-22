@@ -18,7 +18,7 @@ default-members = [
 [workspace.package]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/definiek/zkmcu"
+repository = "https://github.com/Niek-Kamer/zkmcu"
 rust-version = "1.82"
 
 [workspace.lints.rust]
