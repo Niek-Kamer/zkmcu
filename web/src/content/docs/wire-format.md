@@ -39,7 +39,7 @@ Total size = `64 + 3·128 + 4 + num_ic·64` bytes.
 | 5 public inputs (`squares-5`) | 6 | 836 B |
 | 50 public inputs | 51 | 3,716 B |
 
-`num_ic` is bounds-checked against the actual buffer length with checked arithmetic before any allocation — see [security](/security/#dos-via-unbounded-allocation-fixed).
+`num_ic` is bounds-checked against the actual buffer length with checked arithmetic before any allocation — see [security](/security/#dos-via-unbounded-allocation).
 
 ## Proof
 

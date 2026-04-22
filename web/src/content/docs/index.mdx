@@ -22,7 +22,7 @@ import { Card, CardGrid, Code, Aside, Badge } from '@astrojs/starlight/component
   <Badge text="v0.1.0" variant="success" />
   <Badge text="no_std Rust" variant="note" />
   <Badge text="MIT OR Apache-2.0" variant="tip" />
-  <Badge text="1.4 KB proof · 256 bytes" variant="note" />
+  <Badge text="256 B constant-size proof" variant="note" />
 </div>
 
 ## In five lines
@@ -41,7 +41,7 @@ That's it for the one-shot API. See [Getting started](/getting-started/) for the
 ## Measured on silicon
 
 <CardGrid>
-  <Card title="972 ms" icon="rocket">
+  <Card title="962 ms" icon="rocket">
     Full Groth16 / BN254 verify on the Raspberry Pi Pico 2 W's Cortex-M33 core at 150 MHz.
   </Card>
   <Card title="112 KB" icon="document">

@@ -1,6 +1,6 @@
 # Benchmarks
 
-Raw and structured results from every zkmcu benchmark run. This is the **single source of truth** — both the research PDFs and the web docs consume these files; nothing is duplicated in prose.
+Raw and structured results from every zkmcu benchmark run. This is the **single source of truth**, both the research PDFs and the web docs consume these files; nothing is duplicated in prose.
 
 ## Layout
 
@@ -19,7 +19,7 @@ One directory per run. Runs are append-only; if a result is invalidated, add a n
 
 ## Conventions
 
-- Dates are ISO-8601 (`YYYY-MM-DD`) and timezone-naïve — the date is when the run was started, not published.
+- Dates are ISO-8601 (`YYYY-MM-DD`) and timezone-naïve. The date is when the run was started, not published.
 - Slugs are lowercase, hyphenated: `m33-groth16-baseline`, `hazard3-groth16-baseline`, `m33-dsp-optimized`, etc.
 - `result.toml` schema is at [`schema.md`](./schema.md).
 - `raw.log` is whatever the firmware (or host tool) actually printed. Do not edit it.
