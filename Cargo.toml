@@ -71,6 +71,7 @@ substrate-bn = { version = "0.6", default-features = false }
 
 # arkworks — used only by zkmcu-host-gen (host/std)
 ark-bn254 = "0.5"
+ark-bls12-381 = "0.5"
 ark-ec = "0.5"
 ark-ff = "0.5"
 ark-groth16 = { version = "0.5", default-features = false, features = ["parallel"] }
