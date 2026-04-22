@@ -1,0 +1,82 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"semaphore"      = "4.14.2"           # source of VK + proof
+"snark-artifacts" = "4.13.0"          # trusted-setup tag used by generateProof
+"zkmcu-verifier" = "0.1.0"
+
+[footprint]
+# Unchanged vs the m33-groth16-baseline run — the third test vector
+# (semaphore-depth-10) is loaded at boot but the per-verify peak heap
+# is still dominated by the pairing_batch workspace.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 98304                # 96 KB configured arena
+heap_peak_bytes = 81888           # from the square boot_measure this run (≈ +608 B vs the 81,280 B baseline because 3 vectors are pre-parsed instead of 2)
+heap_base_bytes = 1568
+stack_peak_bytes = 15604
+
+[vector]
+source = "vendor/semaphore/packages/proof/src/verification-keys.json (depth 10) + snarkjs.groth16.fullProve via scripts/gen-semaphore-proof/"
+circuit = "Semaphore v4 membership proof, Merkle tree depth 10"
+public_inputs = 4                  # merkle root, nullifier, hash(message), hash(scope)
+ic_size = 5                        # nPublic + 1
+
+[bench.groth16_verify_semaphore]
+iterations = 5                     # 6th started but capture ended mid-verify
+cycles_median = 176_475_754
+cycles_min    = 176_450_089
+cycles_max    = 176_503_682
+us_median     = 1_176_505
+result = "ok"
+# Variance: 53,593 cycles / 358 us over 5 iters = 0.030 % (tightest of any
+# measurement in the project so far).
+
+# ---- For easy comparison in the same file ----
+
+[bench.groth16_verify_square]
+# Square re-run alongside Semaphore in this same firmware. Confirms
+# regression-free vs the standalone m33-groth16-baseline (~962 ms median).
+iterations = 6
+cycles_median = 144_373_982
+cycles_min    = 144_331_054
+cycles_max    = 144_409_210
+us_median     = 962_493
+result = "ok"
+
+[bench.groth16_verify_squares_5]
+iterations = 6
+cycles_median = 146_111_765       # avg of middle two (N=6): (146106268 + 146117262) / 2
+us_median     = 974_078
+result = "ok"
+
+[bench.scaling_semaphore_vs_square]
+# Extra cost of Semaphore vs the single-public-input square baseline,
+# normalised to one extra public input. Semaphore has 3 extra public inputs
+# beyond square's 1; all four are random-ish 254-bit scalars (merkle root,
+# nullifier, two keccak-shifted hashes).
+extra_public_inputs       = 3
+delta_cycles              = 32_101_772    # 176,475,754 − 144,373,982
+delta_us                  = 214_012
+cycles_per_extra_input    = 10_700_591
+us_per_extra_input        = 71_337
+# Compare to bench.scaling (from m33-scaling run with small-integer scalars
+# in squares-5): us_per_extra_input = 3,000. The 24× gap is the substrate-
+# bn sliding-window-NAF short-circuit at work: small scalars have few
+# non-zero NAF windows, so G1 mul cost is ~30 ms instead of ~110 ms.
+# Circuit designers targeting embedded BN254 verify should plan for the
+# big-scalar regime: \~70 ms per public input on M33.

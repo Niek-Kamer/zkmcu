@@ -1,0 +1,104 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=hazard3
+
+[boot] vec=square ic=2 public=1 stack=15708 cycles=199053268 us=1327021 ms=1327 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15708 cycles=200951294 us=1339675 ms=1339 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15708 cycles=234693355 us=1564622 ms=1564 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=5005420 us=33369 ms=33
+[1] g2mul start
+
+[1] g2mul: cycles=21313475 us=142089 ms=142
+[1] pairing start
+
+[1] pairing: cycles=104055650 us=693704 ms=693
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=199044031 us=1326960 ms=1326 ok=true
+[1] groth16_verify_semaphore start
+
+[1] groth16_verify_semaphore: cycles=234685183 us=1564567 ms=1564 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=9810589 us=65403 ms=65
+[2] g2mul start
+
+[2] g2mul: cycles=42076360 us=280509 ms=280
+[2] pairing start
+
+[2] pairing: cycles=103970738 us=693138 ms=693
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=199071054 us=1327140 ms=1327 ok=true
+[2] groth16_verify_semaphore start
+
+[2] groth16_verify_semaphore: cycles=234681740 us=1564544 ms=1564 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=9853302 us=65688 ms=65
+[3] g2mul start
+
+[3] g2mul: cycles=42292645 us=281950 ms=281
+[3] pairing start
+
+[3] pairing: cycles=104031256 us=693541 ms=693
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=199125104 us=1327500 ms=1327 ok=true
+[3] groth16_verify_semaphore start
+
+[3] groth16_verify_semaphore: cycles=234709361 us=1564729 ms=1564 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=9829521 us=65530 ms=65
+[4] g2mul start
+
+[4] g2mul: cycles=42240630 us=281604 ms=281
+[4] pairing start
+
+[4] pairing: cycles=104001241 us=693341 ms=693
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=199117970 us=1327453 ms=1327 ok=true
+[4] groth16_verify_semaphore start
+
+[4] groth16_verify_semaphore: cycles=234709964 us=1564733 ms=1564 ok=true
+[5] g1mul start
+
+[5] g1mul: cycles=9529132 us=63527 ms=63
+[5] g2mul start
+
+[5] g2mul: cycles=40904543 us=272696 ms=272
+[5] pairing start
+
+[5] pairing: cycles=103960740 us=693071 ms=693
+[5] groth16_verify start
+
+[5] groth16_verify: cycles=199074054 us=1327160 ms=1327 ok=true
+[5] groth16_verify_semaphore start
+
+[5] groth16_verify_semaphore: cycles=234693017 us=1564620 ms=1564 ok=true
+[6] g1mul start
+
+[6] g1mul: cycles=9663430 us=64422 ms=64
+[6] g2mul start
+
+[6] g2mul: cycles=41503265 us=276688 ms=276
+[6] pairing start
+
+[6] pairing: cycles=103982824 us=693218 ms=693
+[6] groth16_verify start
+
+[6] groth16_verify: cycles=199036410 us=1326909 ms=1326 ok=true
+[6] groth16_verify_semaphore start
+
+[6] groth16_verify_semaphore: cycles=234752298 us=1565015 ms=1565 ok=true
+[7] g1mul start
+
+[7] g1mul: cycles=5110006 us=34066 ms=34
+[7] g2mul start
+
+[7] g2mul: cycles=21683588 us=144557 ms=144
+[7] pairing start
+<<capture ended mid-pairing on iter 7>>

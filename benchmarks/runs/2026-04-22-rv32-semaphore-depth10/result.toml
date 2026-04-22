@@ -1,0 +1,80 @@
+[meta]
+date = "2026-04-22"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"   = "0.6.0"
+"semaphore"      = "4.14.2"
+"snark-artifacts" = "4.13.0"
+"zkmcu-verifier" = "0.1.0"
+"riscv"          = "0.11"
+"riscv-rt"       = "0.12"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB configured arena (same as BN254 RV32)
+heap_peak_bytes = 0                # not measured (RV32 firmware uses plain LlffHeap, no TrackingHeap)
+stack_peak_bytes = 15708
+
+[vector]
+source = "vendor/semaphore/packages/proof/src/verification-keys.json (depth 10) + snarkjs.groth16.fullProve"
+circuit = "Semaphore v4 membership proof, Merkle tree depth 10"
+public_inputs = 4
+ic_size = 5
+
+[bench.groth16_verify_semaphore]
+iterations = 6
+cycles_median = 234_701_189        # avg of middle two (N=6 even): (234693017 + 234709361) / 2
+cycles_min    = 234_681_740
+cycles_max    = 234_752_298
+us_median     = 1_564_674
+result = "ok"
+# Variance: 70,558 cycles / 471 us over 6 iterations = 0.030 %. Same
+# silicon-determinism-class consistency as the M33 Semaphore run.
+
+[bench.groth16_verify_square]
+# Co-measured in the same firmware flash.
+iterations = 6
+cycles_median = 199_072_554        # avg of middle two (N=6)
+cycles_min    = 199_036_410
+cycles_max    = 199_125_104
+us_median     = 1_327_150
+result = "ok"
+# Note: 1,327 ms here vs 1,341 ms in the earlier rv32-groth16-baseline.
+# ~1 % drift from the earlier run, consistent with firmware-layout-
+# dependent icache behaviour (different object file = different inst
+# cache alignment). Not a regression.
+
+[bench.rv32_vs_m33_semaphore]
+# Cross-ISA ratio on Semaphore vs on square, for quick comparison with
+# the phase 2.6 cross-ISA findings.
+rv32_over_m33_semaphore = 1.33
+rv32_over_m33_square    = 1.38
+# The 0.05 ratio tightening on Semaphore is the scaling argument from
+# phase 2.6's comparison report showing up in an independent datapoint:
+# Semaphore's 3 extra big-scalar G1 muls lean on RV32's G1-mul advantage
+# on BN254 (RV32 ran G1 mul 35 % faster than M33 at the earlier baseline),
+# partially offsetting RV32's disadvantage on the pairing path.
+
+[bench.scaling_semaphore_vs_square_rv32]
+extra_public_inputs       = 3
+delta_cycles              = 35_628_635    # 234,701,189 − 199,072,554
+delta_us                  = 237_524
+cycles_per_extra_input    = 11_876_212
+us_per_extra_input        = 79_175
+# RV32 per-extra-big-scalar-input cost is ~79 ms, vs ~71 ms on M33.
+# On *small* scalars the previous scaling run measured ~3 ms per input
+# on M33. So RV32 loses proportionally more as scalars go big, even
+# though it's faster on G1 mul in isolation — interesting.

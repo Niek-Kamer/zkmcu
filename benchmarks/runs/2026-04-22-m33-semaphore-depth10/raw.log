@@ -1,0 +1,113 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=96K sys=150MHz core=cortex-m33
+
+[boot] vec=square ic=2 public=1 stack=15604 heap_base=1568 heap_peak=81888 cycles=144353006 us=962353 ms=962 ok=true
+# (the squares-5 and semaphore boot_measure lines got cut off by serial-
+# flow-control corruption that mangled the start of iteration 1's output;
+# all three vectors appear cleanly in the per-iteration loop output below)
+
+[1] g1mul: cycles=8853289 us=59021 ms=59
+[1] g2mul start
+
+[1] g2mul: cycles=31149795 us=207665 ms=207
+[1] pairing start
+
+[1] pairing: cycles=78622195 us=524147 ms=524
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=144401875 us=962679 ms=962 ok=true
+[1] groth16_verify_sq5 start
+
+[1] groth16_verify_sq5: cycles=146106268 us=974041 ms=974 ok=true
+[1] groth16_verify_semaphore start
+
+[1] groth16_verify_semaphore: cycles=176451049 us=1176340 ms=1176 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=9011581 us=60077 ms=60
+[2] g2mul start
+
+[2] g2mul: cycles=31697305 us=211315 ms=211
+[2] pairing start
+
+[2] pairing: cycles=78621906 us=524146 ms=524
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=144369491 us=962463 ms=962 ok=true
+[2] groth16_verify_sq5 start
+
+[2] groth16_verify_sq5: cycles=146079216 us=973861 ms=973 ok=true
+[2] groth16_verify_semaphore start
+
+[2] groth16_verify_semaphore: cycles=176487998 us=1176586 ms=1176 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=8795337 us=58635 ms=58
+[3] g2mul start
+
+[3] g2mul: cycles=30895534 us=205970 ms=205
+[3] pairing start
+
+[3] pairing: cycles=78658384 us=524389 ms=524
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=144331054 us=962207 ms=962 ok=true
+[3] groth16_verify_sq5 start
+
+[3] groth16_verify_sq5: cycles=146117262 us=974115 ms=974 ok=true
+[3] groth16_verify_semaphore start
+
+[3] groth16_verify_semaphore: cycles=176475754 us=1176505 ms=1176 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=8893541 us=59290 ms=59
+[4] g2mul start
+
+[4] g2mul: cycles=31294523 us=208630 ms=208
+[4] pairing start
+
+[4] pairing: cycles=78661723 us=524411 ms=524
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=144360711 us=962404 ms=962 ok=true
+[4] groth16_verify_sq5 start
+
+[4] groth16_verify_sq5: cycles=146081552 us=973877 ms=973 ok=true
+[4] groth16_verify_semaphore start
+
+[4] groth16_verify_semaphore: cycles=176450089 us=1176333 ms=1176 ok=true
+[5] g1mul start
+
+[5] g1mul: cycles=8524318 us=56828 ms=56
+[5] g2mul start
+
+[5] g2mul: cycles=30003311 us=200022 ms=200
+[5] pairing start
+
+[5] pairing: cycles=78689030 us=524593 ms=524
+[5] groth16_verify start
+
+[5] groth16_verify: cycles=144373982 us=962493 ms=962 ok=true
+[5] groth16_verify_sq5 start
+
+[5] groth16_verify_sq5: cycles=146179999 us=974533 ms=974 ok=true
+[5] groth16_verify_semaphore start
+
+[5] groth16_verify_semaphore: cycles=176503682 us=1176691 ms=1176 ok=true
+[6] g1mul start
+
+[6] g1mul: cycles=8838310 us=58922 ms=58
+[6] g2mul start
+
+[6] g2mul: cycles=31120984 us=207473 ms=207
+[6] pairing start
+
+[6] pairing: cycles=78695780 us=524638 ms=524
+[6] groth16_verify start
+
+[6] groth16_verify: cycles=144409210 us=962728 ms=962 ok=true
+[6] groth16_verify_sq5 start
+
+[6] groth16_verify_sq5: cycles=146143014 us=974286 ms=974 ok=true
+[6] groth16_verify_semaphore start
+<<capture ended mid-verify on iter 6>>
