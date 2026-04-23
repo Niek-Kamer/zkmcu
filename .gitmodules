@@ -1,3 +1,6 @@
 [submodule "vendor/semaphore"]
 	path = vendor/semaphore
 	url = https://github.com/Niek-Kamer/semaphore.git
+[submodule "vendor/bn"]
+	path = vendor/bn
+	url = https://github.com/Niek-Kamer/bn.git
