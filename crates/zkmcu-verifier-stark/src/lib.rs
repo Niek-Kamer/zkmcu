@@ -57,9 +57,9 @@
 
 #![no_std]
 
-// `extern crate alloc;` will be added in phase 3.1.2 when the AIR modules
-// start using `Vec`, `String`, etc. Right now the public surface is just
-// references to winterfell's re-exports — no allocation at this layer.
+extern crate alloc;
+
+pub mod fibonacci;
 
 // Re-export the winterfell types downstream consumers need without forcing
 // them to take a direct dep on winterfell. Keeps the public API surface

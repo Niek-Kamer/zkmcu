@@ -20,6 +20,7 @@ mod bls12_381;
 pub(crate) mod bn254;
 mod circuits;
 mod semaphore;
+mod stark;
 
 fn vectors_data_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -73,8 +74,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // with `just regen-vectors`). Semaphore import is opt-in because it
     // depends on the vendor/semaphore submodule being cloned.
     let has_arg = |name: &str| args.iter().any(|a| a == name);
-    let any_explicit =
-        has_arg("bn254") || has_arg("bls12-381") || has_arg("bls12_381") || has_arg("semaphore");
+    let any_explicit = has_arg("bn254")
+        || has_arg("bls12-381")
+        || has_arg("bls12_381")
+        || has_arg("semaphore")
+        || has_arg("stark");
 
     if !any_explicit || has_arg("bn254") {
         bn254::run(&out_root)?;
@@ -86,6 +90,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let depth = parse_depth(&args)?;
         let proof_path = parse_proof_arg(&args);
         semaphore::run(&out_root, &[depth], proof_path.as_deref())?;
+    }
+    if has_arg("stark") {
+        stark::run(&out_root)?;
     }
 
     Ok(())
