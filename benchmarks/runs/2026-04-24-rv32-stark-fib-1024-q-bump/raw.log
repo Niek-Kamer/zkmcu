@@ -1,0 +1,73 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=384K sys=150MHz core=hazard3 alloc=bump proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5544 heap_peak=252699 cycles=12327371 us=82182 ms=82 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=12320202 us=82134 ms=82 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=12335387 us=82235 ms=82 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=12319079 us=82127 ms=82 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=12325575 us=82170 ms=82 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=12318819 us=82125 ms=82 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=12317717 us=82118 ms=82 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=12315922 us=82106 ms=82 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=12326563 us=82177 ms=82 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=12333449 us=82222 ms=82 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=12307821 us=82052 ms=82 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=12332933 us=82219 ms=82 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=12316588 us=82110 ms=82 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=12327868 us=82185 ms=82 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=12324631 us=82164 ms=82 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=12325665 us=82171 ms=82 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=12336025 us=82240 ms=82 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=12328066 us=82187 ms=82 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=12309825 us=82065 ms=82 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=12317856 us=82119 ms=82 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=12313665 us=82091 ms=82 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=12325919 us=82172 ms=82 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=12348205 us=82321 ms=82 ok=true
+<<capture Ctrl+C'd after iter 22>>
+# No USB-CDC corruption clipping — iteration 1 was complete. All 22
+# samples usable. Boot banner reports alloc=bump.

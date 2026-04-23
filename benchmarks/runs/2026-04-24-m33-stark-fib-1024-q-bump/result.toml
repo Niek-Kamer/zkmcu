@@ -1,0 +1,77 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation v2: BumpAlloc global allocator with watermark reset"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"zkmcu-bump-alloc"  = "0.1.0"
+"cortex-m"          = "0.7"
+"cortex-m-rt"       = "0.7"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 393216                 # 384 KB arena (up from 256 KB)
+heap_base_bytes = 61805             # bytes consumed by parse_proof + parse_public
+heap_peak_bytes = 314504            # 82 % of the 384 KB arena
+stack_peak_bytes = 5680
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_bump]
+iterations = 27
+cycles_median = 10_193_094          # N=27 odd, 14th element
+cycles_min    = 10_180_484
+cycles_max    = 10_216_263
+us_median     = 67_953
+us_min        = 67_869
+us_max        = 68_108
+us_q1         = 67_928               # 25th percentile
+us_q3         = 67_984               # 75th percentile
+result = "ok"
+# Three variance measures — use the right one for the right question:
+#   min-max        = 0.352 %   (sensitive to rare outliers)
+#   IQR / median   = 0.082 %   ← typical iteration-to-iteration jitter
+#   std_dev / mean = 0.080 %   ← silicon-baseline-like
+# IQR and std_dev are in the same ballpark as the ~0.03–0.1 % baseline
+# that allocation-free pairing verifiers produce on this silicon. The
+# bump allocator eliminated the allocator-jitter source; remaining
+# outliers in the min-max spread look like cache / USB-peripheral
+# effects below the allocator layer.
+stack_peak_bytes = 5680
+
+[bench.vs_previous_runs]
+# Phase 3.2 LlffHeap clone-in: 69_971 us median, 0.33 % variance
+# Phase 3.2.x LlffHeap clone-out: 69_665 us median, 0.245 % variance (0.128 % IQR)
+# Phase 3.2.y BumpAlloc clone-out: 67_953 us median, 0.082 % IQR
+us_delta_vs_lhff_clone_in  = -2_018   # bump is 1.7 ms faster than clone-in LlffHeap
+us_delta_vs_lhff_clone_out = -1_712   # bump is 1.7 ms faster than clone-out LlffHeap
+iqr_ratio_bump_over_llff   = 0.641    # IQR 0.082 % vs LlffHeap's 0.128 %
+
+[bench.allocator_cost]
+# The 1.7 ms median speedup quantifies the pure-allocator cost under
+# LlffHeap: ~400 alloc/dealloc calls in winterfell::verify each paying
+# for linked-list traversal. Bump alloc's O(1) path eliminates this.
+llff_allocator_overhead_us = 1_712

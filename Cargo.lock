@@ -340,7 +340,6 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "critical-section",
- "embedded-alloc",
  "embedded-hal 1.0.0",
  "fugit",
  "heapless 0.9.2",
@@ -348,6 +347,7 @@ dependencies = [
  "rp235x-hal",
  "usb-device",
  "usbd-serial",
+ "zkmcu-bump-alloc",
  "zkmcu-verifier-stark",
 ]
 
@@ -397,7 +397,6 @@ name = "bench-rp2350-rv32-stark"
 version = "0.1.0"
 dependencies = [
  "critical-section",
- "embedded-alloc",
  "embedded-hal 1.0.0",
  "fugit",
  "heapless 0.9.2",
@@ -407,6 +406,7 @@ dependencies = [
  "rp235x-hal",
  "usb-device",
  "usbd-serial",
+ "zkmcu-bump-alloc",
  "zkmcu-verifier-stark",
 ]
 
@@ -2428,6 +2428,10 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
+
+[[package]]
+name = "zkmcu-bump-alloc"
+version = "0.1.0"
 
 [[package]]
 name = "zkmcu-host-gen"

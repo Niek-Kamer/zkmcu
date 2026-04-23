@@ -13,7 +13,6 @@ workspace = true
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7"
 critical-section = "1.2"
-embedded-alloc = { version = "0.7", features = ["llff"] }
 embedded-hal = "1.0"
 fugit = "0.3"
 heapless = "0.9"
@@ -22,3 +21,4 @@ rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-imp
 usb-device = "0.3"
 usbd-serial = "0.2"
 zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }
+zkmcu-bump-alloc = { path = "../zkmcu-bump-alloc" }

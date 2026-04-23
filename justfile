@@ -115,6 +115,8 @@ docs:
                                                          {{out}}/2026-04-24-stark-quadratic-results.pdf
     typst compile --root . research/reports/2026-04-24-stark-variance-isolation.typ \
                                                          {{out}}/2026-04-24-stark-variance-isolation.pdf
+    typst compile --root . research/reports/2026-04-24-stark-bump-alloc.typ \
+                                                         {{out}}/2026-04-24-stark-bump-alloc.pdf
 
 # Rebuild a single doc on change. `just docs-watch research/reports/…`.
 docs-watch path:

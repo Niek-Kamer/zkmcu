@@ -6,6 +6,7 @@ members = [
     "crates/zkmcu-verifier-stark",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
+    "crates/zkmcu-bump-alloc",
     "crates/bench-rp2350-m33",
     "crates/bench-rp2350-m33-bls12",
     "crates/bench-rp2350-m33-stark",
@@ -21,6 +22,7 @@ default-members = [
     "crates/zkmcu-verifier-stark",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
+    "crates/zkmcu-bump-alloc",
 ]
 
 [workspace.package]

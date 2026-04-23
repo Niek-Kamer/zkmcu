@@ -1,0 +1,89 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=bump proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5680 heap_base=61805 heap_peak=314504 cycles=10201550 us=68010 ms=68 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=10188173 us=67921 ms=67 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=10196649 us=67977 ms=67 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=10181086 us=67873 ms=67 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=10200755 us=68005 ms=68 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=10190164 us=67934 ms=67 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=10187742 us=67918 ms=67 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=10193642 us=67957 ms=67 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=10216263 us=68108 ms=68 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=10191131 us=67940 ms=67 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=10192864 us=67952 ms=67 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=10211667 us=68077 ms=68 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=10188375 us=67922 ms=67 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=10180484 us=67869 ms=67 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=10189232 us=67928 ms=67 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=10195603 us=67970 ms=67 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=10182055 us=67880 ms=67 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=10199432 us=67996 ms=67 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=10207129 us=68047 ms=68 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=10193094 us=67953 ms=67 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=10195027 us=67966 ms=67 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=10190490 us=67936 ms=67 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=10195185 us=67967 ms=67 ok=true
+[23] stark_verify start
+
+[23] stark_verify: cycles=10193015 us=67953 ms=67 ok=true
+[24] stark_verify start
+
+[24] stark_verify: cycles=10198047 us=67986 ms=67 ok=true
+[25] stark_verify start
+
+[25] stark_verify: cycles=10197647 us=67984 ms=67 ok=true
+[26] stark_verify start
+
+[26] stark_verify: cycles=10197630 us=67984 ms=67 ok=true
+[27] stark_verify start
+
+[27] stark_verify: cycles=10192570 us=67950 ms=67 ok=true
+<<capture Ctrl+C'd after iter 27>>
+# No USB-CDC corruption clipping — iteration 1 was complete. All 27
+# samples usable. Boot banner reports alloc=bump, confirming the
+# bump-allocator firmware is in flash.

@@ -1,0 +1,83 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation v2: BumpAlloc global allocator with watermark reset"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"zkmcu-bump-alloc"  = "0.1.0"
+"riscv"             = "0.11"
+"riscv-rt"          = "0.12"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 393216                 # 384 KB arena
+heap_peak_bytes = 252699            # 64 % of arena — less than M33's 314504 B
+stack_peak_bytes = 5544
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_bump]
+iterations = 22
+cycles_median = 12_325_103          # avg of 11th + 12th (N=22 even)
+cycles_min    = 12_307_821
+cycles_max    = 12_348_205
+us_median     = 82_167
+us_min        = 82_052
+us_max        = 82_321
+us_q1         = 82_118               # 25th percentile (6th element)
+us_q3         = 82_187               # 75th percentile (17th element)
+result = "ok"
+# Three variance measures:
+#   min-max        = 0.327 %
+#   IQR / median   = 0.084 %    ← typical jitter, at silicon baseline
+#   std_dev / mean = 0.076 %    ← silicon-baseline-like
+# Matches the M33 bump-alloc result (0.082 % IQR). Both ISAs now show
+# allocator-free variance behaviour.
+stack_peak_bytes = 5544
+
+[bench.vs_previous_runs]
+# Phase 3.2 LlffHeap clone-in RV32: 93_027 us median, 0.29 % variance
+# Phase 3.2.x LlffHeap clone-out RV32: 92_387 us median, 0.456 % variance
+# Phase 3.2.y BumpAlloc clone-out RV32: 82_167 us median, 0.084 % IQR
+us_delta_vs_llff_clone_in  = -10_860   # bump is 10.9 ms faster than LlffHeap clone-in
+us_delta_vs_llff_clone_out = -10_220   # bump is 10.2 ms faster than LlffHeap clone-out
+
+[bench.allocator_cost]
+# Much larger allocator overhead on RV32 than on M33: 10.2 ms vs 1.7 ms.
+# Linked-list-first-fit traversal is substantially more expensive on
+# Hazard3, probably due to weaker branch prediction + cache behaviour
+# on the linked-list pointer chasing. Bump's O(1) path removes this.
+llff_allocator_overhead_us = 10_220
+
+[bench.cross_isa]
+# Cross-ISA ratio at bump alloc:
+rv32_over_m33_stark_q_bump = 1.209   # 82.167 / 67.953
+phase_3_2_llff_ratio       = 1.329   # narrowed from LlffHeap
+phase_3_1_none_ratio       = 1.462   # narrowed further from FieldExtension::None
+# The cross-ISA gap has narrowed with every change that strips away
+# allocator or extension-field overhead. The "pure crypto" gap between
+# M33 and RV32 on STARK verify is ~1.21x — smaller than any previously
+# published zkmcu cross-ISA number.

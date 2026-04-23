@@ -27,7 +27,7 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy (host crates)
-        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-verifier-stark -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
+        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-verifier-stark -p zkmcu-vectors -p zkmcu-host-gen -p zkmcu-bump-alloc --all-targets --release -- -D warnings
 
       - name: cargo test
         run: cargo test --release
@@ -150,3 +150,4 @@ jobs:
           typst compile --root . research/reports/2026-04-24-stark-quadratic-prediction.typ research/out/2026-04-24-stark-quadratic-prediction.pdf
           typst compile --root . research/reports/2026-04-24-stark-quadratic-results.typ research/out/2026-04-24-stark-quadratic-results.pdf
           typst compile --root . research/reports/2026-04-24-stark-variance-isolation.typ research/out/2026-04-24-stark-variance-isolation.pdf
+          typst compile --root . research/reports/2026-04-24-stark-bump-alloc.typ research/out/2026-04-24-stark-bump-alloc.pdf
