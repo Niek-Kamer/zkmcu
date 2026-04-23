@@ -30,7 +30,7 @@ Fibonacci-1024 AIR, `FieldExtension::Quadratic` (95-bit conjectured security). T
 | **TlsfHeap (O(1), production default)** | **74.7 ms** | **0.08 %** | **93.5 KB** | **112.4 ms** | **0.11 %** | **✓** |
 | BumpAlloc (watermark-reset, benchmark only) | 67.9 ms | 0.08 % | 314 KB | 82.2 ms | 0.08 % | ✗ |
 
-**TlsfHeap is the production pick** — it gets you the variance floor of the bump allocator while keeping heap peak at LlffHeap's 93.5 KB and fitting the 128 KB tier. The 5 ms cost on M33 (20 ms on RV32) is the price of O(1) worst-case bound. For hardware wallets where verify runs at human action speed, that's indistinguishable; for hot loops, LlffHeap still wins on raw throughput.
+**TlsfHeap is the production pick**, it gets you the variance floor of the bump allocator while keeping heap peak at LlffHeap's 93.5 KB and fitting the 128 KB tier. The 5 ms cost on M33 (20 ms on RV32) is the price of O(1) worst-case bound. For hardware wallets where verify runs at human action speed, that's indistinguishable; for hot loops, LlffHeap still wins on raw throughput.
 
 Full story on where this data comes from and what it means for side-channel resistance: see [Deterministic timing](/determinism/).
 
@@ -81,7 +81,7 @@ Directly measured on-device via stack painting + a tracking-heap allocator wrapp
 
 All three fit comfortably on any 128 KB SRAM-class MCU: nRF52832, STM32F405, Ledger ST33K1M5, Infineon SLE78. That's the phase-3 finding: **zkmcu is the first open `no_std` family of SNARK and STARK verifiers that all fit the hardware-wallet-tier SRAM budget at production-grade security**.
 
-STARK verify surprises on the stack side — only 5.6 KB, vs 15-20 KB for Groth16. Winterfell routes most verify state through the heap allocator rather than stack frames, and the cost of that is *not* a bigger stack.
+STARK verify surprises on the stack side, only 5.6 KB, vs 15-20 KB for Groth16. Winterfell routes most verify state through the heap allocator rather than stack frames, and the cost of that is *not* a bigger stack.
 
 ## Public-input scaling (BN254)
 
@@ -93,7 +93,7 @@ The `vk_x = IC[0] + Σ x[i] · IC[i+1]` step is a G1 scalar multiplication per p
 | Ethereum address | ~160 | ~40 ms |
 | Merkle root / hash output | ~254 random | **~71 ms** |
 
-Semaphore's 4 public inputs (merkle root, nullifier, hash-of-message, hash-of-scope) are all full 254-bit scalars — they land in the bottom row. A 10-public-input circuit with merkle-root-shaped inputs takes ~1.6 s; the same circuit shape with counter-shaped inputs takes ~990 ms. Circuit designers targeting embedded verify should fold public state into a single hash-commitment `Fr` if at all possible. **Per-input cost differs by 24×** between the two regimes.
+Semaphore's 4 public inputs (merkle root, nullifier, hash-of-message, hash-of-scope) are all full 254-bit scalars, they land in the bottom row. A 10-public-input circuit with merkle-root-shaped inputs takes ~1.6 s; the same circuit shape with counter-shaped inputs takes ~990 ms. Circuit designers targeting embedded verify should fold public state into a single hash-commitment `Fr` if at all possible. **Per-input cost differs by 24×** between the two regimes.
 
 ## Cross-ISA, three families
 
@@ -106,7 +106,7 @@ Same source, same silicon, different ISA. Cortex-M33 wins the overall verify on 
 | BN254 Groth16 | 1.33× | G2 scalar mul + pairing tower |
 | BLS12-381 Groth16 | 2.56× | UMAAL wins at 12-word Fp where it didn't at 8 |
 
-The STARK rows are the big new finding. With `BumpAlloc` (allocator overhead stripped out) the cross-ISA ratio is 1.21× — the honest "pure Blake3 + Goldilocks $F_(p^2)$ arithmetic" number. With `TlsfHeap` it widens to 1.51× because Hazard3 pays more per mispredicted branch in TLSF's bitmap walks. And with `LlffHeap` it lands between at 1.33×. **An allocator choice can swing the M33-vs-Hazard3 conclusion by 30 %.** Any cross-ISA crypto benchmark using a stock general-purpose allocator is partially measuring the allocator, not the workload. See [Deterministic timing](/determinism/) for the full trace.
+The STARK rows are the big new finding. With `BumpAlloc` (allocator overhead stripped out) the cross-ISA ratio is 1.21×, the honest "pure Blake3 + Goldilocks $F_(p^2)$ arithmetic" number. With `TlsfHeap` it widens to 1.51× because Hazard3 pays more per mispredicted branch in TLSF's bitmap walks. And with `LlffHeap` it lands between at 1.33×. **An allocator choice can swing the M33-vs-Hazard3 conclusion by 30 %.** Any cross-ISA crypto benchmark using a stock general-purpose allocator is partially measuring the allocator, not the workload. See [Deterministic timing](/determinism/) for the full trace.
 
 **BLS12-381 cross-ISA:** Hazard3 *loses* on every primitive at 12-word Fp. Full writeup in [`research/reports/2026-04-22-bls12-381-results.typ`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/reports/2026-04-22-bls12-381-results.typ). Short version: Cortex-M33's `UMAAL` multiply-accumulate instruction wins big on BLS12's 12-word Fp where it didn't matter much at BN254's 8-word size. Cross-ISA conclusions on pairing-friendly curves are prime-size dependent, not algorithm dependent.
 
@@ -116,9 +116,9 @@ The six firmware crates (`bench-rp2350-{m33,rv32}{,-bls12,-stark}`) run their re
 
 Each run writes:
 
-- `raw.log` — verbatim serial capture
-- `result.toml` — structured, schema-versioned
-- `notes.md` — observations, anomalies, and what was deliberately not measured
+- `raw.log`, verbatim serial capture
+- `result.toml`, structured, schema-versioned
+- `notes.md`, observations, anomalies, and what was deliberately not measured
 
 ```bash
 # Dev machine:

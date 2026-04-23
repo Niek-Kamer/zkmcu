@@ -40,11 +40,11 @@ embedded-alloc = { version = "0.7", features = ["tlsf"] }
 # embedded-alloc = { version = "0.7", features = ["llff"] }
 ```
 
-For STARK specifically, the allocator choice has a measurable effect on timing variance — see [Deterministic timing](/determinism/). For Groth16, either works fine.
+For STARK specifically, the allocator choice has a measurable effect on timing variance, see [Deterministic timing](/determinism/). For Groth16, either works fine.
 
 ## Verify a Groth16 proof
 
-Simplest case — you have three byte buffers (verifying key, proof, public inputs) in the curve's wire format:
+Simplest case, you have three byte buffers (verifying key, proof, public inputs) in the curve's wire format:
 
 ```rust
 let ok = zkmcu_verifier::verify_bytes(&vk_bytes, &proof_bytes, &public_bytes)?;
@@ -58,7 +58,7 @@ See [wire formats](/wire-format/) for what those buffers must look like on each 
 
 ## Verify a STARK proof
 
-STARK verify doesn't have a separate VK — the AIR definition is the verifier-side invariant. You compile your AIR into the verifier binary. For the reference Fibonacci AIR that ships with `zkmcu-verifier-stark`:
+STARK verify doesn't have a separate VK, the AIR definition is the verifier-side invariant. You compile your AIR into the verifier binary. For the reference Fibonacci AIR that ships with `zkmcu-verifier-stark`:
 
 ```rust
 use zkmcu_verifier_stark::{parse_proof, fibonacci};
@@ -68,7 +68,7 @@ let public = fibonacci::parse_public(&public_bytes)?;
 fibonacci::verify(proof, public)?;
 ```
 
-For a custom AIR: implement winterfell's `Air` trait for your transition constraints, then call `winterfell::verify::<YourAir, Blake3_256<BaseElement>, DefaultRandomCoin<Blake3_256<BaseElement>>, MerkleTree<Blake3_256<BaseElement>>>(...)` with a `MinConjecturedSecurity` threshold you pick. The Fibonacci variant in this crate is a thin wrapper around exactly that call — copy its shape.
+For a custom AIR: implement winterfell's `Air` trait for your transition constraints, then call `winterfell::verify::<YourAir, Blake3_256<BaseElement>, DefaultRandomCoin<Blake3_256<BaseElement>>, MerkleTree<Blake3_256<BaseElement>>>(...)` with a `MinConjecturedSecurity` threshold you pick. The Fibonacci variant in this crate is a thin wrapper around exactly that call, copy its shape.
 
 ## Verify many proofs against one VK (Groth16)
 
@@ -98,12 +98,12 @@ cargo run -p zkmcu-host-gen --release -- bls12-381   # BLS12-381 only
 cargo run -p zkmcu-host-gen --release -- stark       # Winterfell Fibonacci STARK
 ```
 
-Writes `crates/zkmcu-vectors/data/<name>/{vk,proof,public}.bin` (STARK has no `vk.bin` — AIR is the invariant). Vectors ship by default:
+Writes `crates/zkmcu-vectors/data/<name>/{vk,proof,public}.bin` (STARK has no `vk.bin`, AIR is the invariant). Vectors ship by default:
 
-- `square` — 1 public input (BN254 + BLS12-381, two copies of the same circuit)
-- `squares-5` — 5 public inputs, small-scalar (BN254 + BLS12-381)
-- `semaphore-depth-10` — **real** Semaphore Groth16 proof, 4 public inputs, BN254 only. See [Semaphore page](/semaphore/) for the generator pipeline
-- `stark-fib-1024` — Fibonacci STARK at `FieldExtension::Quadratic`, 95-bit conjectured security
+- `square`, 1 public input (BN254 + BLS12-381, two copies of the same circuit)
+- `squares-5`, 5 public inputs, small-scalar (BN254 + BLS12-381)
+- `semaphore-depth-10`, **real** Semaphore Groth16 proof, 4 public inputs, BN254 only. See [Semaphore page](/semaphore/) for the generator pipeline
+- `stark-fib-1024`, Fibonacci STARK at `FieldExtension::Quadratic`, 95-bit conjectured security
 
 For production use, generate proofs with whatever prover your application uses. Any Ethereum-compatible BN254 Groth16 prover emits EIP-197 bytes; any BLS12-381 Groth16 prover emits EIP-2537 bytes; any winterfell-based prover emits proof bytes directly consumable by `zkmcu-verifier-stark` as long as the AIR definition agrees.
 
@@ -122,8 +122,8 @@ Each brings up clocks, initialises a heap, parses baked-in test vectors via `inc
 ## What the target needs
 
 - `no_std` Rust toolchain (stable, `rustc` 1.82 or newer)
-- A global allocator (TlsfHeap or LlffHeap — see table above)
-- **About 100 KB of SRAM during verify** for any of the three systems on Cortex-M33. All three fit on any 128 KB SRAM-class MCU — nRF52832, STM32F405, Ledger ST33, Infineon SLE78.
+- A global allocator (TlsfHeap or LlffHeap, see table above)
+- **About 100 KB of SRAM during verify** for any of the three systems on Cortex-M33. All three fit on any 128 KB SRAM-class MCU, nRF52832, STM32F405, Ledger ST33, Infineon SLE78.
 - **About 75-200 KB of flash** depending on the proof system (BN254 is lightest, winterfell is heaviest due to the multiple winter-* sub-crates pulled in).
 
 See the [benchmarks](/benchmarks/) page for directly-measured numbers on the Raspberry Pi Pico 2 W.

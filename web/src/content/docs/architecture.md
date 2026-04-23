@@ -16,7 +16,7 @@ zkmcu ships as a family of parallel crates: three library crates for the three s
 | `zkmcu-bump-alloc` | `no_std` bump-style `GlobalAlloc` with watermark save/restore. Used for the deterministic-timing benchmark runs; also publishable as a standalone primitive. |
 | `zkmcu-host-gen` | Host-only CLI. Uses `arkworks` to generate Groth16 proofs on either curve (with cross-check via the second independent implementation), uses `winter-prover` for STARK proofs, imports the vendored Semaphore VK + externally-generated proofs. |
 
-The three verifier crates expose parallel APIs. Groth16 verifiers share the same five-function shape (`parse_vk`, `parse_proof`, `parse_public`, `verify`, `verify_bytes`). STARK verify takes a slightly different form — no VK (the AIR definition is the verifier-side invariant), and `winterfell::Proof` is the parsed form — but the same `verify(proof, public) -> Result<()>` endpoint. No generic trait unifying them; keeping implementations independent means each can be read top-to-bottom without chasing abstractions.
+The three verifier crates expose parallel APIs. Groth16 verifiers share the same five-function shape (`parse_vk`, `parse_proof`, `parse_public`, `verify`, `verify_bytes`). STARK verify takes a slightly different form, no VK (the AIR definition is the verifier-side invariant), and `winterfell::Proof` is the parsed form, but the same `verify(proof, public) -> Result<()>` endpoint. No generic trait unifying them; keeping implementations independent means each can be read top-to-bottom without chasing abstractions.
 
 ## Firmware crates
 
@@ -38,7 +38,7 @@ Given a verifying key `(α, β, γ, δ, IC)`, a proof `(A, B, C)`, and public in
 1. Compute `vk_x = IC[0] + Σ x[i] · IC[i+1]` in `G1`
 2. Check that the product `e(-A, B) · e(α, β) · e(vk_x, γ) · e(C, δ)` equals the identity in the target group `Gt`
 
-For **BN254**, the four pairings go through `substrate_bn::pairing_batch` — one `multi_miller_loop` + one final exponentiation shared across the four pairs.
+For **BN254**, the four pairings go through `substrate_bn::pairing_batch`, one `multi_miller_loop` + one final exponentiation shared across the four pairs.
 
 For **BLS12-381**, same algebraic shape, through `pairing::MultiMillerLoop::multi_miller_loop` on zkcrypto's `bls12_381::Bls12`.
 
@@ -46,7 +46,7 @@ Same algorithm, different backends. The API surface you write against in both ca
 
 ## Verification algorithm (STARK path)
 
-Different shape entirely. There's no VK in the Groth16 sense — the AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant. Given:
+Different shape entirely. There's no VK in the Groth16 sense, the AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant. Given:
 
 - A `winterfell::Proof` (FRI-based, Merkle-committed, Blake3-hashed)
 - `PublicInputs` for the AIR (Fibonacci's is just the claimed result)
@@ -83,7 +83,7 @@ Every committed test vector gets two or more independent stacks to agree on it b
 
 **STARK path**:
 1. Vector is produced by `winter-prover` from a host-side Fibonacci trace, under fixed `ProofOptions` with `FieldExtension::Quadratic`
-2. `zkmcu-host-gen` runs `zkmcu_verifier_stark::fibonacci::verify` on the proof bytes with `MinConjecturedSecurity(95)` **before** writing them to disk. If the prover's configured options don't meet 95-bit, generation aborts — the committed bytes are guaranteed to pass the production verifier.
+2. `zkmcu-host-gen` runs `zkmcu_verifier_stark::fibonacci::verify` on the proof bytes with `MinConjecturedSecurity(95)` **before** writing them to disk. If the prover's configured options don't meet 95-bit, generation aborts, the committed bytes are guaranteed to pass the production verifier.
 3. On the embedded side, `zkmcu-verifier-stark` re-verifies the same bytes.
 
 Passing means the two (or three) independent cryptographic stacks agree on wire format, arithmetic, and security parameters. It's the main safety net against encoding drift.
@@ -102,9 +102,9 @@ Alternative considered: `ark-bn254`. Works fine, pulls in the whole arkworks gen
 - `no_std`-clean out of the gate with `default-features = false, features = ["groups", "pairings", "alloc"]`
 - All-zkcrypto dep closure (`ff`, `group`, `pairing`, `subtle`, `rand_core`). No `getrandom`, no `std` leakage
 - Stack-allocated `G2Prepared` keeps pairing-workspace heap usage down vs heap-allocated Fq12 polynomial workspaces
-- Scalar-oblivious G1 scalar mul — informally constant-time with respect to scalar Hamming weight (0.09 % variance across random scalars)
+- Scalar-oblivious G1 scalar mul, informally constant-time with respect to scalar Hamming weight (0.09 % variance across random scalars)
 
-A dep-fit spike is documented at `research/notebook/2026-04-22-bls12-381-dep-fit.md` in the repo — first build, zero warnings, zero patches needed.
+A dep-fit spike is documented at `research/notebook/2026-04-22-bls12-381-dep-fit.md` in the repo, first build, zero warnings, zero patches needed.
 
 ## Why winterfell (STARK)
 
@@ -121,11 +121,11 @@ Alternatives considered: `ax-stark` (too early, not `no_std`-ready), `stone` (C+
 
 The bump allocator gives byte-identical allocator state between iterations (watermark reset after every verify), bringing variance to the 0.08 % silicon noise floor. It's:
 
-- a benchmark tool — confirms the crypto itself is deterministic
-- a diagnostic — isolates which fraction of total variance is allocator-induced
-- a generally useful `no_std` primitive — atomic CAS bump pointer, in-place realloc on top of the bump, watermark save/restore, `~200 lines`
+- a benchmark tool, confirms the crypto itself is deterministic
+- a diagnostic, isolates which fraction of total variance is allocator-induced
+- a generally useful `no_std` primitive, atomic CAS bump pointer, in-place realloc on top of the bump, watermark save/restore, `~200 lines`
 
-Not a production allocator — no-op `dealloc` means memory leaks to the watermark, which pushes the bench STARK firmware's heap to 384 KB. Production firmware should use `embedded-alloc::TlsfHeap` instead.
+Not a production allocator, no-op `dealloc` means memory leaks to the watermark, which pushes the bench STARK firmware's heap to 384 KB. Production firmware should use `embedded-alloc::TlsfHeap` instead.
 
 ## Workspace layout at the repo root
 

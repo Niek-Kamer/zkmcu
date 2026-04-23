@@ -13,7 +13,7 @@ import { Aside, Badge, CardGrid, Card } from '@astrojs/starlight/components';
   <Badge text="variance 0.08 %" variant="tip" />
 </div>
 
-`zkmcu-verifier-stark` is a `no_std` wrapper around winterfell 0.13 that exposes a zkmcu-shaped verify API for Goldilocks-field STARK proofs. First verified on silicon on 2026-04-23: **74.7 ms on Cortex-M33 @ 150 MHz, 112 ms on Hazard3 RV32**, 100 KB total RAM, variance 0.08 % — every property that matters for a production hardware-wallet-class deployment.
+`zkmcu-verifier-stark` is a `no_std` wrapper around winterfell 0.13 that exposes a zkmcu-shaped verify API for Goldilocks-field STARK proofs. First verified on silicon on 2026-04-23: **74.7 ms on Cortex-M33 @ 150 MHz, 112 ms on Hazard3 RV32**, 100 KB total RAM, variance 0.08 %, every property that matters for a production hardware-wallet-class deployment.
 
 ## Why STARK
 
@@ -40,7 +40,7 @@ The headline 74.7 ms number is measured at the configuration that's actually def
 
 - **Fibonacci AIR** with `N = 1024` trace steps (small, representative)
 - **`FieldExtension::Quadratic`** over Goldilocks → **95-bit conjectured STARK security**
-- **`MinConjecturedSecurity(95)`** enforced by the verifier — the prover *must* submit options that meet this bar, otherwise verify rejects
+- **`MinConjecturedSecurity(95)`** enforced by the verifier, the prover *must* submit options that meet this bar, otherwise verify rejects
 - **Blake3-256** hash, **binary Merkle tree** vector commitment
 - **TlsfHeap** (O(1) two-level segregated fit) as the global allocator
 
@@ -74,13 +74,13 @@ Before phase-3 measurements, the worry was whether STARK verify could fit alongs
 | BLS12-381 Groth16 | ~99 KB | ✓ |
 | **STARK (TlsfHeap, 95-bit)** | **~100 KB** | **✓** |
 
-All three verifier families now sit on the same silicon tier. nRF52832, STM32F405, Ledger ST33K1M5, Infineon SLE78 — every hardware-wallet-grade chip on the market can run any of the three.
+All three verifier families now sit on the same silicon tier. nRF52832, STM32F405, Ledger ST33K1M5, Infineon SLE78, every hardware-wallet-grade chip on the market can run any of the three.
 
 ## Deterministic timing
 
 The STARK verify path allocates ~400 `Vec`s internally for FRI state, auth-path parsing, composition polynomial scratch. With the stock `LlffHeap` allocator, the free-list state evolves iteration-to-iteration and timing variance lands around 0.25 % on M33. For side-channel-sensitive deployments (hardware wallets), that's noisy.
 
-Swapping to `TlsfHeap` — O(1) two-level segregated fit — brings variance down to **0.08 %**, the silicon noise floor. Verify path becomes timing-deterministic to the level of cache and USB-peripheral noise, which is as good as it gets without a hand-rolled constant-time implementation.
+Swapping to `TlsfHeap`, O(1) two-level segregated fit, brings variance down to **0.08 %**, the silicon noise floor. Verify path becomes timing-deterministic to the level of cache and USB-peripheral noise, which is as good as it gets without a hand-rolled constant-time implementation.
 
 Full methodology: [Deterministic timing](/determinism/).
 
@@ -108,7 +108,7 @@ The Fibonacci AIR + public input is deterministic under fixed prover options, so
 ## What this does *not* claim
 
 - **Not a claim that Fibonacci is a realistic workload.** It's the STARK hello-world. Real workloads (Miden VM trace verify, RISC-V zkVM proof aggregation, Cairo) will push verify cost and heap peak substantially higher. We expect `N = 2^16` traces to take 150-300 ms and push heap past 150 KB. Phase 4 territory.
-- **Not a claim that `embedded-alloc::TlsfHeap` is the fastest option.** A hand-tuned bump allocator with watermark reset gives 67.9 ms median (phase 3.2.y benchmark) but needs 384 KB arena — too big for the 128 KB tier. TlsfHeap is the best-of-both production pick; raw bump is a measurement tool.
-- **Not a claim that winterfell's internal allocation pattern is optimal.** 400 `Vec` allocations per verify is more than a hand-rolled STARK verifier would do. Upstream contribution to add a `&mut [u8]` scratch-buffer API would eliminate runtime alloc entirely — Phase 4 engineering.
+- **Not a claim that `embedded-alloc::TlsfHeap` is the fastest option.** A hand-tuned bump allocator with watermark reset gives 67.9 ms median (phase 3.2.y benchmark) but needs 384 KB arena, too big for the 128 KB tier. TlsfHeap is the best-of-both production pick; raw bump is a measurement tool.
+- **Not a claim that winterfell's internal allocation pattern is optimal.** 400 `Vec` allocations per verify is more than a hand-rolled STARK verifier would do. Upstream contribution to add a `&mut [u8]` scratch-buffer API would eliminate runtime alloc entirely, Phase 4 engineering.
 
 See [Deterministic timing](/determinism/) for the full story on the allocator sensitivity and the cross-ISA implications, and [Security](/security/) for the threat model.
