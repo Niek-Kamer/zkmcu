@@ -1,0 +1,87 @@
+zkmcu boot: heap=96K sys=150MHz core=cortex-m33
+
+[boot] vec=square ic=2 public=1 stack=15276 heap_base=1568 heap_peak=81888 cycles=169993481 us=1133289 ms=1133 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15276 heap_base=1568 heap_peak=81888 cycles=174007600 us=1160050 ms=1160 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15276 heap_base=1568 heap_peak=81888 cycles=246751964 us=1645013 ms=1645 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=22200010 us=148000 ms=148
+[1] g2mul start
+
+[1] g2mul: cycles=30478172 us=203187 ms=203
+[1] pairing start
+
+[1] pairing: cycles=86418251 us=576121 ms=576
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=169969587 us=1133130 ms=1133 ok=true
+[1] groth16_verify_sq5 start
+
+[1] groth16_verify_sq5: cycles=174066303 us=1160442 ms=1160 ok=true
+[1] groth16_verify_semaphore start
+
+[1] groth16_verify_semaphore: cycles=246645845 us=1644305 ms=1644 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=21177558 us=141183 ms=141
+[2] g2mul start
+
+[2] g2mul: cycles=29380883 us=195872 ms=195
+[2] pairing start
+
+[2] pairing: cycles=86408025 us=576053 ms=576
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=170065388 us=1133769 ms=1133 ok=true
+[2] groth16_verify_sq5 start
+
+[2] groth16_verify_sq5: cycles=174087974 us=1160586 ms=1160 ok=true
+[2] groth16_verify_semaphore start
+
+[2] groth16_verify_semaphore: cycles=246760699 us=1645071 ms=1645 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=21983829 us=146558 ms=146
+[3] g2mul start
+
+[3] g2mul: cycles=30352656 us=202351 ms=202
+[3] pairing start
+
+[3] pairing: cycles=86424494 us=576163 ms=576
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=170000430 us=1133336 ms=1133 ok=true
+[3] groth16_verify_sq5 start
+
+[3] groth16_verify_sq5: cycles=174053864 us=1160359 ms=1160 ok=true
+[3] groth16_verify_semaphore start
+
+[3] groth16_verify_semaphore: cycles=246805486 us=1645369 ms=1645 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=21733093 us=144887 ms=144
+[4] g2mul start
+
+[4] g2mul: cycles=30349081 us=202327 ms=202
+[4] pairing start
+
+[4] pairing: cycles=86465811 us=576438 ms=576
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=169964922 us=1133099 ms=1133 ok=true
+[4] groth16_verify_sq5 start
+
+[4] groth16_verify_sq5: cycles=174063540 us=1160423 ms=1160 ok=true
+[4] groth16_verify_semaphore start
+
+[4] groth16_verify_semaphore: cycles=246864307 us=1645762 ms=1645 ok=true
+[5] g1mul start
+
+[5] g1mul: cycles=21991622 us=146610 ms=146
+[5] g2mul start
+
+[5] g2mul: cycles=30308728 us=202058 ms=202
+[5] pairing start
+
+[5] pairing: cycles=86474861 us=576499 ms=576
+[5] groth16_verify start

@@ -1,0 +1,72 @@
+[meta]
+date = "2026-04-23"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=3, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn" = "0.6.0"
+"ark-groth16"  = "0.5.0"
+
+[footprint]
+text_bytes = 125_988
+data_bytes = 0
+bss_bytes  = 98_348
+heap_bytes = 98_304
+stack_peak_bytes = 15_276
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 4
+cycles_median = 169_985_008
+cycles_min    = 169_964_922
+cycles_max    = 170_065_388
+us_median     = 1_133_233
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "sum of 5 squares"
+public_inputs = 5
+ic_size = 6
+iterations = 4
+cycles_median = 174_064_921
+cycles_min    = 174_053_864
+cycles_max    = 174_087_974
+us_median     = 1_160_432
+result = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit = "semaphore-depth-10"
+public_inputs = 4
+ic_size = 5
+iterations = 4
+cycles_median = 246_783_092
+cycles_min    = 246_645_845
+cycles_max    = 246_864_307
+us_median     = 1_645_220
+result = "ok"
+
+[bench.pairing]
+iterations = 5
+cycles_median = 86_424_494
+us_median     = 576_163
+
+[bench.g1_mul]
+iterations = 5
+cycles_typical = 21_983_829
+us_typical     = 146_558
+
+[bench.g2_mul]
+iterations = 5
+cycles_typical = 30_349_081
+us_typical     = 202_327

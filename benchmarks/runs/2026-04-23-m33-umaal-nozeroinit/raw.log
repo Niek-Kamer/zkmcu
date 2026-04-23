@@ -1,0 +1,97 @@
+zkmcu boot: heap=96K sys=150MHz core=cortex-m33
+
+[boot] vec=square ic=2 public=1 stack=15724 heap_base=1568 heap_peak=81888 cycles=96261126 us=641740 ms=641 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15724 heap_base=1568 heap_peak=81888 cycles=97169111 us=647794 ms=647 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15724 heap_base=1568 heap_peak=81888 cycles=114095081 us=760633 ms=760 ok=true
+[1] g1mul: cycles=4946781 us=32978 ms=32
+[1] g2mul: cycles=22590206 us=150601 ms=150
+[1] pairing: cycles=52539388 us=350262 ms=350
+[1] groth16_verify: cycles=96240491 us=641603 ms=641 ok=true
+[1] groth16_verify_sq5: cycles=97172241 us=647814 ms=647 ok=true
+[1] groth16_verify_semaphore: cycles=114091485 us=760609 ms=760 ok=true
+[2] g1mul: cycles=4989850 us=33265 ms=33
+[2] g2mul: cycles=22752931 us=151686 ms=151
+[2] pairing: cycles=52554597 us=350363 ms=350
+[2] groth16_verify: cycles=96258533 us=641723 ms=641 ok=true
+[2] groth16_verify_sq5: cycles=97162440 us=647749 ms=647 ok=true
+[2] groth16_verify_semaphore: cycles=114101292 us=760675 ms=760 ok=true
+[3] g1mul: cycles=4889634 us=32597 ms=32
+[3] g2mul: cycles=22290059 us=148600 ms=148
+[3] pairing: cycles=52513729 us=350091 ms=350
+[3] groth16_verify: cycles=96242157 us=641614 ms=641 ok=true
+[3] groth16_verify_sq5: cycles=97174502 us=647830 ms=647 ok=true
+[3] groth16_verify_semaphore: cycles=114102247 us=760681 ms=760 ok=true
+[4] g1mul: cycles=4909346 us=32728 ms=32
+[4] g2mul: cycles=22414563 us=149430 ms=149
+[4] pairing: cycles=52517090 us=350113 ms=350
+[4] groth16_verify: cycles=96245680 us=641637 ms=641 ok=true
+[4] groth16_verify_sq5: cycles=97167352 us=647782 ms=647 ok=true
+[4] groth16_verify_semaphore: cycles=114101596 us=760677 ms=760 ok=true
+[5] g1mul: cycles=4923483 us=32823 ms=32
+[5] g2mul: cycles=22444351 us=149629 ms=149
+[5] pairing: cycles=52418677 us=349457 ms=349
+[5] groth16_verify: cycles=96251827 us=641678 ms=641 ok=true
+[5] groth16_verify_sq5: cycles=97175164 us=647834 ms=647 ok=true
+[5] groth16_verify_semaphore: cycles=114099161 us=760661 ms=760 ok=true
+[6] g1mul: cycles=4847797 us=32318 ms=32
+[6] g2mul: cycles=22106778 us=147378 ms=147
+[6] pairing: cycles=52536161 us=350241 ms=350
+[6] groth16_verify: cycles=96245194 us=641634 ms=641 ok=true
+[6] groth16_verify_sq5: cycles=97162120 us=647747 ms=647 ok=true
+[6] groth16_verify_semaphore: cycles=114110391 us=760735 ms=760 ok=true
+[7] g1mul: cycles=4830027 us=32200 ms=32
+[7] g2mul: cycles=22025172 us=146834 ms=146
+[7] pairing: cycles=52442648 us=349617 ms=349
+[7] groth16_verify: cycles=96228566 us=641523 ms=641 ok=true
+[7] groth16_verify_sq5: cycles=97173649 us=647824 ms=647 ok=true
+[7] groth16_verify_semaphore: cycles=114098328 us=760655 ms=760 ok=true
+[8] g1mul: cycles=4850661 us=32337 ms=32
+[8] g2mul: cycles=22083696 us=147224 ms=147
+[8] pairing: cycles=52418300 us=349455 ms=349
+[8] groth16_verify: cycles=96253513 us=641690 ms=641 ok=true
+[8] groth16_verify_sq5: cycles=97163842 us=647758 ms=647 ok=true
+[8] groth16_verify_semaphore: cycles=114096356 us=760642 ms=760 ok=true
+[9] g1mul: cycles=4841377 us=32275 ms=32
+[9] g2mul: cycles=22082267 us=147215 ms=147
+[9] pairing: cycles=52517219 us=350114 ms=350
+[9] groth16_verify: cycles=96247329 us=641648 ms=641 ok=true
+[9] groth16_verify_sq5: cycles=97160497 us=647736 ms=647 ok=true
+[9] groth16_verify_semaphore: cycles=114096026 us=760640 ms=760 ok=true
+[10] g1mul: cycles=5015247 us=33434 ms=33
+[10] g2mul: cycles=22932658 us=152884 ms=152
+[10] pairing: cycles=52436752 us=349578 ms=349
+[10] groth16_verify: cycles=96252373 us=641682 ms=641 ok=true
+[10] groth16_verify_sq5: cycles=97177032 us=647846 ms=647 ok=true
+[10] groth16_verify_semaphore: cycles=114100480 us=760669 ms=760 ok=true
+[11] g1mul: cycles=4975030 us=33166 ms=33
+[11] g2mul: cycles=22768796 us=151791 ms=151
+[11] pairing: cycles=52461913 us=349746 ms=349
+[11] groth16_verify: cycles=96236810 us=641578 ms=641 ok=true
+[11] groth16_verify_sq5: cycles=97161654 us=647744 ms=647 ok=true
+[11] groth16_verify_semaphore: cycles=114104773 us=760698 ms=760 ok=true
+[12] g1mul: cycles=4806810 us=32045 ms=32
+[12] g2mul: cycles=21921756 us=146145 ms=146
+[12] pairing: cycles=52487531 us=349916 ms=349
+[12] groth16_verify: cycles=96247733 us=641651 ms=641 ok=true
+[12] groth16_verify_sq5: cycles=97171626 us=647810 ms=647 ok=true
+[12] groth16_verify_semaphore: cycles=114105961 us=760706 ms=760 ok=true
+[13] g1mul: cycles=4982040 us=33213 ms=33
+[13] g2mul: cycles=22766171 us=151774 ms=151
+[13] pairing: cycles=52490188 us=349934 ms=349
+[13] groth16_verify: cycles=96254401 us=641696 ms=641 ok=true
+[13] groth16_verify_sq5: cycles=97162166 us=647747 ms=647 ok=true
+[13] groth16_verify_semaphore: cycles=114100019 us=760666 ms=760 ok=true
+[14] g1mul: cycles=4951411 us=33009 ms=33
+[14] g2mul: cycles=22579826 us=150532 ms=150
+[14] pairing: cycles=52417639 us=349450 ms=349
+[14] groth16_verify: cycles=96255326 us=641702 ms=641 ok=true
+[14] groth16_verify_sq5: cycles=97171441 us=647809 ms=647 ok=true
+[14] groth16_verify_semaphore: cycles=114099633 us=760664 ms=760 ok=true
+[15] g1mul: cycles=4913240 us=32754 ms=32
+[15] g2mul: cycles=22438699 us=149591 ms=149
+[15] pairing: cycles=52486425 us=349909 ms=349
+[15] groth16_verify: cycles=96246939 us=641646 ms=641 ok=true
+[15] groth16_verify_sq5: cycles=97161903 us=647746 ms=647 ok=true
+[15] groth16_verify_semaphore: cycles=114100743 us=760671 ms=760 ok=true
+[16] g1mul: cycles=4923591 us=32823 ms=32
+[16] g2mul: cycles=22470675 us=149804 ms=149

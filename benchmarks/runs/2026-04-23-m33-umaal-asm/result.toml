@@ -1,0 +1,79 @@
+[meta]
+date = "2026-04-23"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; UMAAL mul_reduce_asm enabled via cortex-m33-asm feature)"
+"ark-groth16"      = "0.5.0"
+
+[footprint]
+text_bytes = 73_184
+data_bytes = 0
+bss_bytes  = 98_348
+heap_bytes = 98_304
+stack_peak_bytes = 15_724
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 6
+cycles_median = 104_651_959
+cycles_min    = 104_642_743
+cycles_max    = 104_670_789
+us_median     = 697_679
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "sum of 5 squares"
+public_inputs = 5
+ic_size = 6
+iterations = 6
+cycles_median = 105_677_543
+cycles_min    = 105_668_834
+cycles_max    = 105_679_251
+us_median     = 704_516
+result = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit = "semaphore-depth-10"
+public_inputs = 4
+ic_size = 5
+iterations = 6
+cycles_median = 124_285_838
+cycles_min    = 124_283_314
+cycles_max    = 124_288_928
+us_median     = 828_572
+result = "ok"
+
+[bench.pairing]
+iterations = 7
+cycles_median = 56_605_179
+cycles_min    = 56_579_693
+cycles_max    = 56_665_765
+us_median     = 377_367
+
+[bench.g1_mul]
+iterations = 7
+cycles_typical = 5_404_042
+us_typical     = 36_026
+cycles_min     = 5_330_692
+cycles_max     = 5_519_760
+
+[bench.g2_mul]
+iterations = 7
+cycles_typical = 24_239_760
+us_typical     = 161_598
+cycles_min     = 23_917_018
+cycles_max     = 24_850_724

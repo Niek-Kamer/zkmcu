@@ -1,0 +1,66 @@
+zkmcu boot: heap=96K sys=150MHz core=cortex-m33
+
+[boot] vec=square ic=2 public=1 stack=15604 heap_base=1568 heap_peak=81888 cycles=144319090 us=962127 ms=962 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15604 heap_base=1568 heap_peak=81888 cycles=146094578 us=973963 ms=973 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15604 heap_base=1568 heap_peak=81888 cycles=176406936 us=1176046 ms=1176 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=8946515 us=59643 ms=59
+[1] g2mul start
+
+[1] g2mul: cycles=31465396 us=209769 ms=209
+[1] pairing start
+
+[1] pairing: cycles=78663481 us=524423 ms=524
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=144338694 us=962257 ms=962 ok=true
+[1] groth16_verify_sq5 start
+
+[1] groth16_verify_sq5: cycles=146084750 us=973898 ms=973 ok=true
+[1] groth16_verify_semaphore start
+
+[1] groth16_verify_semaphore: cycles=176419536 us=1176130 ms=1176 ok=true
+[2] g1mul start
+
+[2] g1mul: cycles=8917642 us=59450 ms=59
+[2] g2mul start
+
+[2] g2mul: cycles=31392645 us=209284 ms=209
+[2] pairing start
+
+[2] pairing: cycles=78614730 us=524098 ms=524
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=144347352 us=962315 ms=962 ok=true
+[2] groth16_verify_sq5 start
+
+[2] groth16_verify_sq5: cycles=146108313 us=974055 ms=974 ok=true
+[2] groth16_verify_semaphore start
+
+[2] groth16_verify_semaphore: cycles=176461288 us=1176408 ms=1176 ok=true
+[3] g1mul start
+
+[3] g1mul: cycles=9005995 us=60039 ms=60
+[3] g2mul start
+
+[3] g2mul: cycles=31682773 us=211218 ms=211
+[3] pairing start
+
+[3] pairing: cycles=78685395 us=524569 ms=524
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=144381800 us=962545 ms=962 ok=true
+[3] groth16_verify_sq5 start
+
+[3] groth16_verify_sq5: cycles=146068200 us=973788 ms=973 ok=true
+[3] groth16_verify_semaphore start
+
+[3] groth16_verify_semaphore: cycles=176456417 us=1176376 ms=1176 ok=true
+[4] g1mul start
+
+[4] g1mul: cycles=8821369 us=58809 ms=58
+[4] g2mul start
+
+[4] g2mul: cycles=31020403 us=206802 ms=206
+[4] pairing start
