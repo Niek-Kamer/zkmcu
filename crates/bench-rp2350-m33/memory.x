@@ -40,3 +40,19 @@ SECTIONS {
 
 PROVIDE(start_to_end = __end_block_addr - __start_block_addr);
 PROVIDE(end_to_start = __start_block_addr - __end_block_addr);
+
+/* Opt-in section for code that should execute from SRAM rather than XIP
+ * flash. The linker places .ram_text's VMA in RAM and its LMA in FLASH;
+ * a pre_init hook copies LMA -> VMA at boot. Any symbol tagged
+ * `.ram_text.<name>` lands here. First consumer: mul_reduce_armv8m in the
+ * substrate-bn fork. */
+SECTIONS {
+    .ram_text : ALIGN(4) {
+        __ram_text_vma_start = .;
+        *(.ram_text .ram_text.*)
+        . = ALIGN(4);
+        __ram_text_vma_end = .;
+    } > RAM AT > FLASH
+} INSERT BEFORE .data;
+
+PROVIDE(__ram_text_lma_start = LOADADDR(.ram_text));

@@ -14,6 +14,9 @@ members = [
     "crates/bench-rp2350-rv32-bls12",
     "crates/bench-rp2350-rv32-stark",
 ]
+# Vendored third-party crates are kept out of the workspace so their own
+# tests / profiles / lints don't inherit ours (and ours don't inherit theirs).
+exclude = ["vendor/bn"]
 # Default build targets exclude the firmware crates, which need embedded targets.
 # Build them explicitly from inside their crate directories.
 default-members = [
@@ -107,8 +110,12 @@ ark-std = "0.5"
 # through the maintainer's working fork. The fork stays at semver 1.0.0 so this is
 # a transparent swap from the compiler's perspective; it just lets us dogfood fixes
 # that are queued for upstream PR.
+#
+# substrate-bn is forked so we can hand-write ARMv8-M asm for U256::mul using
+# UMAAL, wich LLVM refuses to emit on thumbv8m.main.
 [patch.crates-io]
 embedded-hal = { git = "https://github.com/Niek-Kamer/embedded-hal", branch = "main", package = "embedded-hal" }
+substrate-bn = { path = "vendor/bn", package = "substrate-bn" }
 
 [profile.release]
 codegen-units = 1

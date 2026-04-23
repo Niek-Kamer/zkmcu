@@ -117,6 +117,32 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 4] = [
 const XTAL_HZ: u32 = 12_000_000;
 const SYS_HZ: u32 = 150_000_000;
 
+/// Copy the `.ram_text` section from its flash LMA to its RAM VMA before
+/// the normal cortex-m-rt startup (bss zeroing, data copy, main) runs.
+/// Opt-in for code that should execute from SRAM rather than XIP flash;
+/// currently the only consumer is `mul_reduce_armv8m` in the substrate-bn
+/// fork.
+#[cortex_m_rt::pre_init]
+unsafe fn copy_ram_text() {
+    extern "C" {
+        static __ram_text_lma_start: u32;
+        static mut __ram_text_vma_start: u32;
+        static mut __ram_text_vma_end: u32;
+    }
+    let src = core::ptr::addr_of!(__ram_text_lma_start);
+    let dst = core::ptr::addr_of_mut!(__ram_text_vma_start);
+    let end = core::ptr::addr_of_mut!(__ram_text_vma_end);
+    let count = (end as usize).wrapping_sub(dst as usize) / 4;
+    // SAFETY: the linker places .ram_text's image in flash starting at
+    // __ram_text_lma_start, and reserves the corresponding RAM window
+    // between __ram_text_vma_start and __ram_text_vma_end. Both are u32-
+    // aligned by the ALIGN(4) directives in memory.x. pre_init runs before
+    // any other code, so nothing has read from the destination window yet.
+    unsafe {
+        core::ptr::copy_nonoverlapping(src, dst, count);
+    }
+}
+
 #[hal::entry]
 fn main() -> ! {
     // SAFETY: `HEAP_MEM` is a static `[MaybeUninit<u8>]` with a unique address;

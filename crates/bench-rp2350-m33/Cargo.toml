@@ -19,7 +19,7 @@ fugit = "0.3"
 heapless = "0.9"
 panic-halt = "1.0"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
-substrate-bn = { workspace = true }
+substrate-bn = { workspace = true, features = ["cortex-m33-asm"] }
 usb-device = "0.3"
 usbd-serial = "0.2"
 zkmcu-vectors = { path = "../zkmcu-vectors" }
