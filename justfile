@@ -25,6 +25,14 @@ build-rv32:
 build-rv32-bls12:
     cd crates/bench-rp2350-rv32-bls12 && cargo build --release
 
+# Build the firmware for the Pico 2 W (Cortex-M33, STARK Fibonacci).
+build-m33-stark:
+    cd crates/bench-rp2350-m33-stark && cargo build --release
+
+# Build the firmware for the Pico 2 W (Hazard3 RV32, STARK Fibonacci).
+build-rv32-stark:
+    cd crates/bench-rp2350-rv32-stark && cargo build --release
+
 # Run every native test (cross-check: arkworks <-> substrate-bn).
 test:
     cargo test --release
@@ -39,7 +47,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-m33-bls12 lint-rv32 lint-rv32-bls12
+lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-rv32 lint-rv32-bls12 lint-rv32-stark
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -56,11 +64,17 @@ lint-rv32:
 lint-rv32-bls12:
     cd crates/bench-rp2350-rv32-bls12 && cargo clippy --release -- -D warnings
 
+lint-m33-stark:
+    cd crates/bench-rp2350-m33-stark && cargo clippy --release -- -D warnings
+
+lint-rv32-stark:
+    cd crates/bench-rp2350-rv32-stark && cargo clippy --release -- -D warnings
+
 # Everything that must pass before a commit.
 check: fmt-check lint test
 
 # Full gate including every firmware build, used before cutting a benchmark run.
-check-full: check build-m33 build-m33-bls12 build-rv32 build-rv32-bls12
+check-full: check build-m33 build-m33-bls12 build-m33-stark build-rv32 build-rv32-bls12 build-rv32-stark
 
 # Regenerate the committed test vectors.
 regen-vectors:

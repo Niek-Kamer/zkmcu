@@ -8,8 +8,10 @@ members = [
     "crates/zkmcu-host-gen",
     "crates/bench-rp2350-m33",
     "crates/bench-rp2350-m33-bls12",
+    "crates/bench-rp2350-m33-stark",
     "crates/bench-rp2350-rv32",
     "crates/bench-rp2350-rv32-bls12",
+    "crates/bench-rp2350-rv32-stark",
 ]
 # Default build targets exclude the firmware crates, which need embedded targets.
 # Build them explicitly from inside their crate directories.
