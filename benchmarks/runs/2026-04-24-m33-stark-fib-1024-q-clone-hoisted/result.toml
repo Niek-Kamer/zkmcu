@@ -1,0 +1,65 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation: proof.clone() hoisted outside the timed window"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"cortex-m"          = "0.7"
+"cortex-m-rt"       = "0.7"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+# Same as companion run with clone inside the timed window.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 61798
+heap_peak_bytes = 93515
+stack_peak_bytes = 5640
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_no_clone]
+iterations = 25
+cycles_median = 10_449_812        # N=25 odd, 13th element
+cycles_min    = 10_440_722
+cycles_max    = 10_466_326
+us_median     = 69_665
+result = "ok"
+# Variance: 25,604 cycles / 10,449,812 = 0.245 %. Down from 0.33 %
+# with clone inside the timed window, but NOT down to silicon baseline
+# (~0.03–0.1 %). Clone contributes some jitter; most variance remains.
+stack_peak_bytes = 5640
+
+[bench.vs_clone_inside]
+# Companion run: 2026-04-24-m33-stark-fib-1024-q/
+# Clone-inside: median 69_971 us, variance 0.33 %
+us_delta_us                 = -306     # clone costs ~306 μs verify-side
+us_ratio_no_clone_over_with = 0.996
+variance_reduction_pct      = 25.8     # (0.33 - 0.245) / 0.33
+
+[bench.hypothesis]
+statement = "proof.clone() inside the timed window is the dominant variance source"
+outcome   = "partially confirmed — contributes ~25 % of variance; dominant source is inside winterfell::verify"

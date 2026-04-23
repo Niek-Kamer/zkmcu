@@ -1,0 +1,65 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation: proof.clone() hoisted outside the timed window"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"riscv"             = "0.11"
+"riscv-rt"          = "0.12"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_peak_bytes = 0                # not measured (plain LlffHeap)
+stack_peak_bytes = 5528
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_no_clone]
+iterations = 22
+cycles_median = 13_858_151        # avg of 11th and 12th (N=22 even)
+cycles_min    = 13_824_475
+cycles_max    = 13_887_610
+us_median     = 92_387
+result = "ok"
+# Variance: 63,135 cycles / 13,858,151 = 0.456 %. *Higher* than the
+# clone-inside run's 0.29 %. Opposite of the M33 result — on RV32 the
+# clone appears to have a roughly neutral effect on variance, and
+# removing it exposes underlying winterfell-internal allocator jitter
+# that the clone happened to partially mask.
+stack_peak_bytes = 5528
+
+[bench.vs_clone_inside]
+# Companion: 2026-04-24-rv32-stark-fib-1024-q/
+# Clone-inside: median 93_027 us, variance 0.29 %
+us_delta_us                 = -640     # clone costs ~640 μs verify-side
+us_ratio_no_clone_over_with = 0.993
+variance_delta_pct          = 57.2     # (0.456 - 0.29) / 0.29, POSITIVE — variance went up
+
+[bench.hypothesis]
+statement = "proof.clone() inside the timed window is the dominant variance source"
+outcome   = "disconfirmed for RV32 — variance got worse when clone was removed"

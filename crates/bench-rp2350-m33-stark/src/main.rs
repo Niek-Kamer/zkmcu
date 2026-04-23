@@ -187,8 +187,9 @@ fn main() -> ! {
     let public = fibonacci::parse_public(FIB_PUBLIC).expect("parse stark public");
 
     // One-shot boot measurement: peak stack + peak heap + cycles for one
-    // verify. Parse cost is excluded (the clone happens inside the
-    // measured window because winterfell::verify consumes the Proof).
+    // verify. Parse cost is excluded; proof.clone() is hoisted out of the
+    // timed window to isolate the allocator-jitter contribution from the
+    // verify cost itself (phase 3.2.x variance-isolation experiment).
     boot_measure(
         &mut usb_dev,
         &mut serial,
@@ -209,8 +210,12 @@ fn main() -> ! {
             iter,
             b"stark_verify start\r\n",
         );
+        // Clone happens OUTSIDE the timed window. winterfell::verify still
+        // consumes the Proof, so we need a fresh clone each iteration —
+        // but the allocator work lands outside the cycle-count span.
+        let cloned = proof.clone();
         let t0 = DWT::cycle_count();
-        let result = fibonacci::verify(proof.clone(), public);
+        let result = fibonacci::verify(cloned, public);
         let t1 = DWT::cycle_count();
         let cycles = u64::from(t1.wrapping_sub(t0));
         let verdict = match result {

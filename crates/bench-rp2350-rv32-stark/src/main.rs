@@ -168,8 +168,13 @@ fn main() -> ! {
             iter,
             b"stark_verify start\r\n",
         );
+        // Clone happens OUTSIDE the timed window — phase 3.2.x variance-
+        // isolation experiment. winterfell::verify consumes the Proof, so
+        // a fresh clone per iteration is still required; only the allocator
+        // work is moved outside the cycle span.
+        let cloned = proof.clone();
         let t0 = mcycle64();
-        let result = fibonacci::verify(proof.clone(), public);
+        let result = fibonacci::verify(cloned, public);
         let t1 = mcycle64();
         let cycles = t1.wrapping_sub(t0);
         let verdict = match result {

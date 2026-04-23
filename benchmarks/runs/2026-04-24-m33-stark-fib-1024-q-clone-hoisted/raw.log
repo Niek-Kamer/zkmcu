@@ -1,0 +1,84 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5640 heap_base=61798 heap_peak=93515 cycles=10458887 us=69725 ms=69 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=10444951 us=69633 ms=69 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=10449812 us=69665 ms=69 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=10449080 us=69660 ms=69 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=10445924 us=69639 ms=69 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=10440722 us=69604 ms=69 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=10463104 us=69754 ms=69 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=10455934 us=69706 ms=69 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=10466326 us=69775 ms=69 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=10451075 us=69673 ms=69 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=10451123 us=69674 ms=69 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=10441454 us=69609 ms=69 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=10460989 us=69739 ms=69 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=10448531 us=69656 ms=69 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=10452329 us=69682 ms=69 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=10446668 us=69644 ms=69 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=10459426 us=69729 ms=69 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=10447534 us=69650 ms=69 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=10463759 us=69758 ms=69 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=10446045 us=69640 ms=69 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=10460348 us=69735 ms=69 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=10451884 us=69679 ms=69 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=10448529 us=69656 ms=69 ok=true
+[23] stark_verify start
+
+[23] stark_verify: cycles=10448725 us=69658 ms=69 ok=true
+[24] stark_verify start
+
+[24] stark_verify: cycles=10445596 us=69637 ms=69 ok=true
+[25] stark_verify start
+
+[25] stark_verify: cycles=10456492 us=69709 ms=69 ok=true
+<<capture Ctrl+C'd after iter 25>>
+# Note: no USB-CDC corruption clipping this time — first iteration was
+# complete. Same hardware, same firmware shape aside from the clone
+# hoist; may be coincidence or may be that the clone-hoist changed the
+# early-boot serial pacing slightly.

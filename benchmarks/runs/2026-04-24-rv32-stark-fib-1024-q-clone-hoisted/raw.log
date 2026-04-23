@@ -1,0 +1,74 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=hazard3 proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5528 cycles=13868785 us=92458 ms=92 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=13872386 us=92482 ms=92 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=13845362 us=92302 ms=92 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=13873685 us=92491 ms=92 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=13869317 us=92462 ms=92 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=13854641 us=92364 ms=92 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=13852147 us=92347 ms=92 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=13824475 us=92163 ms=92 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=13858862 us=92392 ms=92 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=13861432 us=92409 ms=92 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=13855691 us=92371 ms=92 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=13854981 us=92366 ms=92 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=13873099 us=92487 ms=92 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=13868263 us=92455 ms=92 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=13877456 us=92516 ms=92 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=13857439 us=92382 ms=92 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=13841435 us=92276 ms=92 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=13887015 us=92580 ms=92 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=13854860 us=92365 ms=92 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=13851128 us=92340 ms=92 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=13850703 us=92338 ms=92 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=13859513 us=92396 ms=92 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=13887610 us=92584 ms=92 ok=true
+<<capture Ctrl+C'd after iter 22>>
+# Note: no USB-CDC corruption clipping — iteration 1 was complete,
+# unlike the phase 3.1 and phase 3.2 RV32 runs. May just be random
+# USB enumeration timing.
