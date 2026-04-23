@@ -19,7 +19,7 @@ export default defineConfig({
 				{ tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' } },
 				{ tag: 'link', attrs: { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' } },
 				{ tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
-				{ tag: 'meta', attrs: { name: 'theme-color', content: '#10b981' } },
+				{ tag: 'meta', attrs: { name: 'theme-color', content: '#0d9488' } },
 			],
 			social: [
 				{
@@ -29,6 +29,11 @@ export default defineConfig({
 				},
 			],
 			customCss: ['./src/styles/custom.css'],
+			components: {
+				// Wraps Starlight's default Footer and appends the site-wide
+				// brand + links block. See src/components/Footer.astro.
+				Footer: './src/components/Footer.astro',
+			},
 			sidebar: [
 				{ label: 'Home', link: '/' },
 				{ label: 'Getting started', link: '/getting-started/' },
