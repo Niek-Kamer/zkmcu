@@ -91,6 +91,8 @@ docs:
                                                          {{out}}/2026-04-22-bls12-381-results.pdf
     typst compile --root . research/reports/2026-04-22-semaphore-baseline.typ \
                                                          {{out}}/2026-04-22-semaphore-baseline.pdf
+    typst compile --root . research/reports/2026-04-23-stark-prediction.typ \
+                                                         {{out}}/2026-04-23-stark-prediction.pdf
 
 # Rebuild a single doc on change. `just docs-watch research/reports/…`.
 docs-watch path:
