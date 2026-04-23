@@ -1,0 +1,21 @@
+[package]
+name = "spike-stark-dep-fit"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Standalone workspace so the parent's members list + [patch.crates-io]
+# don't interfere with this spike. Scratch / notebook only — not part of
+# the zkmcu workspace.
+[workspace]
+
+[dependencies]
+# winterfell is the umbrella crate that re-exports winter-verifier,
+# winter-fri, winter-crypto, winter-math, winter-air. Default-features
+# off means no `std`, no `concurrent` (rayon), no `async`.
+winterfell = { version = "0.13", default-features = false }
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
