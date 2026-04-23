@@ -1,0 +1,78 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=hazard3 alloc=tlsf proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5528 cycles=16882530 us=112550 ms=112 ok=true
+[1] stark_verify start
+
+[1] stark_v[2] stark_verify start
+# Iteration 1 clipped by USB-CDC flow-control corruption during
+# enumeration. Complete samples from iteration 2.
+
+[2] stark_verify: cycles=16826817 us=112178 ms=112 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=16896111 us=112640 ms=112 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=16837747 us=112251 ms=112 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=16859714 us=112398 ms=112 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=16885464 us=112569 ms=112 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=16866589 us=112443 ms=112 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=16878777 us=112525 ms=112 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=16833726 us=112224 ms=112 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=16856856 us=112379 ms=112 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=16871856 us=112479 ms=112 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=16839614 us=112264 ms=112 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=16856581 us=112377 ms=112 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=16837919 us=112252 ms=112 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=16862390 us=112415 ms=112 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=16870065 us=112467 ms=112 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=16880825 us=112538 ms=112 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=16873562 us=112490 ms=112 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=16865405 us=112436 ms=112 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=16839802 us=112265 ms=112 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=16842199 us=112281 ms=112 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=16843206 us=112288 ms=112 ok=true
+[23] stark_verify start
+
+[23] stark_verify: cycles=16863513 us=112423 ms=112 ok=true
+[24] stark_verify start
+
+[24] stark_verify: cycles=16837240 us=112248 ms=112 ok=true
+<<capture Ctrl+C'd after iter 24>>

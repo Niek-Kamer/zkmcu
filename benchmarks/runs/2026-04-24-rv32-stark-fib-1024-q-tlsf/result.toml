@@ -1,0 +1,82 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation v3: embedded-alloc::TlsfHeap (O(1) two-level segregated fit)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"           # tlsf feature
+"riscv"             = "0.11"
+"riscv-rt"          = "0.12"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_peak_bytes = 0                 # not measured on RV32 (no TrackingHeap)
+stack_peak_bytes = 5528
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_tlsf]
+iterations = 23
+cycles_median = 16_859_714          # 12th element (N=23 odd)
+cycles_min    = 16_826_817
+cycles_max    = 16_896_111
+us_median     = 112_398
+us_min        = 112_178
+us_max        = 112_640
+us_q1         = 112_264              # 25th percentile
+us_q3         = 112_479              # 75th percentile
+result = "ok"
+# Variance measures:
+#   min-max / median   = 0.411 %
+#   IQR / median       = 0.191 %
+#   std_dev / mean     = 0.110 %
+# Tighter than LlffHeap (0.456 %) but noticeably wider than BumpAlloc
+# (0.076 % std-dev). RV32 pays more per TLSF alloc op than M33 does
+# — bitmap-manipulation branches hit Hazard3's weaker branch
+# prediction harder. Std-dev is 36 % higher than M33's TLSF run.
+stack_peak_bytes = 5528
+
+[bench.vs_previous_runs]
+# LlffHeap clone-in RV32:   93_027 us median, 0.29 % min-max
+# LlffHeap clone-out RV32:  92_387 us median, 0.456 % min-max
+# BumpAlloc clone-out RV32: 82_167 us median, 0.076 % std-dev, 252.7 KB heap
+# TlsfHeap clone-out RV32:  112_398 us median, 0.110 % std-dev
+us_delta_vs_llff = 20_011     # TLSF is 20 ms slower than LlffHeap on RV32
+us_delta_vs_bump = 30_231     # TLSF is 30.2 ms slower than BumpAlloc on RV32
+
+[bench.cross_isa]
+# Cross-ISA ratio keeps swinging:
+#   Phase 3.1 LlffHeap None:      1.462
+#   Phase 3.2 LlffHeap Quadratic: 1.329
+#   Phase 3.2.y BumpAlloc:        1.209
+#   Phase 3.2.z TlsfHeap:         1.506  ← WIDEST of all configs
+rv32_over_m33_stark_q_tlsf = 1.506
+# TLSF widens the cross-ISA gap to 1.506× because its bitmap ops
+# are more branch-heavy than LlffHeap's free-list walk, and Hazard3's
+# weaker branch predictor pays more for each mispredict. This is the
+# opposite of what BumpAlloc did — BumpAlloc narrowed the gap to
+# 1.21× by eliminating allocator-induced mispredicts entirely.

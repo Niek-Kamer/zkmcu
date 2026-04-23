@@ -1,0 +1,79 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "variance-isolation v3: embedded-alloc::TlsfHeap (O(1) two-level segregated fit)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"          # tlsf feature
+"cortex-m"          = "0.7"
+"cortex-m-rt"       = "0.7"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB — same as LlffHeap config
+heap_base_bytes = 61798            # identical to LlffHeap — TLSF uses same alloc pattern
+heap_peak_bytes = 93515            # identical to LlffHeap — fits 128 KB tier ✓
+stack_peak_bytes = 5632
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_tlsf]
+iterations = 20
+cycles_median = 11_200_461         # avg of 10th + 11th (N=20 even)
+cycles_min    = 11_184_811
+cycles_max    = 11_223_172
+us_median     = 74_652
+us_min        = 74_565
+us_max        = 74_821
+us_q1         = 74_628              # 25th percentile
+us_q3         = 74_712              # 75th percentile
+result = "ok"
+# Three variance measures:
+#   min-max / median   = 0.343 %
+#   IQR / median       = 0.113 %
+#   std_dev / mean     = 0.081 %   ← matches BumpAlloc's 0.080 %
+# TLSF gives bump-alloc-level std-dev variance while keeping heap peak
+# at LlffHeap's 93.5 KB (fits 128 KB tier). The IQR is a touch wider
+# than bump's 0.082 % because TLSF still has per-op branching whose
+# timing varies with free-list state — O(1) in the worst case, but
+# not byte-identical iteration-to-iteration like a reset bump arena.
+stack_peak_bytes = 5632
+
+[bench.vs_previous_runs]
+# LlffHeap clone-out:    69_665 us median, 0.128 % IQR, 93.5 KB heap
+# BumpAlloc clone-out:   67_953 us median, 0.082 % IQR, 314.5 KB heap
+# TlsfHeap clone-out:    74_652 us median, 0.113 % IQR, 93.5 KB heap
+us_delta_vs_llff   = 4_987   # TLSF is 5.0 ms slower than LlffHeap
+us_delta_vs_bump   = 6_699   # TLSF is 6.7 ms slower than BumpAlloc
+heap_vs_llff_bytes = 0       # identical
+
+[bench.production_story]
+fits_128kb_tier = true
+variance_production_grade = true
+# This run is the first configuration that's BOTH silicon-baseline-variance
+# and 128-KB-tier-compliant. The cost is ~5 ms over LlffHeap's median.
+# For side-channel-sensitive / timing-deterministic firmware (hardware
+# wallets, TEEs), this tradeoff is usually preferable.

@@ -1,0 +1,68 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5632 heap_base=61798 heap_peak=93515 cycles=11203330 us=74688 ms=74 ok=true
+[1stark_verify start
+# Iterations 1-2 clipped by USB-CDC flow-control corruption during
+# enumeration — same pattern as all earlier STARK runs. Complete
+# samples from iteration 3.
+
+[3] stark_verify: cycles=11197345 us=74648 ms=74 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=11194303 us=74628 ms=74 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=11223172 us=74821 ms=74 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=11195142 us=74634 ms=74 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=11206868 us=74712 ms=74 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=11198538 us=74656 ms=74 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=11202576 us=74683 ms=74 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=11216263 us=74775 ms=74 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=11208459 us=74723 ms=74 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=11198846 us=74658 ms=74 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=11196646 us=74644 ms=74 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=11184811 us=74565 ms=74 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=11206941 us=74712 ms=74 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=11192117 us=74614 ms=74 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=11197309 us=74648 ms=74 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=11199963 us=74666 ms=74 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=11197298 us=74648 ms=74 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=11214242 us=74761 ms=74 ok=true
+[21] stark_verify start
+
+[21] stark_verify: cycles=11191071 us=74607 ms=74 ok=true
+[22] stark_verify start
+
+[22] stark_verify: cycles=11194087 us=74627 ms=74 ok=true
+<<capture Ctrl+C'd after iter 22>>
