@@ -103,7 +103,23 @@ Heads up for anyone designing embedded-ZK circuits: on BN254 Cortex-M33, each ex
 | pairing | **607 ms** | 1,975 ms | 3.26× |
 | **Groth16 verify** (1 pub input) | **2,015 ms** | 5,151 ms | 2.56× |
 
-These are baselines, not optimized numbers. Room for improvement: the M33 has DSP intrinsics (`SMLAL`, `UMAAL`) for Montgomery reduction that neither `substrate-bn` nor `bls12_381` touch, and Hazard3 has the `Zbb`/`Zba`/`Zbc` bit-manip extensions sitting unused. First guess for the M33 with intrinsics is roughly half of both Groth16 verify times, idk if RV32 catches up but the bit-manip should close some of the pairing gap.
+These are baselines, not optimized numbers. The M33 has DSP intrinsics (`SMLAL`, `UMAAL`) for Montgomery reduction that neither `substrate-bn` nor `bls12_381` touch out of the box, and Hazard3 has the `Zbb`/`Zba`/`Zbc` bit-manip extensions sitting unused. BN254 on M33 is the first one I actually did, next section.
+
+## UMAAL asm on Cortex-M33 (BN254)
+
+Hand-written ARMv8-M assembly for `substrate-bn`'s `mul_reduce` (the Montgomery multiplication primitive) using UMAAL on 32-bit limbs, placed in SRAM at boot so the hottest function sidesteps the RP2350's 16 KB XIP instruction cache entirely. Lives in a fork of `substrate-bn` at `vendor/bn` behind a `cortex-m33-asm` Cargo feature; host builds and all 34 upstream tests still use the Rust path unchanged.
+
+| op | BN254, stock | BN254, UMAAL asm | Δ |
+|---|---:|---:|---:|
+| **Groth16 verify** (1 pub input) | 962 ms | **641 ms** | -33 % |
+| **Groth16 verify** (Semaphore depth-10) | 1,176 ms | **761 ms** | -35 % |
+| BN254 pairing | 535 ms | **350 ms** | -35 % |
+| G1 scalar mul (typical) | 62 ms | **33 ms** | -47 % |
+| G2 scalar mul (typical) | 207 ms | **150 ms** | -28 % |
+
+The lever is that LLVM's M-profile instruction selector emits zero UMAAL instructions for `substrate-bn`'s `u128`-based schoolbook even with `target-cpu=cortex-m33`. The asm does it by hand: 128 UMAAL inner steps per `mul_reduce`, operand rows kept register-resident in r4–r11 across each phase, `.text` footprint of the replacement primitive at 50 % of LLVM's original output. Moving it to SRAM was worth another 1-2 % on its own and keeps 2 KB of XIP-cache pressure off everything else in the pairing code.
+
+RV32 and BLS12-381 are still at their baselines. UMAAL is ARM-specific; Hazard3's `Zbc` carry-less-mul extension is the analogous lever for RISC-V and hasn't been tried yet. Full arc from the 988 ms crates.io baseline through the four layered optimizations: `research/reports/2026-04-23-umaal-sram-groth16.typ`.
 
 ## Memory
 
@@ -235,6 +251,7 @@ Typst sources under `research/`, build with `just docs`, output lands in `resear
 - `prior-art.pdf`: living survey of what else exists in embedded ZK
 - `2026-04-22-bls12-381-results.pdf`: BLS12-381 measurements vs frozen predictions (2 of 3 criteria fired)
 - `2026-04-22-semaphore-baseline.pdf`: real-world Semaphore Groth16 proof on a Pico 2 W
+- `2026-04-23-umaal-sram-groth16.pdf`: hand-written UMAAL Montgomery multiply in SRAM, 988 → 641 ms on BN254 Groth16 verify
 - `2026-04-23-stark-prediction.pdf` + `stark-results.pdf`: phase 3.1, first STARK on-silicon numbers
 - `2026-04-24-stark-quadratic-prediction.pdf` + `stark-quadratic-results.pdf`: phase 3.2, production-grade 95-bit STARK
 - `2026-04-24-stark-variance-isolation.pdf`: phase 3.2.x, `proof.clone()` hypothesis (disconfirmed)
