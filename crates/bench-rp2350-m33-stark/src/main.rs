@@ -27,10 +27,8 @@ type Timer0 = hal::Timer<hal::timer::CopyableTimer0>;
 // Lives at crates/zkmcu-vectors/data/stark-fib-1024/. No include via
 // zkmcu-vectors function for now; phase 3.1 keeps it direct to mirror
 // what the BLS12 firmware does.
-static FIB_PROOF: &[u8] =
-    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
-static FIB_PUBLIC: &[u8] =
-    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
+static FIB_PROOF: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
+static FIB_PUBLIC: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
 
 // TrackingHeap — identical to the BN254 / BLS12 firmware. Two relaxed
 // atomic ops per alloc/dealloc, negligible next to the hashing + FRI
@@ -293,11 +291,7 @@ fn current_sp() -> usize {
 fn measure_verify_stack_peak(
     proof: Proof,
     public: PublicInputs,
-) -> (
-    Result<(), zkmcu_verifier_stark::Error>,
-    Option<usize>,
-    u64,
-) {
+) -> (Result<(), zkmcu_verifier_stark::Error>, Option<usize>, u64) {
     let sp = current_sp();
     let paint_top = (sp - STACK_PAINT_MARGIN) & !3usize;
     let paint_bottom = paint_top - STACK_PAINT_BYTES;

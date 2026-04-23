@@ -21,10 +21,8 @@ type Timer0 = hal::Timer<hal::timer::CopyableTimer0>;
 
 // Baked-in Fibonacci STARK proof. See bench-rp2350-m33-stark/src/main.rs
 // for the rationale on direct include_bytes! (same pattern as BLS12).
-static FIB_PROOF: &[u8] =
-    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
-static FIB_PUBLIC: &[u8] =
-    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
+static FIB_PROOF: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
+static FIB_PUBLIC: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -246,11 +244,7 @@ fn current_sp() -> usize {
 fn measure_verify_stack_peak(
     proof: Proof,
     public: PublicInputs,
-) -> (
-    Result<(), zkmcu_verifier_stark::Error>,
-    Option<usize>,
-    u64,
-) {
+) -> (Result<(), zkmcu_verifier_stark::Error>, Option<usize>, u64) {
     let sp = current_sp();
     let paint_top = (sp - STACK_PAINT_MARGIN) & !3usize;
     let paint_bottom = paint_top - STACK_PAINT_BYTES;

@@ -123,17 +123,19 @@ pub fn run(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let dir = out_root.join("stark-fib-1024");
     fs::create_dir_all(&dir)?;
 
-    // ~96-bit conjectured security at N=1024 — matches winterfell's own
-    // Fibonacci example parameters.
+    // ~96-bit conjectured security at N=1024 via quadratic extension over
+    // Goldilocks. Phase 3.1 used FieldExtension::None which capped at
+    // 63-bit — below production. Phase 3.2 lifts to Quadratic so the
+    // verifier hits the security level the grant pitch implies.
     let options = ProofOptions::new(
-        32,                     // num queries
-        8,                      // blowup factor
-        0,                      // grinding factor
-        FieldExtension::None,   // base field only, no extension
-        8,                      // FRI folding factor
-        31,                     // FRI max remainder polynomial degree
-        BatchingMethod::Linear, // constraint-composition batching
-        BatchingMethod::Linear, // DEEP-composition batching
+        32,                        // num queries
+        8,                         // blowup factor
+        0,                         // grinding factor
+        FieldExtension::Quadratic, // F_{p^2} for DEEP + FRI + constraint combining
+        8,                         // FRI folding factor
+        31,                        // FRI max remainder polynomial degree
+        BatchingMethod::Linear,    // constraint-composition batching
+        BatchingMethod::Linear,    // DEEP-composition batching
     );
 
     // Build the trace + derive the public output from its last row.

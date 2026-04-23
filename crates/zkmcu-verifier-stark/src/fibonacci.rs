@@ -138,21 +138,21 @@ pub fn parse_public(bytes: &[u8]) -> Result<PublicInputs, Error> {
 /// Verify a Fibonacci-AIR STARK proof against the provided public inputs.
 ///
 /// Hash: Blake3-256 over Goldilocks. Vector commitment: binary Merkle tree.
-/// Random coin: winterfell's default. Security threshold: 63-bit
-/// conjectured (matches the base Goldilocks field with no extension).
+/// Random coin: winterfell's default. Security threshold: 95-bit
+/// conjectured — matches the prover's `FieldExtension::Quadratic`
+/// configuration over Goldilocks.
 ///
-/// 63-bit conjectured security is low for production use. The winterfell
-/// docstring example hits 95-bit by using the `f128` field;
-/// alternatively, setting `FieldExtension::Quadratic` in the prover's
-/// `ProofOptions` lifts Goldilocks to ~128-bit. For phase 3.1 benchmarking
-/// the per-query cost is the same regardless of claimed security, so we
-/// accept what the base-field options provide — security hardening is a
-/// phase-3.2 follow-up.
+/// Phase 3.1 ran this verifier at `MinConjecturedSecurity(63)` with
+/// `FieldExtension::None` on the prover side. That was a benchmarking
+/// configuration, not a production security level. Phase 3.2 lifts the
+/// prover to `FieldExtension::Quadratic` for ~96-bit conjectured security;
+/// the threshold below matches.
 ///
 /// # Errors
 ///
 /// Returns [`Error::Verification`] wrapping the inner [`VerifierError`] if
-/// any of the Merkle / FRI / constraint checks fail.
+/// any of the Merkle / FRI / constraint checks fail, *or* if the proof's
+/// `ProofOptions` fall below the 95-bit conjectured-security threshold.
 ///
 /// [`VerifierError`]: winterfell::VerifierError
 pub fn verify(proof: Proof, public: PublicInputs) -> Result<(), Error> {
@@ -160,6 +160,6 @@ pub fn verify(proof: Proof, public: PublicInputs) -> Result<(), Error> {
     type Coin = DefaultRandomCoin<Hasher>;
     type Vc = MerkleTree<Hasher>;
 
-    let min_opts = AcceptableOptions::MinConjecturedSecurity(63);
+    let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
     winterfell::verify::<FibAir, Hasher, Coin, Vc>(proof, public, &min_opts).map_err(Error::from)
 }
