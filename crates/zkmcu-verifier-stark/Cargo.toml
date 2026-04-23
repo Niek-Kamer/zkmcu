@@ -1,0 +1,18 @@
+[package]
+name = "zkmcu-verifier-stark"
+version = "0.1.0"
+description = "no_std STARK (winterfell) verifier for ARM Cortex-M and RISC-V microcontrollers"
+keywords = ["no-std", "stark", "fri", "winterfell", "cryptography"]
+categories = ["cryptography", "embedded", "no-std"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+winterfell = { workspace = true }

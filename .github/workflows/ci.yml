@@ -27,7 +27,7 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy (host crates)
-        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
+        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-verifier-stark -p zkmcu-vectors -p zkmcu-host-gen --all-targets --release -- -D warnings
 
       - name: cargo test
         run: cargo test --release
@@ -50,6 +50,9 @@ jobs:
 
       - name: cargo check (zkmcu-verifier-bls12 on Cortex-M33)
         run: cargo check -p zkmcu-verifier-bls12 --release --target thumbv8m.main-none-eabihf
+
+      - name: cargo check (zkmcu-verifier-stark on Cortex-M33)
+        run: cargo check -p zkmcu-verifier-stark --release --target thumbv8m.main-none-eabihf
 
       - name: cargo clippy (BN254 firmware)
         working-directory: crates/bench-rp2350-m33
@@ -85,6 +88,9 @@ jobs:
 
       - name: cargo check (zkmcu-verifier-bls12 on Hazard3 RV32)
         run: cargo check -p zkmcu-verifier-bls12 --release --target riscv32imac-unknown-none-elf
+
+      - name: cargo check (zkmcu-verifier-stark on Hazard3 RV32)
+        run: cargo check -p zkmcu-verifier-stark --release --target riscv32imac-unknown-none-elf
 
       - name: cargo clippy (BN254 firmware)
         working-directory: crates/bench-rp2350-rv32

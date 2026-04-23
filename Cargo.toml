@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/zkmcu-verifier",
     "crates/zkmcu-verifier-bls12",
+    "crates/zkmcu-verifier-stark",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/bench-rp2350-m33",
@@ -15,6 +16,7 @@ members = [
 default-members = [
     "crates/zkmcu-verifier",
     "crates/zkmcu-verifier-bls12",
+    "crates/zkmcu-verifier-stark",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
 ]
@@ -79,6 +81,12 @@ substrate-bn = { version = "0.6", default-features = false }
 bls12_381 = { version = "0.8", default-features = false, features = ["groups", "pairings", "alloc"] }
 group = { version = "0.13", default-features = false }
 pairing = "0.23"
+
+# winterfell umbrella for STARK verification. `default-features = false`
+# keeps std / concurrent / async off. Direct sub-dep version (winter-verifier
+# alone) is a phase-3 optimisation — start with the umbrella, swap later if
+# .text size on the firmware is meaningfully inflated.
+winterfell = { version = "0.13", default-features = false }
 
 # arkworks — used only by zkmcu-host-gen (host/std)
 ark-bn254 = "0.5"
