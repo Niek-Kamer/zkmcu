@@ -1,0 +1,69 @@
+[meta]
+date = "2026-04-23"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+# .text / .data / .bss not extracted for this run. Heap/stack measurements
+# below are direct on-device readouts.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB configured arena (oversized first-run)
+heap_peak_bytes = 70739            # measured on-device during verify via TrackingHeap
+heap_base_bytes = 50686            # already-allocated when measurement starts (parsed Proof sits here)
+stack_peak_bytes = 5200            # measured directly on-device via paint-and-scan
+
+[vector]
+source = "winter-prover via scripts/gen-semaphore-proof/gen.ts-shaped flow (host-side Fibonacci prover in zkmcu-host-gen::stark)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1)"
+hash = "Blake3-256"
+security_bits_conjectured = 63
+proof_size_bytes = 25332
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024]
+iterations = 17
+cycles_median = 6_575_470
+cycles_min    = 6_567_188
+cycles_max    = 6_587_041
+us_median     = 43_836
+result = "ok"
+# Variance: (max - min) / median = 19,853 / 6,575,470 = 0.30 %. Higher
+# than the prediction's 0.03-0.1 % band but still tight by any
+# non-silicon-measurement standard. Most likely cause: Proof is cloned
+# inside the timed window (winterfell::verify consumes the Proof by
+# value), introducing allocator-jitter variance that the pairing-based
+# verifiers don't see.
+heap_peak_bytes = 70739
+stack_peak_bytes = 5200
+
+[bench.comparison_same_silicon]
+# Reference numbers from the earlier phase-2 runs on the same M33,
+# for quick comparison within this TOML.
+bn254_groth16_verify_ms = 962            # 1 public input, synthetic square
+bn254_semaphore_verify_ms = 1176         # Semaphore depth 10, 4 big-scalar public inputs
+bls12_381_groth16_verify_ms = 2015       # 1 public input, synthetic square
+stark_fib_1024_verify_ms = 44            # this run
+# STARK verify is 22x faster than BN254 Groth16, 27x faster than
+# Semaphore Groth16, 47x faster than BLS12-381 Groth16 on the same chip.
+# Proof size tradeoff: STARK proof is 25 KB wire, vs 256 B / 256 B /
+# 512 B for the three Groth16 rows above. Classic throughput-for-
+# bandwidth trade.

@@ -1,0 +1,65 @@
+[meta]
+date = "2026-04-23"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"riscv"             = "0.11"
+"riscv-rt"          = "0.12"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+# .text / .data / .bss not extracted. heap_peak not measured because the
+# RV32 firmware uses plain LlffHeap (no TrackingHeap wrapper) — same
+# limitation as the BN254 / BLS12 RV32 runs. Expected peak is close to
+# M33's 70.7 KB since allocations come from the same winterfell code.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB configured arena
+heap_peak_bytes = 0                # not measured (see above)
+stack_peak_bytes = 5096            # measured directly on-device
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (host-side Fibonacci prover)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1)"
+hash = "Blake3-256"
+security_bits_conjectured = 63
+proof_size_bytes = 25332
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024]
+iterations = 16
+cycles_median = 9_610_903      # avg of middle two (N=16 even)
+cycles_min    = 9_584_396
+cycles_max    = 9_651_025
+us_median     = 64_073
+result = "ok"
+# Variance: 66,629 cycles / 9,610,903 = 0.69 %. Slightly higher than
+# M33's 0.30 %. Same proof.clone() allocator-jitter hypothesis applies.
+stack_peak_bytes = 5096
+
+[bench.cross_isa]
+rv32_over_m33_stark = 1.462      # 64.07 / 43.84
+predicted_band = "0.7 - 1.3x"
+falsified = true
+# This is the third phase-3.1 falsification criterion that fired.
+# Hazard3 is ~46 % slower than Cortex-M33 on STARK Fibonacci verify.
+# Pattern echoes the BLS12-381 finding: M33 consistently wins on
+# hash + field-arithmetic-heavy workloads at larger primes; the
+# "Hazard3 wins on G1 scalar mul" result from BN254 keeps not
+# transferring. Cross-ISA conclusions are workload-sensitive.

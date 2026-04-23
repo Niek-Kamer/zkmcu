@@ -1,0 +1,59 @@
+$ cat /dev/ttyACM0
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 proof=stark-fib-1024
+
+[boot] vec=stark-fib-1024 stack=5200 heap_base=50686 heap_peak=70739 cycles=6569747 us=43798 ms=43 ok=true
+# First three iterations got clipped by USB-CDC flow-control corruption
+# during enumeration — same artefact we saw on the phase-2.7 Semaphore
+# M33 run. Main-loop output is clean from iteration 4 onward.
+[1] stark_veri[4] stark_verify start
+
+[4] stark_verify: cycles=6580695 us=43871 ms=43 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=6575479 us=43836 ms=43 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=6571338 us=43808 ms=43 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=6569281 us=43795 ms=43 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=6568520 us=43790 ms=43 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=6574180 us=43827 ms=43 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=6575470 us=43836 ms=43 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=6576724 us=43844 ms=43 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=6572867 us=43819 ms=43 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=6569250 us=43795 ms=43 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=6587041 us=43913 ms=43 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=6574916 us=43832 ms=43 ok=true
+[16] stark_verify start
+
+[16] stark_verify: cycles=6576334 us=43842 ms=43 ok=true
+[17] stark_verify start
+
+[17] stark_verify: cycles=6582986 us=43886 ms=43 ok=true
+[18] stark_verify start
+
+[18] stark_verify: cycles=6580238 us=43868 ms=43 ok=true
+[19] stark_verify start
+
+[19] stark_verify: cycles=6581871 us=43879 ms=43 ok=true
+[20] stark_verify start
+
+[20] stark_verify: cycles=6567188 us=43781 ms=43 ok=true
+<<capture Ctrl+C'd after iter 20>>
