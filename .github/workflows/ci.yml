@@ -148,3 +148,4 @@ jobs:
           typst compile --root . research/reports/2026-04-23-stark-prediction.typ research/out/2026-04-23-stark-prediction.pdf
           typst compile --root . research/reports/2026-04-23-stark-results.typ research/out/2026-04-23-stark-results.pdf
           typst compile --root . research/reports/2026-04-24-stark-quadratic-prediction.typ research/out/2026-04-24-stark-quadratic-prediction.pdf
+          typst compile --root . research/reports/2026-04-24-stark-quadratic-results.typ research/out/2026-04-24-stark-quadratic-results.pdf

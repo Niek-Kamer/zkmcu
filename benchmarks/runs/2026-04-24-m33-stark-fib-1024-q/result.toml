@@ -1,0 +1,85 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"cortex-m"          = "0.7"
+"cortex-m-rt"       = "0.7"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+# .text / .data / .bss not extracted. Measured heap + stack with
+# TrackingHeap + stack painting, same methodology as phase 3.1.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB configured arena
+heap_base_bytes = 61798            # resident parsed proof (up from 50686 at None)
+heap_peak_bytes = 93515            # peak during verify (up from 70739 at None)
+stack_peak_bytes = 5640            # up from 5200 at None
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2} for DEEP + FRI + constraint combining"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q]
+iterations = 18
+cycles_median = 10_495_622        # avg of middle two (N=18 even)
+cycles_min    = 10_474_493
+cycles_max    = 10_508_776
+us_median     = 69_971
+result = "ok"
+# Variance: 34,283 cycles / 10,495,622 = 0.33 %. Nearly identical to
+# phase 3.1's 0.30 % despite bigger proof. proof.clone()-in-timed-window
+# hypothesis holds — jitter is intrinsic to the clone allocation, doesn't
+# scale linearly with clone size.
+stack_peak_bytes = 5640
+
+[bench.vs_phase_3_1]
+# Phase 3.1 measured at FieldExtension::None (63-bit):
+# us_median = 43_836, heap_peak = 70_739, stack_peak = 5200, proof = 25332
+us_ratio_quadratic_over_none = 1.596
+heap_peak_ratio              = 1.322
+stack_peak_ratio             = 1.085
+proof_size_ratio             = 1.219
+
+[bench.total_ram]
+# Heap peak + stack peak + statics (~500 B).
+# 93515 + 5640 + 500 = 99655 B ≈ 97.3 KiB.
+total_bytes_estimate = 99655
+fits_128kb_tier      = true
+margin_vs_128kb      = 31441   # 128*1024 - 99655
+
+[bench.vs_prediction]
+# Phase 3.2.0 predictions, committed in research/reports/2026-04-24-stark-quadratic-prediction.typ:
+# M33 verify: 90-140 ms (point 110 ms) — measured 70.0 ms, BELOW band
+# Proof size: 40-50 KB (point 44 KB) — measured 30.9 KB, BELOW band
+# M33 heap peak: 110-140 KB — measured 93.5 KB, BELOW band
+# M33 stack peak: 5.2-7 KB — measured 5.6 KB, within band
+# M33 total RAM: 115-150 KB — measured ~100 KB, BELOW band
+# Variance: 0.3-0.8 % — measured 0.33 %, within band (low end)
+#
+# Four of six predictions fell below the band. Same direction-bias as
+# phase 3.1's prediction miss: the cost model overestimates how much of
+# verify time is field arithmetic and how much the proof size grows
+# under Quadratic extension.
+criteria_fired = 4

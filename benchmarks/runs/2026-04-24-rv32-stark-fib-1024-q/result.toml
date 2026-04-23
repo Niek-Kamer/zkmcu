@@ -1,0 +1,84 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC + Zbb/Zba/Zbc/Zbs"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"        = "0.13.1"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"    = "0.7.0"
+"riscv"             = "0.11"
+"riscv-rt"          = "0.12"
+"rp235x-hal"        = "0.4.0"
+
+[footprint]
+# .text / .data / .bss not extracted. heap_peak not measured because the
+# RV32 firmware uses plain LlffHeap (no TrackingHeap wrapper) — same
+# limitation as phase 3.1 RV32. Expected peak ~93 KB based on M33 run.
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB configured arena
+heap_peak_bytes = 0                # not measured (see above)
+stack_peak_bytes = 5528            # up from 5096 at FieldExtension::None
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci prover, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2} for DEEP + FRI + constraint combining"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q]
+iterations = 18
+cycles_median = 13_954_093        # avg of middle two (N=18 even)
+cycles_min    = 13_931_185
+cycles_max    = 13_971_372
+us_median     = 93_027
+result = "ok"
+# Variance: 40,187 cycles / 13,954,093 = 0.29 %. *Better* than phase 3.1
+# RV32's 0.69 % — unexpected; prediction was 0.5–1.2 %. Possibly because
+# the larger proof amortises allocator jitter over a longer measurement
+# window, same jitter cost spread over more total time.
+stack_peak_bytes = 5528
+
+[bench.vs_phase_3_1]
+# Phase 3.1 RV32 measured at FieldExtension::None (63-bit):
+# us_median = 64_073, stack_peak = 5096, proof = 25332
+us_ratio_quadratic_over_none = 1.451
+stack_peak_ratio             = 1.085
+proof_size_ratio             = 1.219
+
+[bench.cross_isa]
+# RV32/M33 ratio at Quadratic extension. Phase 3.1 was 1.462 at FieldExtension::None.
+rv32_over_m33_stark_q = 1.329
+phase_3_1_ratio       = 1.462
+# Cross-ISA ratio NARROWED under Quadratic, opposite of phase 3.2.0
+# prediction. Predicted 1.45–1.65x (wider than phase 3.1's 1.46) because
+# the model expected extension-field arithmetic to amplify M33's
+# register / UMULL advantage. Measured 1.33x (narrower). Likely because
+# the bigger proof is more auth-path-dominated (hash work, where the
+# ISAs are closer) than FRI-fold-arithmetic-dominated.
+
+[bench.vs_prediction]
+# Phase 3.2.0 predictions:
+# RV32 verify: 130–210 ms (point 170) — measured 93.0 ms, BELOW band
+# RV32 stack peak: 5.2–7 KB — measured 5.5 KB, within band
+# Variance: 0.5–1.2 % — measured 0.29 %, BELOW band
+# Cross-ISA ratio 1.45–1.65x — measured 1.33x, BELOW band
+#
+# Three of four RV32 predictions fell below the predicted band. Same
+# optimistic miss pattern as M33.
+criteria_fired = 3
