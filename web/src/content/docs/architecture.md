@@ -3,31 +3,35 @@ title: Architecture
 description: How zkmcu is structured and how the pieces fit together.
 ---
 
-zkmcu ships as a family of parallel crates: two library crates for the two supported curves, plus shared infrastructure for test vectors and firmware benching.
+zkmcu ships as a family of parallel crates: three library crates for the three supported proof systems, plus shared infrastructure for test vectors, firmware benchmarking, and deterministic-timing allocator experiments.
 
-## Four library crates
+## Library crates
 
 | Crate | Role |
 |---|---|
 | `zkmcu-verifier` | `no_std` Groth16 verify on **BN254**, EIP-197 wire format. Backed by `substrate-bn`. |
 | `zkmcu-verifier-bls12` | `no_std` Groth16 verify on **BLS12-381**, EIP-2537 wire format. Backed by zkcrypto `bls12_381`. |
-| `zkmcu-vectors` | `no_std` loader for committed binary test vectors via `include_bytes!`. Both curves, plus a real Semaphore vector. |
-| `zkmcu-host-gen` | Host-only CLI. Uses `arkworks` to generate Groth16 proofs on either curve and serialise to EIP-197 / EIP-2537. Also imports the vendored Semaphore VK + externally-generated proofs. |
+| `zkmcu-verifier-stark` | `no_std` STARK verify on **Goldilocks + Blake3**, winterfell 0.13 wire format. Ships with a Fibonacci AIR reference; user AIRs wire in via the same `Air` trait winterfell uses. |
+| `zkmcu-vectors` | `no_std` loader for committed binary test vectors via `include_bytes!`. All three proof systems, plus a real Semaphore vector. |
+| `zkmcu-bump-alloc` | `no_std` bump-style `GlobalAlloc` with watermark save/restore. Used for the deterministic-timing benchmark runs; also publishable as a standalone primitive. |
+| `zkmcu-host-gen` | Host-only CLI. Uses `arkworks` to generate Groth16 proofs on either curve (with cross-check via the second independent implementation), uses `winter-prover` for STARK proofs, imports the vendored Semaphore VK + externally-generated proofs. |
 
-The two verifier crates expose the same five-function API (`parse_vk`, `parse_proof`, `parse_public`, `verify`, `verify_bytes`). Parallel structure, different curve underneath. No generic trait unifying them — keeping the two implementations independent means each can be read top-to-bottom without chasing abstractions.
+The three verifier crates expose parallel APIs. Groth16 verifiers share the same five-function shape (`parse_vk`, `parse_proof`, `parse_public`, `verify`, `verify_bytes`). STARK verify takes a slightly different form — no VK (the AIR definition is the verifier-side invariant), and `winterfell::Proof` is the parsed form — but the same `verify(proof, public) -> Result<()>` endpoint. No generic trait unifying them; keeping implementations independent means each can be read top-to-bottom without chasing abstractions.
 
-## Four firmware crates
+## Firmware crates
 
-| Crate | Target | Curve |
+| Crate | Target | Curve / System |
 |---|---|---|
-| `bench-rp2350-m33` | ARM Cortex-M33, `thumbv8m.main-none-eabihf` | BN254 |
-| `bench-rp2350-m33-bls12` | same | BLS12-381 |
-| `bench-rp2350-rv32` | RISC-V Hazard3, `riscv32imac-unknown-none-elf` | BN254 |
-| `bench-rp2350-rv32-bls12` | same | BLS12-381 |
+| `bench-rp2350-m33` | ARM Cortex-M33, `thumbv8m.main-none-eabihf` | BN254 Groth16 |
+| `bench-rp2350-m33-bls12` | same | BLS12-381 Groth16 |
+| `bench-rp2350-m33-stark` | same | Winterfell STARK |
+| `bench-rp2350-rv32` | RISC-V Hazard3, `riscv32imac-unknown-none-elf` | BN254 Groth16 |
+| `bench-rp2350-rv32-bls12` | same | BLS12-381 Groth16 |
+| `bench-rp2350-rv32-stark` | same | Winterfell STARK |
 
-All four import the verifier + vectors crates. The crypto source is byte-for-byte identical between same-curve firmware on the two ISAs; only entry macros, linker scripts, and cycle-counter reads differ. That's the portability claim this layout is designed to test.
+All six import the verifier + vectors crates. The crypto source is byte-for-byte identical between same-system firmware on the two ISAs; only entry macros, linker scripts, and cycle-counter reads differ. That's the portability claim this layout is designed to test.
 
-## Verification algorithm (both curves)
+## Verification algorithm (Groth16 paths)
 
 Given a verifying key `(α, β, γ, δ, IC)`, a proof `(A, B, C)`, and public inputs `x[0..n]`:
 
@@ -40,9 +44,27 @@ For **BLS12-381**, same algebraic shape, through `pairing::MultiMillerLoop::mult
 
 Same algorithm, different backends. The API surface you write against in both cases is identical.
 
+## Verification algorithm (STARK path)
+
+Different shape entirely. There's no VK in the Groth16 sense — the AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant. Given:
+
+- A `winterfell::Proof` (FRI-based, Merkle-committed, Blake3-hashed)
+- `PublicInputs` for the AIR (Fibonacci's is just the claimed result)
+
+Verify does:
+
+1. Parse the proof into winterfell's structured form
+2. Verify the trace commitment Merkle tree
+3. Verify the constraint composition polynomial commitment
+4. Verify the FRI folding chain (13 layers at blowup 8, trace length 1024)
+5. Check the queries hit consistent values across all the above
+6. Final DEEP composition consistency check at the out-of-domain point
+
+Winterfell encapsulates all of this behind `winterfell::verify::<Air, HashFn, RandomCoin, VectorCommitment>(proof, pub_inputs, acceptable_options)`. `zkmcu-verifier-stark` is a thin wrapper that pins the hash (Blake3-256), vector commitment (binary Merkle tree), and minimum-security threshold (95-bit conjectured) for a specific AIR.
+
 ## Cross-library consistency
 
-Every committed test vector gets two independent stacks to agree on it before the bytes are trusted:
+Every committed test vector gets two or more independent stacks to agree on it before the bytes are trusted:
 
 **BN254 path**:
 1. Vector is generated by `ark-groth16` 0.5 on the host
@@ -54,12 +76,17 @@ Every committed test vector gets two independent stacks to agree on it before th
 2. `zkmcu-host-gen` serialises to EIP-2537 bytes and **immediately cross-checks** by parsing those bytes with zkcrypto `bls12_381` and running a hand-rolled Groth16 pairing check. If arkworks and zkcrypto disagree, the tool aborts before writing the `.bin` files.
 3. On the embedded side, `zkmcu-verifier-bls12` re-verifies the same bytes.
 
-**Semaphore path** (the real-world vector):
+**Semaphore path** (real-world BN254 vector):
 1. VK extracted from the vendored Semaphore 4.14.2 trusted setup
 2. Proof generated by snarkjs via `@semaphore-protocol/proof` under the production snark-artifacts
 3. Verified back through `zkmcu-verifier` on host, then again on-device through the firmware
 
-Passing means three (BLS12) or two (BN254) independent cryptographic stacks agree on both wire format and arithmetic. It's the main safety net against encoding drift.
+**STARK path**:
+1. Vector is produced by `winter-prover` from a host-side Fibonacci trace, under fixed `ProofOptions` with `FieldExtension::Quadratic`
+2. `zkmcu-host-gen` runs `zkmcu_verifier_stark::fibonacci::verify` on the proof bytes with `MinConjecturedSecurity(95)` **before** writing them to disk. If the prover's configured options don't meet 95-bit, generation aborts — the committed bytes are guaranteed to pass the production verifier.
+3. On the embedded side, `zkmcu-verifier-stark` re-verifies the same bytes.
+
+Passing means the two (or three) independent cryptographic stacks agree on wire format, arithmetic, and security parameters. It's the main safety net against encoding drift.
 
 ## Why `substrate-bn` (BN254)
 
@@ -75,26 +102,51 @@ Alternative considered: `ark-bn254`. Works fine, pulls in the whole arkworks gen
 - `no_std`-clean out of the gate with `default-features = false, features = ["groups", "pairings", "alloc"]`
 - All-zkcrypto dep closure (`ff`, `group`, `pairing`, `subtle`, `rand_core`). No `getrandom`, no `std` leakage
 - Stack-allocated `G2Prepared` keeps pairing-workspace heap usage down vs heap-allocated Fq12 polynomial workspaces
-- Scalar-oblivious G1 scalar mul — informally constant-time with respect to scalar Hamming weight (0.09 % variance across random scalars). Useful security-positive, even though CT is not formally verified
+- Scalar-oblivious G1 scalar mul — informally constant-time with respect to scalar Hamming weight (0.09 % variance across random scalars)
 
 A dep-fit spike is documented at `research/notebook/2026-04-22-bls12-381-dep-fit.md` in the repo — first build, zero warnings, zero patches needed.
+
+## Why winterfell (STARK)
+
+- `no_std` out of the gate with `default-features = false`. `concurrent` / `rayon` / `async` all gated behind non-default features that stay off.
+- Builds clean on both `thumbv8m.main-none-eabihf` and `riscv32imac-unknown-none-elf` with zero patches. Dep-fit confirmed in `research/notebook/2026-04-23-stark-prior-art.md`.
+- Separate `winter-prover` (std) and `winter-verifier` (no_std) halves let us pull only the verify side into firmware, keeping prover-only code out of the flash budget.
+- Pure-Rust Blake3 fallback on both embedded targets (no SIMD cross-compile needed).
+
+Alternatives considered: `ax-stark` (too early, not `no_std`-ready), `stone` (C++ only), rolling our own (unreasonable for phase 3). Winterfell's Fibonacci reference was the shortest path to a measurable first number.
+
+## Why a custom bump allocator
+
+`zkmcu-bump-alloc` exists because of a specific methodology finding documented on [Deterministic timing](/determinism/): winterfell's verify path makes ~400 `Vec` allocations, and a stock general-purpose allocator's free-list evolution introduces enough timing jitter (~0.25 % on Cortex-M33, ~0.46 % on Hazard3) to obscure the underlying crypto determinism.
+
+The bump allocator gives byte-identical allocator state between iterations (watermark reset after every verify), bringing variance to the 0.08 % silicon noise floor. It's:
+
+- a benchmark tool — confirms the crypto itself is deterministic
+- a diagnostic — isolates which fraction of total variance is allocator-induced
+- a generally useful `no_std` primitive — atomic CAS bump pointer, in-place realloc on top of the bump, watermark save/restore, `~200 lines`
+
+Not a production allocator — no-op `dealloc` means memory leaks to the watermark, which pushes the bench STARK firmware's heap to 384 KB. Production firmware should use `embedded-alloc::TlsfHeap` instead.
 
 ## Workspace layout at the repo root
 
 ```
 bindings/
 ├── crates/
-│   ├── zkmcu-verifier/          ← no_std BN254 verify
-│   ├── zkmcu-verifier-bls12/    ← no_std BLS12-381 verify
-│   ├── zkmcu-vectors/           ← no_std test-vector loader (both curves)
-│   ├── zkmcu-host-gen/          ← host-only arkworks CLI
-│   ├── bench-rp2350-m33/        ← Cortex-M33 firmware, BN254
-│   ├── bench-rp2350-m33-bls12/  ← Cortex-M33 firmware, BLS12-381
-│   ├── bench-rp2350-rv32/       ← Hazard3 firmware, BN254
-│   └── bench-rp2350-rv32-bls12/ ← Hazard3 firmware, BLS12-381
-├── benchmarks/runs/<date>-<slug>/   ← raw.log + result.toml per run
-├── research/                    ← Typst sources → PDFs (whitepaper, survey, reports)
-├── scripts/gen-semaphore-proof/ ← Bun + TS tool that produces the real Semaphore proof
-├── vendor/semaphore/            ← submodule with the upstream Semaphore source
-└── web/                         ← this site
+│   ├── zkmcu-verifier/           ← no_std BN254 verify
+│   ├── zkmcu-verifier-bls12/     ← no_std BLS12-381 verify
+│   ├── zkmcu-verifier-stark/     ← no_std winterfell STARK verify
+│   ├── zkmcu-vectors/            ← no_std test-vector loader (all systems)
+│   ├── zkmcu-host-gen/           ← host-only arkworks + winter-prover CLI
+│   ├── zkmcu-bump-alloc/         ← no_std bump allocator with watermark reset
+│   ├── bench-rp2350-m33/         ← Cortex-M33 firmware, BN254
+│   ├── bench-rp2350-m33-bls12/   ← Cortex-M33 firmware, BLS12-381
+│   ├── bench-rp2350-m33-stark/   ← Cortex-M33 firmware, STARK
+│   ├── bench-rp2350-rv32/        ← Hazard3 firmware, BN254
+│   ├── bench-rp2350-rv32-bls12/  ← Hazard3 firmware, BLS12-381
+│   └── bench-rp2350-rv32-stark/  ← Hazard3 firmware, STARK
+├── benchmarks/runs/<date>-<slug>/    ← raw.log + result.toml per run
+├── research/                     ← Typst sources → PDFs (whitepaper, survey, reports)
+├── scripts/gen-semaphore-proof/  ← Bun + TS tool that produces the real Semaphore proof
+├── vendor/semaphore/             ← submodule with the upstream Semaphore source
+└── web/                          ← this site
 ```

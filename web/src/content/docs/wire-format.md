@@ -1,9 +1,15 @@
 ---
 title: Wire formats
-description: EIP-197 (BN254) and EIP-2537 (BLS12-381) binary encodings used by zkmcu's parsers.
+description: EIP-197 (BN254), EIP-2537 (BLS12-381), and winterfell 0.13 (STARK) binary encodings used by zkmcu's parsers.
 ---
 
-zkmcu uses Ethereum's two canonical Groth16 wire formats: [EIP-197](https://eips.ethereum.org/EIPS/eip-197) for BN254 and [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) for BLS12-381. Any Ethereum-compatible Groth16 prover emits bytes one of the two verifier crates accepts without translation.
+zkmcu uses three wire formats, one per supported proof system:
+
+- **[EIP-197](https://eips.ethereum.org/EIPS/eip-197)** for BN254 Groth16 — Ethereum's canonical precompile format
+- **[EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)** for BLS12-381 Groth16 — Ethereum's newer BLS precompile format
+- **winterfell 0.13 `Proof::to_bytes()`** for Goldilocks STARKs — winterfell's own serialisation
+
+Any Ethereum-compatible Groth16 prover emits bytes one of the two Groth16 verifier crates accepts without translation. Any winterfell-based STARK prover emits bytes `zkmcu-verifier-stark::parse_proof` accepts, provided the prover and verifier agree on the AIR definition.
 
 ## Summary
 
@@ -104,11 +110,54 @@ count(u32 LE) ‖ input[count](Fr)              ← public inputs
 
 Field elements are **big-endian** on both curves (matching Ethereum precompile conventions). Length prefixes (`num_ic`, `count`) are **little-endian `u32`**. The `u32` length prefix gives 4 GB of headroom against realistic input sizes, but the parsers always bound-check against the real buffer length before trusting it — see [security](/security/#dos-via-unbounded-allocation).
 
-## Porting between the two
+## Winterfell STARK
 
-Common pitfalls when adapting code from `zkmcu-verifier` to `zkmcu-verifier-bls12`:
+The STARK wire format is winterfell's own `Proof::to_bytes()` / `Proof::from_bytes()` pair — not an Ethereum-standardised format. It's the serialised form of winterfell's internal `Proof` struct, carrying the trace commitment, constraint commitment, FRI layer commitments, query responses, and out-of-domain evaluations.
+
+### Proof structure (conceptual)
+
+```text
+  header + context (~200 B)          ← trace length, AIR metadata, options
+  trace Merkle root (32 B)
+  constraint Merkle root (32 B)
+  OOD trace evaluations              ← base-field or F_{p^2} depending on extension
+  OOD constraint evaluations
+  FRI layer commitments              ← ~13 roots at blowup 8, trace length 1024
+  FRI query proofs                   ← 32 queries × Merkle auth path per layer
+  FRI remainder polynomial
+```
+
+Total size depends on AIR, trace length, blowup, query count, and field-extension choice. For the reference Fibonacci AIR at $N = 1024$, blowup 8, 32 queries:
+
+| Config | Security | Proof size |
+|---|---:|---:|
+| `FieldExtension::None` | 63-bit conjectured | 25,332 B |
+| `FieldExtension::Quadratic` | **95-bit conjectured** *(production default)* | **30,888 B** |
+| `FieldExtension::Cubic` | ~128-bit conjectured | ~40 KB (est.) |
+
+The jump from None to Quadratic only grows the proof by ~22 % because FRI layer evaluations are ~half the proof by weight and doubling them is partly offset by auth-path bytes that stay the same.
+
+### Public inputs
+
+The Fibonacci AIR's public input is a single Goldilocks field element (the claimed result `Fib(2N) mod p`), encoded as 8 bytes little-endian `u64`. For custom AIRs, public-input encoding is whatever the AIR's `ToElements` impl defines — byte-level layout is the application's responsibility.
+
+### No VK
+
+STARK verify doesn't have a verifying key in the Groth16 sense. The AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant — it's compiled into the verifier binary, not passed at runtime. This is why `zkmcu-verifier-stark` has no `parse_vk` function.
+
+## Porting between formats
+
+Common pitfalls when adapting code across verifier crates:
+
+**BN254 ↔ BLS12-381 (Groth16 ↔ Groth16)**:
 
 1. **Fp2 order flip**: `(c1, c0)` on BN254 vs `(c0, c1)` on BLS12-381. Most integration bugs land here.
 2. **Fp size**: 32 bytes on BN254 vs 64 bytes on BLS12-381. Every size constant doubles, but the 16-byte padding is unique to EIP-2537.
 3. **Identity encoding**: all-zero bytes on both, so this one transfers directly.
 4. **`Fr` size**: both curves use a 32-byte Fr. Scalar fields are within a bit of each other (255-bit BLS12 vs 254-bit BN254) — no format changes needed for public inputs.
+
+**Groth16 ↔ STARK**:
+
+1. **No VK on STARK side** — the AIR compiled into the verifier binary replaces the role the VK plays for Groth16. This means STARK upgrades require re-flashing firmware; Groth16 upgrades can hot-swap the VK at runtime.
+2. **Proof size differs by 50-100×** — 256 B vs 30 KB. If your transport was sized for Groth16 payloads, it will need rework for STARK.
+3. **Public-input encoding is AIR-specific for STARK** — the 4-byte LE count + fixed-size Fr scheme used by both Groth16 crates doesn't apply; whatever your AIR's `ToElements` impl says is the format.

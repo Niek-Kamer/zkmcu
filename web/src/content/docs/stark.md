@@ -1,0 +1,114 @@
+---
+title: STARK verify on a microcontroller
+description: Winterfell-generated Fibonacci STARK proof at 95-bit conjectured security, verified on a $7 Raspberry Pi Pico 2 W in 74.7 ms with 100 KB total RAM.
+---
+
+import { Aside, Badge, CardGrid, Card } from '@astrojs/starlight/components';
+
+<div class="hero-badges">
+  <Badge text="winterfell 0.13" variant="note" />
+  <Badge text="95-bit conjectured security" variant="note" />
+  <Badge text="74.7 ms on Cortex-M33" variant="success" />
+  <Badge text="100 KB total RAM" variant="success" />
+  <Badge text="variance 0.08 %" variant="tip" />
+</div>
+
+`zkmcu-verifier-stark` is a `no_std` wrapper around winterfell 0.13 that exposes a zkmcu-shaped verify API for Goldilocks-field STARK proofs. First verified on silicon on 2026-04-23: **74.7 ms on Cortex-M33 @ 150 MHz, 112 ms on Hazard3 RV32**, 100 KB total RAM, variance 0.08 % — every property that matters for a production hardware-wallet-class deployment.
+
+## Why STARK
+
+Groth16 proofs are tiny (256-512 bytes) but expensive to verify (1-2 seconds on an MCU). STARK proofs are bigger (25-31 KB) but verify in ~75 ms. Different tradeoff, different workloads.
+
+<CardGrid>
+  <Card title="When Groth16 wins" icon="seti:lock">
+    Bandwidth-bound transport. LoRa, NFC, low-bandwidth BLE. 256 B on the wire fits a single radio frame; 30 KB doesn't. Pay the verify-time cost on the receiver.
+  </Card>
+  <Card title="When STARK wins" icon="rocket">
+    Verify-time-bound receiver. Per-packet verification, hot loops, latency budgets under 100 ms. A MCU that needs to verify a proof 10 times per second can't afford Groth16's per-verify cost.
+  </Card>
+  <Card title="When both win" icon="approve-check-circle">
+    Hardware wallets. USB or BLE bandwidth is ample (kB/s, not B/s), verify latency barely matters at human action speed (one per transaction confirmation). Ship both and let the prover pick.
+  </Card>
+  <Card title="Post-quantum angle" icon="puzzle">
+    STARK soundness doesn't depend on elliptic-curve discrete log or pairing hardness. Blake3 hash-based construction is conjectured post-quantum secure. Groth16 is not.
+  </Card>
+</CardGrid>
+
+## What "production security" means here
+
+The headline 74.7 ms number is measured at the configuration that's actually defensible:
+
+- **Fibonacci AIR** with `N = 1024` trace steps (small, representative)
+- **`FieldExtension::Quadratic`** over Goldilocks → **95-bit conjectured STARK security**
+- **`MinConjecturedSecurity(95)`** enforced by the verifier — the prover *must* submit options that meet this bar, otherwise verify rejects
+- **Blake3-256** hash, **binary Merkle tree** vector commitment
+- **TlsfHeap** (O(1) two-level segregated fit) as the global allocator
+
+The 95-bit figure matches winterfell's own Fibonacci reference configuration. A lower bound like 63-bit (what `FieldExtension::None` gives) verifies in 43 ms but isn't production security; that config exists in the repo as `phase 3.1` for comparison. Higher bounds via cubic extension or grinding are Phase 3.3 candidates.
+
+## The numbers
+
+| | Cortex-M33 | Hazard3 RV32 |
+|-|---:|---:|
+| Verify time (median) | **74.7 ms** | **112.4 ms** |
+| Iteration-to-iteration std-dev | 0.081 % | 0.110 % |
+| Iteration-to-iteration IQR | 0.113 % | 0.191 % |
+| Peak heap | 93.5 KB | ~93 KB (est.) |
+| Peak stack | 5.6 KB | 5.5 KB |
+| **Total RAM** | **~100 KB** | **~100 KB** |
+| All iterations `ok=true` | yes | yes |
+
+Allocator: `embedded-alloc::TlsfHeap`. Clone-hoisted pattern (proof clone outside the timed window so the cycle span reflects pure verify work). Full raw data: [`2026-04-24-m33-stark-fib-1024-q-tlsf`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-24-m33-stark-fib-1024-q-tlsf) and [`rv32` counterpart](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-24-rv32-stark-fib-1024-q-tlsf).
+
+<Aside type="note" title="Why std-dev not min-max">
+  Iteration-to-iteration timing is dominated by a tight core distribution plus occasional outliers (2-3 per ~25 iterations) that look like cache or USB-peripheral events, not allocator jitter. Min-max is sensitive to those; std-dev and IQR aren't. The 0.08 % std-dev number is the "silicon noise floor" that allocation-free pairing-based verifiers on this same chip produce.
+</Aside>
+
+## The 128 KB SRAM tier
+
+Before phase-3 measurements, the worry was whether STARK verify could fit alongside BN254 Groth16 (97 KB total) and BLS12-381 Groth16 (99 KB total) under the 128 KB hardware-wallet SRAM tier. It does:
+
+| Verifier family | Total RAM on M33 | Fits 128 KB? |
+|---|---:|:---:|
+| BN254 Groth16 | ~97 KB | ✓ |
+| BLS12-381 Groth16 | ~99 KB | ✓ |
+| **STARK (TlsfHeap, 95-bit)** | **~100 KB** | **✓** |
+
+All three verifier families now sit on the same silicon tier. nRF52832, STM32F405, Ledger ST33K1M5, Infineon SLE78 — every hardware-wallet-grade chip on the market can run any of the three.
+
+## Deterministic timing
+
+The STARK verify path allocates ~400 `Vec`s internally for FRI state, auth-path parsing, composition polynomial scratch. With the stock `LlffHeap` allocator, the free-list state evolves iteration-to-iteration and timing variance lands around 0.25 % on M33. For side-channel-sensitive deployments (hardware wallets), that's noisy.
+
+Swapping to `TlsfHeap` — O(1) two-level segregated fit — brings variance down to **0.08 %**, the silicon noise floor. Verify path becomes timing-deterministic to the level of cache and USB-peripheral noise, which is as good as it gets without a hand-rolled constant-time implementation.
+
+Full methodology: [Deterministic timing](/determinism/).
+
+## Reproducing end-to-end
+
+```bash
+# One-time: generate the committed test vector via winter-prover.
+cargo run -p zkmcu-host-gen --release -- stark
+
+# Verify on the host (parse + winterfell verify, cross-checks before disk).
+cargo test -p zkmcu-verifier-stark --release
+
+# Flash + bench on hardware.
+cargo build -p bench-rp2350-m33-stark --release
+scp target/thumbv8m.main-none-eabihf/release/bench-rp2350-m33-stark \
+    <pi-host>:/tmp/bench-m33-stark.elf
+
+# On the Pi 5 with the Pico in BOOTSEL:
+picotool load -v -x -t elf /tmp/bench-m33-stark.elf
+cat /dev/ttyACM0
+```
+
+The Fibonacci AIR + public input is deterministic under fixed prover options, so the committed `proof.bin` (30,888 B) is byte-reproducible. If your regen produces different bytes, the winterfell-version pin has drifted.
+
+## What this does *not* claim
+
+- **Not a claim that Fibonacci is a realistic workload.** It's the STARK hello-world. Real workloads (Miden VM trace verify, RISC-V zkVM proof aggregation, Cairo) will push verify cost and heap peak substantially higher. We expect `N = 2^16` traces to take 150-300 ms and push heap past 150 KB. Phase 4 territory.
+- **Not a claim that `embedded-alloc::TlsfHeap` is the fastest option.** A hand-tuned bump allocator with watermark reset gives 67.9 ms median (phase 3.2.y benchmark) but needs 384 KB arena — too big for the 128 KB tier. TlsfHeap is the best-of-both production pick; raw bump is a measurement tool.
+- **Not a claim that winterfell's internal allocation pattern is optimal.** 400 `Vec` allocations per verify is more than a hand-rolled STARK verifier would do. Upstream contribution to add a `&mut [u8]` scratch-buffer API would eliminate runtime alloc entirely — Phase 4 engineering.
+
+See [Deterministic timing](/determinism/) for the full story on the allocator sensitivity and the cross-ISA implications, and [Security](/security/) for the threat model.

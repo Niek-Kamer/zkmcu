@@ -11,7 +11,13 @@ An attacker controls the proof bytes, the public-input bytes, and sometimes the 
 2. **Denial of service** — make the verifier panic, hang, OOM, or reset the host device
 3. **Malleability** — find two different encodings of the same logical input to break identity-based invariants (nullifiers, replay tags, Merkle leaves)
 
-zkmcu targets all three. The threat model is identical for both the BN254 (`zkmcu-verifier`) and BLS12-381 (`zkmcu-verifier-bls12`) verifier crates — same parser shape, same DoS-hardening, same strict canonical-encoding checks. EIP-2537 adds one additional check not present in EIP-197: the 16-byte leading-zero padding on every `Fp` element is verified exact-zero, rejecting any non-zero bits there as `Error::InvalidFp`. Without that check an attacker could flip padding bits and the proof would still decode to the same curve point — a trivial malleability vector closed at parse time.
+zkmcu targets all three. The threat model is shared across all three verifier crates — `zkmcu-verifier` (BN254 Groth16), `zkmcu-verifier-bls12` (BLS12-381 Groth16), and `zkmcu-verifier-stark` (winterfell STARK). Same parser shape, same DoS-hardening, same strict canonical-encoding checks where they apply.
+
+Proof-system-specific notes:
+
+- **BN254**: enforces strict `Fr < r` canonical encoding (stricter than `substrate-bn`'s default which silently reduces mod `r`). Matters for nullifier-style applications.
+- **BLS12-381**: enforces that the 16-byte leading-zero padding on every `Fp` element is exact-zero, rejecting any non-zero bits as `Error::InvalidFp`. Without that check an attacker could flip padding bits and the proof would still decode to the same curve point — a trivial malleability vector closed at parse time.
+- **STARK**: enforces `MinConjecturedSecurity(95)` at the verifier level — a prover submitting a proof with weaker options is rejected even if the underlying crypto verifies. This prevents downgrade attacks where an attacker submits a 63-bit-secure proof in place of a 95-bit one.
 
 ## What's tested
 
@@ -54,14 +60,31 @@ Patched in v0.1.0 with checked arithmetic plus buffer-length validation before a
 
 Patched in v0.1.0 with a strict `< r` check in `read_fr_at` before delegating to `substrate-bn`.
 
+## Timing properties
+
+Remote-timing-oracle resistance is a property zkmcu actively measures, not one it tries to formally prove. See [Deterministic timing](/determinism/) for the full methodology. The short version:
+
+| Verifier | Std-dev variance (M33) | Side-channel posture |
+|---|---:|---|
+| BN254 Groth16 | ~0.05 % | Low allocator activity, naturally tight |
+| BLS12-381 Groth16 | ~0.05 % | Same as BN254 |
+| **STARK (TlsfHeap)** | **0.08 %** | Deterministic allocator brings variance to silicon floor |
+| STARK (LlffHeap) | ~0.25 % | Allocator noise obscures crypto timing |
+
+Under the recommended `TlsfHeap` allocator config, all three verifiers produce sub-0.1 % iteration-to-iteration variance. That's below the noise floor of any non-lab-grade timing oracle (USB / BLE / network transports have millisecond-or-worse resolution). *This is not a claim of formal constant-time execution* — it's a claim that the observable timing channel in a realistic deployment is indistinguishable from silicon noise.
+
+For applications where secret data flows into the verify code path (not the usual zkmcu use case), the picture changes — `substrate-bn` and `bls12_381` both have scalar-dependent code paths that a lab-grade attacker with full-cycle-precision measurement could exploit. zkmcu's threat model doesn't cover that case.
+
 ## Explicit out-of-scope for v0.1.0
 
 Documented as not-yet-validated, not quietly skipped:
 
-- **Constant-time execution.** `substrate-bn` is not constant-time. Verify duration varies observably with public-input Hamming weight (see the [scaling benchmark](/benchmarks/)). Acceptable for verify-only threat models where the proof and public inputs are already public. **Not acceptable if secret data ever flows into the verify code path.**
+- **Lab-grade constant-time execution.** As above: observable-to-remote-attacker timing is in the noise floor, but full-cycle CT would require a whole-verifier audit across winterfell's internal code paths (for STARK) and `substrate-bn` / `bls12_381` (for Groth16). Acceptable for verify-only threat models where the proof and public inputs are already public. **Not acceptable if secret data ever flows into the verify code path.**
 - **Power analysis / EM leakage.** Unmeasured. Requires a ChipWhisperer-class lab setup. Treated as a separate follow-up project.
-- **G2 subgroup membership.** Whether `substrate-bn`'s pairing routine rejects points on the G2 twist that are not in the prime-order subgroup is trusted from the upstream library and untested by zkmcu directly. Historically a bug class in BN254 precompile implementations. On the audit list.
-- **Trusted VK assumption.** An adversary who controls the VK can in principle engineer the pairing check to accept a forged proof. zkmcu assumes the VK is trusted — baked into firmware at provisioning time, or loaded from a trusted channel. If your use case loads the VK dynamically from an untrusted source, that is a separate threat model and zkmcu does not defend against it.
+- **G2 subgroup membership (Groth16).** Whether `substrate-bn`'s and `bls12_381`'s pairing routines reject points on the G2 twist that are not in the prime-order subgroup is trusted from the upstream libraries and untested by zkmcu directly. Historically a bug class in BN254 precompile implementations. On the audit list.
+- **STARK security conjecture.** 95-bit "conjectured" security relies on the list-decoding bound assumed by most deployed STARK systems. Provable security is lower by a factor of 2 queries. Acceptable in practice, but worth documenting as "conjectured" not "proven".
+- **Trusted VK assumption (Groth16).** An adversary who controls the VK can in principle engineer the pairing check to accept a forged proof. zkmcu assumes the VK is trusted — baked into firmware at provisioning time, or loaded from a trusted channel. If your use case loads the VK dynamically from an untrusted source, that is a separate threat model and zkmcu does not defend against it.
+- **Trusted AIR assumption (STARK).** Analogous to the Groth16 VK assumption — the AIR definition compiled into the verifier binary is the integrity anchor. An adversary who changes the AIR source before compilation can build a verifier that accepts proofs it shouldn't. STARK upgrades therefore require signed firmware updates, not runtime configuration.
 
 ## Reporting a vulnerability
 

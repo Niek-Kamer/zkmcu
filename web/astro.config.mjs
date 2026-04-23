@@ -9,7 +9,7 @@ export default defineConfig({
 		starlight({
 			title: 'zkmcu',
 			description:
-				'no_std Rust family of Groth16 SNARK verifiers for ARM Cortex-M and RISC-V microcontrollers. Supports BN254 (EIP-197) and BLS12-381 (EIP-2537).',
+				'no_std Rust family of SNARK and STARK verifiers for ARM Cortex-M and RISC-V microcontrollers. BN254, BLS12-381, and winterfell STARK — all under 128 KB SRAM.',
 			social: [
 				{
 					icon: 'github',
@@ -23,8 +23,15 @@ export default defineConfig({
 				{ label: 'Getting started', link: '/getting-started/' },
 				{ label: 'Architecture', link: '/architecture/' },
 				{ label: 'Wire formats', link: '/wire-format/' },
-				{ label: 'Benchmarks', link: '/benchmarks/' },
-				{ label: 'Semaphore (real-world)', link: '/semaphore/' },
+				{
+					label: 'On silicon',
+					items: [
+						{ label: 'STARK (75 ms, 100 KB)', link: '/stark/' },
+						{ label: 'Semaphore (real-world)', link: '/semaphore/' },
+						{ label: 'Benchmarks', link: '/benchmarks/' },
+						{ label: 'Deterministic timing', link: '/determinism/' },
+					],
+				},
 				{ label: 'Security', link: '/security/' },
 			],
 			editLink: {
