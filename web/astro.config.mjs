@@ -9,7 +9,7 @@ export default defineConfig({
 		starlight({
 			title: 'zkmcu',
 			description:
-				'no_std Rust Groth16/BN254 verifier for ARM Cortex-M and RISC-V microcontrollers.',
+				'no_std Rust family of Groth16 SNARK verifiers for ARM Cortex-M and RISC-V microcontrollers. Supports BN254 (EIP-197) and BLS12-381 (EIP-2537).',
 			social: [
 				{
 					icon: 'github',
@@ -22,8 +22,9 @@ export default defineConfig({
 				{ label: 'Home', link: '/' },
 				{ label: 'Getting started', link: '/getting-started/' },
 				{ label: 'Architecture', link: '/architecture/' },
-				{ label: 'Wire format', link: '/wire-format/' },
+				{ label: 'Wire formats', link: '/wire-format/' },
 				{ label: 'Benchmarks', link: '/benchmarks/' },
+				{ label: 'Semaphore (real-world)', link: '/semaphore/' },
 				{ label: 'Security', link: '/security/' },
 			],
 			editLink: {

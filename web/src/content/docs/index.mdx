@@ -1,15 +1,19 @@
 ---
 title: zkmcu
-description: no_std Rust Groth16/BN254 verifier for ARM Cortex-M and RISC-V microcontrollers.
+description: no_std Rust family of Groth16 SNARK verifiers for ARM Cortex-M and RISC-V microcontrollers. Supports BN254 (EIP-197) and BLS12-381 (EIP-2537).
 hero:
   tagline: |
-    A no_std Rust Groth16/BN254 verifier for ARM Cortex-M and RISC-V microcontrollers.
-    Same source runs on both ISAs. Measured directly on silicon.
+    no_std Rust family of Groth16 SNARK verifiers for microcontrollers.
+    BN254 and BLS12-381, same parser shape. Measured on a $7 Raspberry Pi Pico 2 W.
   actions:
     - text: Get started
       link: /getting-started/
       icon: right-arrow
       variant: primary
+    - text: Real-world proof (Semaphore)
+      link: /semaphore/
+      icon: rocket
+      variant: secondary
     - text: View on GitHub
       link: https://github.com/Niek-Kamer/zkmcu
       icon: external
@@ -21,71 +25,76 @@ import { Card, CardGrid, Code, Aside, Badge } from '@astrojs/starlight/component
 <div class="hero-badges">
   <Badge text="v0.1.0" variant="success" />
   <Badge text="no_std Rust" variant="note" />
+  <Badge text="BN254 + BLS12-381" variant="note" />
   <Badge text="MIT OR Apache-2.0" variant="tip" />
-  <Badge text="256 B constant-size proof" variant="note" />
 </div>
 
 ## In five lines
 
-Bring in the crate, feed three EIP-197 byte buffers, get a `bool`.
+Bring in one of the two verifier crates, feed three byte buffers, get a `bool`.
 
 ```rust
-use zkmcu_verifier::verify_bytes;
+use zkmcu_verifier::verify_bytes;                   // BN254 / EIP-197
+// or
+use zkmcu_verifier_bls12::verify_bytes;             // BLS12-381 / EIP-2537
 
 let ok = verify_bytes(&vk_bytes, &proof_bytes, &public_bytes)?;
 assert!(ok, "proof failed to verify");
 ```
 
-That's it for the one-shot API. See [Getting started](/getting-started/) for the reusable parser variant and the embedded-target integration.
+Both crates expose the same five-function API (`parse_vk`, `parse_proof`, `parse_public`, `verify`, `verify_bytes`). Different curve, different wire format, same shape. See [Getting started](/getting-started/) for the reusable parser variant and the embedded-target integration.
 
 ## Measured on silicon
 
 <CardGrid>
-  <Card title="962 ms" icon="rocket">
-    Full Groth16 / BN254 verify on the Raspberry Pi Pico 2 W's Cortex-M33 core at 150 MHz.
+  <Card title="1 176 ms" icon="rocket">
+    **Real Semaphore v4 proof** verified on Cortex-M33 at 150 MHz. Same VK the Ethereum Semaphore precompile accepts. [More](/semaphore/)
   </Card>
-  <Card title="112 KB" icon="document">
-    Total RAM used during verification. 96 KB heap arena, 16 KB peak stack.
+  <Card title="962 ms" icon="approve-check-circle">
+    Synthetic BN254 Groth16 verify (1 public input). Baseline measurement. [Benchmarks](/benchmarks/)
   </Card>
-  <Card title="0.06 %" icon="approve-check-circle">
-    Iteration-to-iteration variance. Deterministic timing on an in-order pipeline.
+  <Card title="2 015 ms" icon="puzzle">
+    BLS12-381 Groth16 verify on the same chip. First public no_std BLS12 verifier on Cortex-M.
   </Card>
-  <Card title="2 ISAs" icon="puzzle">
-    One Rust source tree. Runs on ARM Cortex-M33 and RISC-V Hazard3 from the same code.
+  <Card title="≈ 97 KB" icon="document">
+    Total RAM during verify, both curves. Fits the 128 KB SRAM class of shipping hardware-wallet silicon.
   </Card>
 </CardGrid>
 
 <Aside type="note" title="Why this matters">
-  Every current ZK verifier ships for phones or servers. Hardware wallets, offline credential validators, IoT attestation tags — none of them run SNARK verification on-device today. zkmcu closes that gap on any 128 KB SRAM-class MCU.
+  Every current SNARK verifier ships for phones or servers. Hardware wallets, offline credential validators, IoT attestation tags — nothing runs SNARK verification on-device today because no open-source no_std verifier existed. zkmcu closes that gap on any 128 KB SRAM-class MCU, for both Ethereum's BN254 precompile format and BLS12-381's EIP-2537 format.
 </Aside>
 
 ## What it's for
 
 <CardGrid>
   <Card title="Hardware wallets" icon="laptop">
-    Local ZK verification without trusting the USB host. Fits the 128 KB SRAM class: Ledger ST33, Infineon SLE78, nRF52832, STM32F405.
+    Local ZK verification on the secure element, so a compromised phone can't trick the hw wallet into rubber-stamping a bogus Semaphore / Tornado / Aztec-style action.
   </Card>
   <Card title="Offline credentials" icon="seti:lock">
-    Transit turnstiles, festivals, borders. No server round-trip needed to verify a privacy-preserving credential.
+    Transit turnstiles, festivals, borders. Verify a privacy-preserving credential fully offline, no server round-trip.
   </Card>
   <Card title="IoT attestation" icon="linux">
-    Small devices verifying each other's provenance and claims directly, without a cloud relay.
+    Small devices verifying each other's SNARK-attested provenance directly, without a cloud relay in the loop.
+  </Card>
+  <Card title="Cross-chain proofs" icon="external">
+    BLS12-381 sync-committee proofs, Filecoin PoSt / PoRep, Aleo proofs — anything on a BN254 or BLS12-381 Groth16 stack.
   </Card>
 </CardGrid>
 
 ## Where to next
 
 <CardGrid>
-  <Card title="Getting started" icon="rocket">
-    Add the crate, write a five-line verify. [Start here](/getting-started/).
+  <Card title="Semaphore real-world proof" icon="rocket">
+    Production Ethereum-Semaphore VK + snarkjs-generated proof, verified on a $7 MCU in 1.18 s. [See it](/semaphore/)
+  </Card>
+  <Card title="Getting started" icon="right-arrow">
+    Add one of the two crates, write a five-line verify. [Start here](/getting-started/)
   </Card>
   <Card title="Architecture" icon="open-book">
-    How the crates fit together and why `substrate-bn` is the backend. [Read more](/architecture/).
+    How the four library + four firmware crates fit together. [Read more](/architecture/)
   </Card>
   <Card title="Benchmarks" icon="bars">
-    Directly-measured numbers on silicon. No emulation. [See results](/benchmarks/).
-  </Card>
-  <Card title="Security" icon="warning">
-    Threat model, what's tested, what's explicitly not yet. [Review scope](/security/).
+    Directly-measured numbers on silicon, both curves, both cores. [See results](/benchmarks/)
   </Card>
 </CardGrid>

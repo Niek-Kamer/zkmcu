@@ -11,7 +11,7 @@ An attacker controls the proof bytes, the public-input bytes, and sometimes the 
 2. **Denial of service** — make the verifier panic, hang, OOM, or reset the host device
 3. **Malleability** — find two different encodings of the same logical input to break identity-based invariants (nullifiers, replay tags, Merkle leaves)
 
-zkmcu targets all three.
+zkmcu targets all three. The threat model is identical for both the BN254 (`zkmcu-verifier`) and BLS12-381 (`zkmcu-verifier-bls12`) verifier crates — same parser shape, same DoS-hardening, same strict canonical-encoding checks. EIP-2537 adds one additional check not present in EIP-197: the 16-byte leading-zero padding on every `Fp` element is verified exact-zero, rejecting any non-zero bits there as `Error::InvalidFp`. Without that check an attacker could flip padding bits and the proof would still decode to the same curve point — a trivial malleability vector closed at parse time.
 
 ## What's tested
 
