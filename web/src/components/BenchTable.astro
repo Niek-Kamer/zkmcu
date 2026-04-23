@@ -1,0 +1,180 @@
+---
+// Structured renderer for cross-target benchmark comparisons. Numbers
+// right-align via tabular-nums; units render smaller + dimmed so the digits
+// scan vertically. Fixed column widths so long labels don't starve numeric
+// columns — the failure mode plain HTML tables have.
+
+export type Cell = { us: number };
+
+export type Row = {
+	label: string;
+	sublabel?: string;
+	emphasize?: boolean;
+	cells: Cell[];
+	proofBytes: number;
+};
+
+export interface Props {
+	targets: string[];
+	rows: Row[];
+	showRatio?: boolean;
+}
+
+const { targets, rows, showRatio = true } = Astro.props;
+
+const fmtMs = (us: number) =>
+	(us / 1000).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+const fmtProof = (bytes: number) =>
+	bytes >= 1000 ? `${(bytes / 1000).toFixed(1)} KB` : `${bytes} B`;
+---
+
+<table class="bench-table">
+	<thead>
+		<tr>
+			<th class="label-col">Verify</th>
+			{targets.map((t) => <th class="num-col">{t}</th>)}
+			{showRatio && targets.length >= 2 && (
+				<th class="num-col ratio-col">{targets[1]} / {targets[0]}</th>
+			)}
+			<th class="num-col proof-col">Proof size</th>
+		</tr>
+	</thead>
+	<tbody>
+		{rows.map((row) => (
+			<tr class:list={[{ emphasis: row.emphasize }]}>
+				<td class="label-col">
+					<span class="row-label">{row.label}</span>
+					{row.sublabel && <span class="row-sub">{row.sublabel}</span>}
+				</td>
+				{row.cells.map((cell) => (
+					<td class="num-col">
+						<span class="n">{fmtMs(cell.us)}</span><span class="u">ms</span>
+					</td>
+				))}
+				{showRatio && row.cells.length >= 2 && (
+					<td class="num-col ratio-col">
+						<span class="n">{(row.cells[1].us / row.cells[0].us).toFixed(2)}</span><span class="u">×</span>
+					</td>
+				)}
+				<td class="num-col proof-col">
+					<span class="n">{fmtProof(row.proofBytes)}</span>
+				</td>
+			</tr>
+		))}
+	</tbody>
+</table>
+
+<style>
+	.bench-table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 8px;
+		clip-path: inset(0 round 8px);
+		font-size: 0.95em;
+		font-variant-numeric: tabular-nums;
+		margin-block: 1.25rem;
+	}
+
+	.bench-table thead th {
+		background: var(--sl-color-gray-6);
+		padding: 0.75rem 1rem;
+		font-weight: 600;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		letter-spacing: -0.005em;
+		text-align: right;
+	}
+
+	.bench-table thead th.label-col {
+		text-align: left;
+	}
+
+	.bench-table .label-col {
+		width: auto;
+	}
+
+	.bench-table .num-col {
+		width: 7.5rem;
+		white-space: nowrap;
+	}
+
+	.bench-table .ratio-col {
+		width: 6rem;
+	}
+
+	.bench-table .proof-col {
+		width: 7rem;
+	}
+
+	.bench-table thead .num-col {
+		font-size: 0.88em;
+		letter-spacing: 0.01em;
+	}
+
+	.bench-table tbody td {
+		padding: 0.7rem 1rem;
+		border-top: 1px solid var(--sl-color-gray-6);
+		vertical-align: baseline;
+		text-align: right;
+	}
+
+	.bench-table tbody td.label-col {
+		text-align: left;
+	}
+
+	.bench-table tbody tr:first-child td {
+		border-top: none;
+	}
+
+	.bench-table tbody tr {
+		transition: background-color 0.12s ease;
+	}
+
+	.bench-table tbody tr:hover {
+		background: color-mix(in srgb, var(--sl-color-accent) 7%, transparent);
+	}
+
+	.bench-table .row-label {
+		display: block;
+		color: var(--sl-color-text);
+	}
+
+	.bench-table tr.emphasis .row-label {
+		font-weight: 600;
+		color: var(--sl-color-accent-high);
+	}
+
+	:root[data-theme='light'] .bench-table tr.emphasis .row-label {
+		color: var(--sl-color-accent);
+	}
+
+	.bench-table .row-sub {
+		display: block;
+		color: var(--sl-color-gray-3);
+		font-size: 0.85em;
+		margin-top: 0.15rem;
+	}
+
+	.bench-table .n {
+		font-family: var(--sl-font-system-mono);
+		font-weight: 500;
+	}
+
+	.bench-table tr.emphasis .n {
+		font-weight: 600;
+		color: var(--sl-color-accent-high);
+	}
+
+	:root[data-theme='light'] .bench-table tr.emphasis .n {
+		color: var(--sl-color-accent);
+	}
+
+	.bench-table .u {
+		display: inline-block;
+		margin-left: 0.25em;
+		color: var(--sl-color-gray-3);
+		font-size: 0.85em;
+	}
+</style>

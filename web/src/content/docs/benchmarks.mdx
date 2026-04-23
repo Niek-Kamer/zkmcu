@@ -3,18 +3,58 @@ title: Benchmarks
 description: Directly-measured performance numbers from the Raspberry Pi Pico 2 W. Three verifier families, two ISAs, three allocator strategies.
 ---
 
+import BenchTable from '../../components/BenchTable.astro';
+import { us, proofBytes } from '../../lib/benchmarks';
+
 All numbers measured on-device via USB-CDC serial output. No emulation, no extrapolation. Full per-run data (raw serial logs + structured TOML + observations) lives under [`benchmarks/runs/`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs) in the repo.
 
 ## Headline, all verifier families
 
 Raspberry Pi Pico 2 W @ 150 MHz, production allocator configs (LlffHeap for Groth16, TlsfHeap for STARK), cross-ISA comparison:
 
-| Verify | Cortex-M33 | Hazard3 RV32 | RV32 / M33 | Proof size |
-|---|---:|---:|---:|---:|
-| **STARK Fibonacci-1024**, 95-bit conjectured | **75 ms** | 112 ms | 1.51× | 30.9 KB |
-| Groth16 / BN254, 1 public input (`square`) | 962 ms | 1,341 ms | 1.39× | 256 B |
-| **Groth16 / BN254, real Semaphore depth-10** (4 public inputs) | **1,176 ms** | 1,564 ms | 1.33× | 256 B |
-| Groth16 / BLS12-381, 1 public input (`square`) | 2,015 ms | 5,151 ms | 2.56× | 512 B |
+<BenchTable
+	targets={["Cortex-M33", "Hazard3 RV32"]}
+	rows={[
+		{
+			label: "STARK Fibonacci-1024",
+			sublabel: "95-bit conjectured security",
+			emphasize: true,
+			cells: [
+				{ us: us("2026-04-24-m33-stark-fib-1024-q-tlsf", "stark_verify_fib_1024_q_tlsf") },
+				{ us: us("2026-04-24-rv32-stark-fib-1024-q-tlsf", "stark_verify_fib_1024_q_tlsf") },
+			],
+			proofBytes: proofBytes("2026-04-24-m33-stark-fib-1024-q-tlsf"),
+		},
+		{
+			label: "Groth16 / BN254",
+			sublabel: "1 public input (square)",
+			cells: [
+				{ us: us("2026-04-22-m33-heap-96k-confirmed", "groth16_verify_square") },
+				{ us: us("2026-04-21-rv32-stack-painted", "groth16_verify") },
+			],
+			proofBytes: 256,
+		},
+		{
+			label: "Groth16 / BN254, real Semaphore depth-10",
+			sublabel: "4 public inputs",
+			emphasize: true,
+			cells: [
+				{ us: us("2026-04-22-m33-semaphore-depth10", "groth16_verify_semaphore") },
+				{ us: us("2026-04-22-rv32-semaphore-depth10", "groth16_verify_semaphore") },
+			],
+			proofBytes: 256,
+		},
+		{
+			label: "Groth16 / BLS12-381",
+			sublabel: "1 public input (square)",
+			cells: [
+				{ us: us("2026-04-22-m33-bls12-baseline", "groth16_verify_square") },
+				{ us: us("2026-04-22-rv32-bls12-baseline", "groth16_verify_square") },
+			],
+			proofBytes: 512,
+		},
+	]}
+/>
 
 STARK verify is **15-27× faster than Groth16** on the same silicon. The tradeoff is proof size: 30.9 KB vs 256-512 B. Classic throughput-for-bandwidth swap. Pick Groth16 when the transport is bandwidth-bound (LoRa, NFC); pick STARK when verify latency matters (per-packet, hot loops).
 
@@ -24,11 +64,15 @@ The Semaphore row is the one to pay attention to for production adoption. It's a
 
 Fibonacci-1024 AIR, `FieldExtension::Quadratic` (95-bit conjectured security). Three allocator strategies, two ISAs:
 
+<div class="wide-table">
+
 | Allocator | M33 median | M33 std-dev | M33 heap peak | RV32 median | RV32 std-dev | Fits 128 KB? |
 |---|---:|---:|---:|---:|---:|:---:|
 | LlffHeap (linked-list first-fit) | 69.7 ms | 0.13 % IQR | 93.5 KB | 92.4 ms | ~0.46 % | ✓ |
 | **TlsfHeap (O(1), production default)** | **74.7 ms** | **0.08 %** | **93.5 KB** | **112.4 ms** | **0.11 %** | **✓** |
 | BumpAlloc (watermark-reset, benchmark only) | 67.9 ms | 0.08 % | 314 KB | 82.2 ms | 0.08 % | ✗ |
+
+</div>
 
 **TlsfHeap is the production pick**, it gets you the variance floor of the bump allocator while keeping heap peak at LlffHeap's 93.5 KB and fitting the 128 KB tier. The 5 ms cost on M33 (20 ms on RV32) is the price of O(1) worst-case bound. For hardware wallets where verify runs at human action speed, that's indistinguishable; for hot loops, LlffHeap still wins on raw throughput.
 

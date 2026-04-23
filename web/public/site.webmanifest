@@ -1,0 +1,12 @@
+{
+  "name": "zkmcu",
+  "short_name": "zkmcu",
+  "description": "no_std Rust SNARK and STARK verifiers for microcontrollers.",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#10b981",
+  "background_color": "#0b0f11",
+  "display": "standalone"
+}

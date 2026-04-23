@@ -2,13 +2,23 @@
  * zkmcu — Starlight theme overrides
  *
  * Theming philosophy: minimal chrome, monospace for numbers and structure,
- * gradient accent on display text, everything else stays clean. No loaded
- * fonts — the system stack at the right sizes looks fine and keeps the page
- * fast.
+ * gradient accent on display text, everything else stays clean.
+ *
+ * Fonts: Inter Variable for body + headings, JetBrains Mono for code. Both
+ * self-hosted via @fontsource so the site stays CDN-independent and privacy-
+ * respecting. Variable-weight Inter keeps payload to one file for all weights.
  *
  * Single source of truth for the accent hue: --sl-color-accent below. Change
  * that one hex value to re-theme the whole site.
  * ========================================================================= */
+
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+/* Archivo Black is the one-weight display face used exclusively for the
+ * header wordmark. Everything else is Inter. */
+@import '@fontsource/archivo-black';
 
 /* ----------------------------------------------------------------------------
  * 1. Accent colour (emerald by default)
@@ -27,11 +37,14 @@
 }
 
 /* ----------------------------------------------------------------------------
- * 2. Monospace stack — slightly chunkier than the Starlight default so numbers
- *    feel deliberate when they appear inline or in table headers
+ * 2. Type stacks — Inter for body (loaded above), JetBrains Mono for code.
+ *    Both have system fallbacks in case the webfont fails to load.
  * ------------------------------------------------------------------------- */
 
 :root {
+	--sl-font:
+		'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont,
+		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--sl-font-system-mono:
 		'JetBrains Mono', 'Berkeley Mono', ui-monospace, 'SF Mono', 'SFMono-Regular',
 		Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
@@ -47,6 +60,7 @@ h4 {
 
 body {
 	font-feature-settings: 'ss01', 'cv05', 'cv11', 'zero';
+	line-height: 1.7;
 }
 
 /* ----------------------------------------------------------------------------
@@ -184,21 +198,21 @@ body {
 	box-shadow: 0 1px 0 var(--sl-color-gray-6) inset;
 }
 
-/* Inline code — accent colour, subtle background, monospace */
+/* Inline code — quiet mono token, not a pill. One visual affordance (faint
+ * background) instead of the original four (bg + border + accent color +
+ * bold). Lets inline identifiers recede into prose rather than competing
+ * with surrounding text. */
 .sl-markdown-content :not(pre) > code {
-	background: var(--sl-color-gray-6);
-	padding: 0.15em 0.45em;
-	border-radius: 4px;
+	background: color-mix(in srgb, var(--sl-color-gray-6) 65%, transparent);
+	padding: 0.1em 0.35em;
+	border-radius: 3px;
 	font-size: 0.875em;
-	color: var(--sl-color-accent-high);
-	border: 1px solid var(--sl-color-gray-5);
-	font-weight: 500;
+	color: var(--sl-color-text);
+	font-weight: 400;
 }
 
 :root[data-theme='light'] .sl-markdown-content :not(pre) > code {
-	color: var(--sl-color-accent);
-	background: var(--sl-color-accent-low);
-	border-color: color-mix(in srgb, var(--sl-color-accent) 25%, transparent);
+	background: color-mix(in srgb, var(--sl-color-gray-5) 35%, transparent);
 }
 
 /* ----------------------------------------------------------------------------
@@ -213,7 +227,8 @@ body {
 	 * border-collapse: collapse lets cells share borders cleanly.
 	 * clip-path: inset(0 round 8px) clips cell backgrounds (including hover
 	 * state) inside the rounded border, which overflow:hidden alone doesn't
-	 * reliably do on <table> elements across browsers. */
+	 * reliably do on <table> elements across browsers.
+	 * tabular-nums aligns digits vertically so numeric columns scan at a glance. */
 	display: table;
 	table-layout: auto;
 	border-collapse: collapse;
@@ -222,13 +237,18 @@ body {
 	clip-path: inset(0 round 8px);
 	width: 100%;
 	font-size: 0.95em;
+	font-variant-numeric: tabular-nums;
 }
 
-/* Trailing column absorbs leftover space so cell backgrounds fill the rounded
- * outer border even when content is narrower than the table width. */
-.sl-markdown-content table th:last-child,
-.sl-markdown-content table td:last-child {
-	width: 100%;
+/* Numeric / compact cells (right-aligned `---:` or center-aligned `:---:`
+ * in markdown) stay on one line so value+unit, or short headers like
+ * "Fits 128 KB?", never split across rows. Left-aligned prose in the
+ * label column still wraps naturally. */
+.sl-markdown-content table td[align='right'],
+.sl-markdown-content table th[align='right'],
+.sl-markdown-content table td[align='center'],
+.sl-markdown-content table th[align='center'] {
+	white-space: nowrap;
 }
 
 .sl-markdown-content table th {
@@ -279,6 +299,31 @@ body {
 	font-size: 0.92em;
 	color: var(--sl-color-text);
 	font-weight: 500;
+}
+
+/* Opt-in compact-mode wrapper for a single edge-case table that has more
+ * columns than the reading column comfortably holds (the 7-col allocator
+ * matrix on /benchmarks/). Tightens padding and drops type slightly so
+ * the content actually fits the reading column without the table having
+ * to pop out of it. Horizontal scroll is the fallback if a viewport is
+ * narrow enough that even the compact form overflows. Apply by wrapping
+ * the markdown table in <div class="wide-table"> ... </div>. */
+.sl-markdown-content .wide-table {
+	overflow-x: auto;
+	/* Fade the right edge to hint that content can scroll when the wrapper
+	 * is narrower than the inner table. Harmless when the table fits: the
+	 * fade applies to empty space and is invisible. */
+	mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
+	-webkit-mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
+}
+
+.sl-markdown-content .wide-table table {
+	font-size: 0.85em;
+}
+
+.sl-markdown-content .wide-table table th,
+.sl-markdown-content .wide-table table td {
+	padding-inline: 0.55rem;
 }
 
 /* Bold cells — e.g. "Groth16 verify" rows — use accent colour to draw the eye */
@@ -474,35 +519,10 @@ body {
 }
 
 /* ----------------------------------------------------------------------------
- * 16. Code block filename chrome — subtle traffic-light dots in the corner
- *     for a terminal/screenshot feel. Applied to every fenced code block.
+ * 16. Code blocks — expressive-code (Starlight's default) renders its own
+ *     frame chrome including a language badge and copy button, so we don't
+ *     add a second layer on top. The border + shadow in section 6 is enough.
  * ------------------------------------------------------------------------- */
-
-.expressive-code .frame.is-terminal pre,
-.sl-markdown-content pre {
-	position: relative;
-	padding-top: 2.5rem;
-}
-
-.sl-markdown-content pre::before {
-	content: '';
-	position: absolute;
-	top: 0.85rem;
-	left: 1rem;
-	width: 12px;
-	height: 12px;
-	border-radius: 50%;
-	background: #ef4444;
-	box-shadow:
-		18px 0 0 #f59e0b,
-		36px 0 0 #10b981;
-}
-
-/* Don't double-apply chrome when expressive-code's own frame is already
- * rendering a title bar */
-.sl-markdown-content .expressive-code pre::before {
-	display: none;
-}
 
 /* ----------------------------------------------------------------------------
  * 17. Sidebar polish — readable active-link styling in both themes.
@@ -564,4 +584,16 @@ header[data-astro-header] {
 	outline: 2px solid var(--sl-color-accent);
 	outline-offset: 2px;
 	border-radius: 3px;
+}
+
+/* ----------------------------------------------------------------------------
+ * 20. Header wordmark — Archivo Black, applied to just the site-title span
+ *     in the top header. Keeps Inter for everything else including nav labels.
+ * ------------------------------------------------------------------------- */
+
+.site-title > span {
+	font-family: 'Archivo Black', 'Inter Variable', system-ui, sans-serif;
+	font-weight: 400;
+	letter-spacing: 0.01em;
+	font-size: 1.25rem;
 }
