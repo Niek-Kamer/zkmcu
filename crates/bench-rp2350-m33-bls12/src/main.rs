@@ -37,7 +37,7 @@ static SQUARES_5_PROOF: &[u8] =
 static SQUARES_5_PUBLIC: &[u8] =
     include_bytes!("../../zkmcu-vectors/data/bls12-381/squares-5/public.bin");
 
-// TrackingHeap — identical to the BN254 firmware. Two relaxed atomic ops per
+// TrackingHeap, identical to the BN254 firmware. Two relaxed atomic ops per
 // alloc/dealloc, negligible next to the work the pairing library does inside.
 struct TrackingHeap {
     inner: LlffHeap,
@@ -54,7 +54,7 @@ impl TrackingHeap {
         }
     }
 
-    /// SAFETY: same contract as `LlffHeap::init` — call exactly once before any
+    /// SAFETY: same contract as `LlffHeap::init`, call exactly once before any
     /// allocation.
     unsafe fn init(&self, start: usize, size: usize) {
         // SAFETY: delegated under the same contract as this function.
@@ -310,7 +310,7 @@ fn main() -> ! {
             sys_hz,
         );
 
-        // ---- Full Groth16 verify — the headline number ----
+        // ---- Full Groth16 verify, the headline number ----
         loop_verify(
             &mut usb_dev,
             &mut serial,

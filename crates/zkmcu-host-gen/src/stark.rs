@@ -125,7 +125,7 @@ pub fn run(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
 
     // ~96-bit conjectured security at N=1024 via quadratic extension over
     // Goldilocks. Phase 3.1 used FieldExtension::None which capped at
-    // 63-bit — below production. Phase 3.2 lifts to Quadratic so the
+    // 63-bit, below production. Phase 3.2 lifts to Quadratic so the
     // verifier hits the security level the grant pitch implies.
     let options = ProofOptions::new(
         32,                        // num queries
@@ -149,7 +149,7 @@ pub fn run(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
 
     // Self-verify on host before the bytes hit disk. If the prover and
     // verifier side disagree on the AIR (trace width, constraint degrees,
-    // assertion positions) this is where it shows up — better to fail
+    // assertion positions) this is where it shows up, better to fail
     // the vector-generation step than to commit bad bytes.
     let public = PublicInputs { result };
     zkmcu_verifier_stark::fibonacci::verify(proof.clone(), public)

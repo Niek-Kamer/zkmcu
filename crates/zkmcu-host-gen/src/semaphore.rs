@@ -1,7 +1,7 @@
 //! Semaphore VK import.
 //!
-//! Reads `vendor/semaphore/packages/proof/src/verification-keys.json` — a
-//! bundle of 32 Groth16/BN254 VKs, one per Merkle tree depth — extracts
+//! Reads `vendor/semaphore/packages/proof/src/verification-keys.json`, a
+//! bundle of 32 Groth16/BN254 VKs (one per Merkle tree depth), extracts
 //! the VK for a requested depth, converts to EIP-197 wire format, and
 //! writes it as `crates/zkmcu-vectors/data/semaphore-depth-<N>/vk.bin`.
 //!
@@ -10,7 +10,7 @@
 //! `nPublic + 1 = 5` IC entries (nPublic=4: merkle root, nullifier,
 //! external nullifier, signal hash).
 //!
-//! Writing `proof.bin` and `public.bin` is a separate step — Semaphore
+//! Writing `proof.bin` and `public.bin` is a separate step. Semaphore
 //! proofs have to be produced by their snarkjs toolchain (no self-
 //! contained Rust generator because we don't have the proving key or the
 //! circom circuit compiled into arkworks constraint form). See the
@@ -43,7 +43,7 @@ struct SemaphoreVkBundle {
     vk_beta_2: [[String; 2]; 3],
     vk_gamma_2: [[String; 2]; 3],
     /// `vk_delta_2[depth_idx]` is the per-depth delta G2 point. Unlike
-    /// alpha/beta/gamma, delta is NOT shared — each depth's Phase 2
+    /// alpha/beta/gamma. delta is NOT shared, each depth's Phase 2
     /// trusted-setup contribution produces its own delta.
     vk_delta_2: Vec<[[String; 2]; 3]>,
     /// `IC[depth_idx]` is the IC table for `depth = depth_idx + 1`.
@@ -78,7 +78,7 @@ fn g1_from_jacobian(coords: &[String; 3]) -> Result<G1Affine, Box<dyn std::error
 }
 
 /// Convert a Jacobian `[[x.c0, x.c1], [y.c0, y.c1], [z.c0, z.c1]]` to affine G2.
-/// Snarkjs stores Fp2 as `(c0, c1)` — arkworks' `Fq2::new(c0, c1)` takes
+/// Snarkjs stores Fp2 as `(c0, c1)`, wich is lucky because arkworks' `Fq2::new(c0, c1)` takes
 /// the same order, so no swap at this stage. The EIP-197 wire format uses
 /// `(c1, c0)` order, but `encode_vk` handles that.
 fn g2_from_jacobian(coords: &[[String; 2]; 3]) -> Result<G2Affine, Box<dyn std::error::Error>> {

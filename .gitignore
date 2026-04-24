@@ -9,14 +9,6 @@ web/out/
 
 # Editor / local tooling
 .claude/
-# VS Code: share settings.json + extensions.json, keep everything else local
-# (launch.json, tasks.json etc are user-specific and stay out of the repo).
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-
-# Local spellcheck dictionary
-codebook.toml
 
 # Local agent scratch
 CLAUDE.md

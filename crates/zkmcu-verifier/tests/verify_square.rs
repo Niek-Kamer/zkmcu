@@ -39,7 +39,7 @@ fn square_vector_rejects_tampered_public() {
     let proof = zkmcu_verifier::parse_proof(&load("proof.bin")).expect("parse proof");
     let mut public_bytes = load("public.bin");
 
-    // Flip a bit in the public input — verifier must reject.
+    // Flip a bit in the public input, verifier must reject.
     let last = public_bytes.len() - 1;
     public_bytes[last] ^= 0x01;
     let public = zkmcu_verifier::parse_public(&public_bytes).expect("parse public");
@@ -73,7 +73,7 @@ fn squares_5_rejects_tampered_last_input() {
         zkmcu_verifier::parse_proof(&load_from("squares-5", "proof.bin")).expect("parse proof");
     let mut public_bytes = load_from("squares-5", "public.bin");
 
-    // Flip a bit in the last public input — verifier must reject.
+    // Flip a bit in the last public input, verifier must reject.
     let last = public_bytes.len() - 1;
     public_bytes[last] ^= 0x01;
     let public = zkmcu_verifier::parse_public(&public_bytes).expect("parse public");

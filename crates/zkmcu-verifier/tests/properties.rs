@@ -35,7 +35,7 @@ fn load(circuit: &str, name: &str) -> Vec<u8> {
 proptest! {
     /// parse_vk must never panic on any byte sequence up to 4 KB. Return Err
     /// is fine; panic is a DoS. We cap the length at 4 KB to keep test runs
-    /// fast — larger inputs would be caught by cargo-fuzz over a longer
+    /// fast, larger inputs would be caught by cargo-fuzz over a longer
     /// window.
     #[test]
     fn parse_vk_never_panics(bytes in prop::collection::vec(any::<u8>(), 0..4096)) {
@@ -52,7 +52,7 @@ proptest! {
 
     /// Same property for parse_public. The `count` field is adversary-controlled
     /// and leads us through the checked-arithmetic / with-capacity path that
-    /// a naive implementation would OOM on — proptest exercises this heavily.
+    /// a naive implementation would OOM on, proptest exercises this heavily.
     #[test]
     fn parse_public_never_panics(bytes in prop::collection::vec(any::<u8>(), 0..1024)) {
         drop(parse_public(&bytes));
@@ -79,7 +79,7 @@ proptest! {
 
     /// Random N-byte XOR mask applied to the proof bytes. Any non-zero mask
     /// must produce either a parse error or `Ok(false)`. Nothing may yield
-    /// `Ok(true)` — that would be a proof-forgery primitive.
+    /// `Ok(true)`, that would be a proof-forgery primitive.
     #[test]
     fn random_proof_mask_never_accepts(
         mask in prop::collection::vec(any::<u8>(), 256..=256),

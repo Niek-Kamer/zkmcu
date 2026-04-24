@@ -42,7 +42,7 @@ proptest! {
     }
 
     /// Same property for parse_proof. Proof size is fixed at PROOF_SIZE (512 B)
-    /// but longer inputs are allowed — the parser should just look at the
+    /// but longer inputs are allowed, the parser should just look at the
     /// first PROOF_SIZE bytes.
     #[test]
     fn parse_proof_never_panics(bytes in prop::collection::vec(any::<u8>(), 0..1024)) {
@@ -77,7 +77,7 @@ proptest! {
 
     /// Random PROOF_SIZE-byte XOR mask applied to the proof bytes. Any
     /// non-zero mask must produce either a parse error or `Ok(false)`.
-    /// Nothing may yield `Ok(true)` — that would be a proof-forgery primitive.
+    /// Nothing may yield `Ok(true)`, that would be a proof-forgery primitive.
     #[test]
     fn random_proof_mask_never_accepts(
         mask in prop::collection::vec(any::<u8>(), PROOF_SIZE..=PROOF_SIZE),

@@ -1,6 +1,6 @@
 //! Sanity check that the Semaphore-depth-10 VK extracted from the
 //! `vendor/semaphore` submodule by `zkmcu-host-gen semaphore` parses
-//! cleanly through `zkmcu-verifier`. This is a no-proof test — we only
+//! cleanly through `zkmcu-verifier`. This is a no-proof test, we only
 //! verify the VK decodes on-curve, not that verify runs, because we
 //! don't have a proof committed yet (Semaphore proofs require their
 //! snarkjs toolchain, see phase-2.7 notes).
@@ -80,7 +80,7 @@ fn semaphore_depth_10_proof_verifies() {
     let ok = verify(&vk, &proof, &public).expect("verify runs");
     assert!(
         ok,
-        "zkmcu-verifier rejected a genuine Semaphore Groth16 proof — \
+        "zkmcu-verifier rejected a genuine Semaphore Groth16 proof, \
          likely a wire-format mismatch (Fp2 order, Fr endianness, or the \
          public-input order disagrees with snarkjs)."
     );

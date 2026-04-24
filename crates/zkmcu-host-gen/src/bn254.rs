@@ -124,7 +124,7 @@ fn generate_square(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let native_ok = Groth16::<Bn254>::verify(&vk, &[y], &proof)?;
     assert!(
         native_ok,
-        "native Groth16 verify failed (BN254 square) — refusing to write bad vectors"
+        "native Groth16 verify failed (BN254 square), refusing to write bad vectors"
     );
 
     fs::write(dir.join("vk.bin"), encode_vk(&vk))?;
@@ -175,7 +175,7 @@ fn generate_squares_n<const N: usize>(
     let native_ok = Groth16::<Bn254>::verify(&vk, &ys, &proof)?;
     assert!(
         native_ok,
-        "native Groth16 verify failed (BN254 {slug}) — refusing to write bad vectors"
+        "native Groth16 verify failed (BN254 {slug}), refusing to write bad vectors"
     );
 
     fs::write(dir.join("vk.bin"), encode_vk(&vk))?;
