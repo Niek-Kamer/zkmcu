@@ -44,7 +44,7 @@ The headline 74.7 ms number is measured at the configuration wich is actually de
 - **Blake3-256** hash, **binary Merkle tree** vector commitment
 - **TlsfHeap** (O(1) two-level segregated fit) as the global allocator
 
-The 95-bit figure matches winterfell's own Fibonacci reference configuration. A lower bound like 63-bit (what `FieldExtension::None` gives) verifies in 43 ms but isn't production security, that config exists in the repo as `phase 3.1` just for comparison. Phase 3.3 tested an alternative path to 95-bit via BabyBear × Quartic, see [BabyBear × Quartic](/babybear/). It didn't beat Goldilocks on latency, but it collapsed the cross-ISA gap from 1.51× to 1.04×, wich is a surprise on its own.
+The 95-bit figure matches winterfell's own Fibonacci reference configuration. A lower bound like 63-bit (what `FieldExtension::None` gives) verifies in 43.8 ms but isn't production security, that config exists in the repo as `phase 3.1` just for comparison. Phase 3.3 tested an alternative path to 95-bit via BabyBear × Quartic, see [BabyBear × Quartic](/babybear/). It didn't beat Goldilocks on latency, but it collapsed the cross-ISA gap from 1.51× to 1.04×, wich is a surprise on its own.
 
 ## The numbers
 

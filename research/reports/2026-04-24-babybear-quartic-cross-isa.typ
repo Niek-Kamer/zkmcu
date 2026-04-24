@@ -14,7 +14,7 @@
 #show: paper.with(
   title: "BabyBear × Quartic on RP2350: a negative latency result wich collapses the cross-ISA gap",
   authors: ("zkmcu",),
-  date: "2026-04-25",
+  date: "2026-04-24",
   kind: "report",
   abstract: [
     Phase 3.3 tested the small-field STARK hypothesis on the same
@@ -203,7 +203,7 @@ the ILP headroom, so every Mont-mul cut is a real cycle saved.
 *Rule*: cross-ISA optimisation doesn't generalise. A hand-optimised
 extension-arithmetic routine that helps Hazard3 can easily do nothing
 on M33, or vice versa. Measure each ISA separately. Details in
-`.claude/findings/2026-04-24-karatsuba-isa-asymmetric.md`.
+`research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ`.
 
 == 3. Cross-ISA gap collapses to 1.04× with BabyBear-Karatsuba
 
@@ -287,9 +287,9 @@ Three threads for phase 3.4 or beyond, in rough order of expected payoff:
 The cross-ISA and variance results stand regardless of wich thread
 gets picked up. They're archived in
 `benchmarks/runs/2026-04-24-{m33,rv32}-stark-fib-1024-babybear-q{,-kara}`
-and the findings at
-`.claude/findings/2026-04-24-karatsuba-isa-asymmetric.md` +
-`2026-04-24-babybear-quartic-regresses.md`.
+and the postmortems at
+`research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ` +
+`research/postmortems/2026-04-24-babybear-quartic-regresses.typ`.
 
 #v(1em)
 

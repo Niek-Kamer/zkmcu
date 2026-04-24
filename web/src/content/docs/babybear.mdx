@@ -79,7 +79,7 @@ Same code change, completely different results. Two things going on:
 
 **Cortex-M33's pipelined `UMULL` + DSP + BTB branch predictor absorbs the rest.** Hazard3 doesn't have any of that. Minimal integer pipeline, no branch predictor worth mentioning, in-order issue. Every `MUL` is a full cycle, every conditional branch can mispredict. So hand-written algorithmic savings land on Hazard3 that are invisible on ARM.
 
-Rule: if you're optimising an extension-arithmetic hot path and you want it to actually show up in wall clock, measure Hazard3 first. If it helps there but not on M33, that's expected, the M33 compiler probably had it already. See [the finding](https://github.com/Niek-Kamer/zkmcu/blob/main/.claude/findings/2026-04-24-karatsuba-isa-asymmetric.md) for the full writeup.
+Rule: if you're optimising an extension-arithmetic hot path and you want it to actually show up in wall clock, measure Hazard3 first. If it helps there but not on M33, that's expected, the M33 compiler probably had it already. See [the postmortem](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ) for the full writeup.
 
 ## The cross-ISA collapse
 
@@ -143,7 +143,7 @@ picotool load -v -x -t elf /tmp/bench-m33-stark-bb.elf
 cat /dev/ttyACM0
 ```
 
-Raw runs under [`benchmarks/runs/2026-04-24-{m33,rv32}-stark-fib-1024-babybear-q{,-kara}`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs). Full typst report at [`research/reports/2026-04-25-babybear-quartic-cross-isa.typ`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/reports/2026-04-25-babybear-quartic-cross-isa.typ).
+Raw runs under [`benchmarks/runs/2026-04-24-{m33,rv32}-stark-fib-1024-babybear-q{,-kara}`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs). Full typst report at [`research/reports/2026-04-24-babybear-quartic-cross-isa.typ`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/reports/2026-04-24-babybear-quartic-cross-isa.typ).
 
 ## What's next
 

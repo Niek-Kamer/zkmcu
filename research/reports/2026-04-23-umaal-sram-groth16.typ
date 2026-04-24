@@ -50,8 +50,8 @@ An earlier experiment confirmed compiler flags don't help here. Flipping
 #pct(asm-flash.bench.groth16_verify.us_median, baseline.bench.groth16_verify.us_median + 50000)
 regression instead of a speedup, because the larger output busted the
 RP2350's 16 KB XIP instruction cache and inlined more temporaries into the
-already-spill-heavy inner loop. The finding is recorded at
-`.claude/findings/2026-04-23-opt-level-3-regression.md`. No amount of
+already-spill-heavy inner loop. The postmortem is recorded at
+`research/postmortems/2026-04-23-opt-level-3-regression.typ`. No amount of
 `-C target-feature` tweaking was going to summon UMAAL from rustc 1.94.1 /
 LLVM 19 on this target. The instruction exists; the selector doesn't reach
 for it.

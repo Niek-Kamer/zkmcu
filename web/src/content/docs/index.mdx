@@ -21,6 +21,8 @@ hero:
 ---
 
 import { Card, CardGrid, Code, Aside, Badge } from '@astrojs/starlight/components';
+import { usAt } from '../../lib/benchmarks-index';
+import { fmtMs } from '../../lib/format';
 
 <div class="hero-badges">
   <Badge text="no_std Rust" variant="note" />
@@ -46,7 +48,7 @@ All three: `no_std`, pure Rust, one function call. Every number on this page com
 ## Measured on silicon
 
 <a class="hero-stat" href="/semaphore/">
-  <div class="hero-stat__num">1 176 ms</div>
+  <div class="hero-stat__num">{fmtMs(usAt('bn254_m33_semaphore'))} ms</div>
   <div class="hero-stat__label">Real Semaphore v4 proof, verified on a $7 MCU</div>
   <div class="hero-stat__body">
     BN254 Groth16, 4 public inputs, the actual Ethereum-Semaphore trusted setup. Same VK wich the `0x08` precompile accepts. No simplifications, no off-device preprocess, no cheating.
@@ -54,10 +56,10 @@ All three: `no_std`, pure Rust, one function call. Every number on this page com
 </a>
 
 <CardGrid>
-  <Card title="75 ms" icon="rocket">
+  <Card title={`${fmtMs(usAt('stark_m33_tlsf'))} ms`} icon="rocket">
     **STARK verify at 95-bit security.** Winterfell Fibonacci AIR over Goldilocks, quadratic extension, TlsfHeap allocator. Variance sits at 0.08 %, wich is basically the silicon noise floor. [More](/stark/)
   </Card>
-  <Card title="2 015 ms" icon="puzzle">
+  <Card title={`${fmtMs(usAt('bls12_m33'))} ms`} icon="puzzle">
     BLS12-381 Groth16, same $7 silicon. First public `no_std` BLS12 verifier on Cortex-M, as far as I can find. If anyone knows of an earlier one, tell me and I'll update.
   </Card>
   <Card title="≈ 97 KB" icon="document">

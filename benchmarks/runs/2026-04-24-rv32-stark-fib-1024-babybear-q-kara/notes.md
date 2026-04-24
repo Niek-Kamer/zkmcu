@@ -56,7 +56,7 @@ Goldilocks-Quadratic. Full picture:
 
 The 31-bit-field-fits-register hypothesis is not enough to overcome the
 Quartic-vs-Quadratic extension overhead at 95-bit conjectured security.
-See `.claude/findings/2026-04-24-babybear-quartic-regresses.md`.
+See `research/postmortems/2026-04-24-babybear-quartic-regresses.typ`.
 
 ## Variance is the silver lining
 

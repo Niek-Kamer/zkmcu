@@ -9,7 +9,7 @@ extern crate alloc;
 // porting a crate that assumes std.
 //
 // This is a dep-fit test, not a functional one. We don't construct an AIR
-// or call verify() with real proof bytes — that's phase 3.2 work after
+// or call verify() with real proof bytes, that's phase 3.2 work after
 // this spike's findings land in the notebook.
 
 use winterfell::{Proof, VerifierError};

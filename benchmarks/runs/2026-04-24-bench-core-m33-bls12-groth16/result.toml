@@ -3,7 +3,7 @@ date = "2026-04-24"
 target = "rp2350-cortex-m33"
 toolchain = "rustc 1.94.1"
 profile = "release, lto=fat, opt-level=s, codegen-units=1"
-commit = "98c7af5"
+commit = ""
 experiment = "bench-core refactor rebaseline: Groth16/BLS12-381 on Cortex-M33"
 
 [hardware]

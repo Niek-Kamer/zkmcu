@@ -95,6 +95,7 @@ export default defineConfig({
 					],
 				},
 				{ label: 'Security', link: '/security/' },
+				{ label: 'Self-audit', link: '/self-audit/' },
 			],
 			editLink: {
 				baseUrl: 'https://github.com/Niek-Kamer/zkmcu/edit/main/web/',

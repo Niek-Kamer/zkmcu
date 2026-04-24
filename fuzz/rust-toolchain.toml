@@ -1,0 +1,9 @@
+[toolchain]
+# cargo-fuzz uses -Zsanitizer=address and other -Z flags wich are only
+# accepted on nightly rustc. Pin nightly here so `cargo fuzz ...` invoked
+# from inside fuzz/ auto-selects the right toolchain via rustup.
+#
+# The rest of the workspace stays on stable, the pin is scoped to this
+# directory.
+channel = "nightly"
+components = ["rust-src"]

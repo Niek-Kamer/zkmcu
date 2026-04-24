@@ -22,6 +22,21 @@ Every target's invariant is the same: the parser/verifier must return
 input is a firmware DoS surface under `panic-halt` and violates the
 `SECURITY.md` threat model.
 
+## One-time setup
+
+`cargo-fuzz` uses `-Zsanitizer=address` and related `-Z` flags wich only
+nightly rustc accepts. This directory pins nightly via
+[`rust-toolchain.toml`](./rust-toolchain.toml), so rustup auto-selects
+the right toolchain, but you need nightly installed once:
+
+```sh
+rustup toolchain install nightly
+cargo install cargo-fuzz
+```
+
+The rest of the workspace stays on stable. The pin is scoped to
+`fuzz/`.
+
 ## Running
 
 ```sh
@@ -71,7 +86,10 @@ rm -rf seeds/*/
 ## Known history
 
 This harness landed after proptest (in `crates/zkmcu-verifier-stark/tests/properties.rs`)
-found two STARK panic paths that were fixed in Patch H. The fuzz suite
-should keep extending that coverage. Any new finding gets a
-`.claude/findings/<date>-<slug>.md` writeup and a fix before the next
+found two STARK panic paths. Both were fixed the same day, writeup at
+`research/postmortems/2026-04-24-stark-cross-field-panic.typ`. Fuzz then
+found two more a day later, closed in the winterfell fork, writeup at
+`research/postmortems/2026-04-24-stark-unbounded-vec-alloc.typ`. The fuzz
+suite should keep extending that coverage. Any new incident gets a
+`research/postmortems/<date>-<slug>.typ` writeup and a fix before the next
 release.

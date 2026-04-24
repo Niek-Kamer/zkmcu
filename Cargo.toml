@@ -139,7 +139,10 @@ winter-crypto     = { path = "vendor/winterfell/crypto" }
 winter-fri        = { path = "vendor/winterfell/fri" }
 winter-utils      = { path = "vendor/winterfell/utils/core" }
 winter-maybe-async = { path = "vendor/winterfell/utils/maybe_async" }
-winter-rand-utils = { path = "vendor/winterfell/utils/rand" }
+# winter-rand-utils is intentionally NOT patched: it's test-only in the
+# winterfell prover and never pulled into our crate graph under the feature
+# set we use. Patching it triggers a "patch not used" warning on every build.
+# Re-add if a future feature flag pulls it transitively.
 
 [profile.release]
 codegen-units = 1

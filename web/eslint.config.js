@@ -33,8 +33,13 @@ export default tseslint.config(
 	...tseslint.configs.stylisticTypeChecked,
 	{
 		// Tell typescript-eslint how to find the project for type-aware rules.
-		// projectService: true auto-detects tsconfig from each file, which is
+		// projectService: true auto-detects tsconfig from each file, wich is
 		// the recommended setup for mono-tsconfig projects like this one.
+		// astro-eslint-parser silently downgrades this to `project: true` for
+		// .astro files (prints an informational console line at startup, not
+		// a lint error, and behaviour is identical). Keep projectService
+		// global so type-aware rules have parser services available on every
+		// file they target, including .astro.
 		languageOptions: {
 			parserOptions: {
 				projectService: true,

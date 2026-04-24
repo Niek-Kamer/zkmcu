@@ -66,7 +66,7 @@ us_delta      = 12                 # +12 us, effectively zero
 # Interpretation: extension-field multiplication is NOT the M33 bottleneck for STARK
 # verify at this AIR size + proof size. LLVM at opt-level=s + lto=fat likely already
 # CSE'd the schoolbook well enough that Karatsuba's rearrangement offered no win on
-# Cortex-M33's pipelined UMULL. See .claude/findings/2026-04-24-karatsuba-isa-asymmetric.md
+# Cortex-M33's pipelined UMULL. See research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ
 # for the cross-ISA comparison wich makes this conclusive.
 
 [bench.vs_goldilocks_quadratic_tlsf]

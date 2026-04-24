@@ -339,7 +339,7 @@ fn goldilocks_verifier_rejects_babybear_proof() {
 // reader's `remaining_bytes()` (trait method added for this). These two
 // artifacts must now return `Err(ProofDeserialization)` cleanly.
 //
-// Background: `.claude/findings/2026-04-24-stark-unbounded-vec-alloc.md`.
+// Background: `research/postmortems/2026-04-24-stark-unbounded-vec-alloc.typ`.
 
 fn fuzz_regression_path(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

@@ -75,7 +75,7 @@ pub use winterfell::{AcceptableOptions, Proof, VerifierError};
 /// surface. **Partial mitigation only**, a well-crafted proof within
 /// this size can still drive winterfell's deserializer into an unbounded
 /// `Vec::with_capacity` via an adversary-controlled length prefix (see
-/// `.claude/findings/2026-04-24-stark-unbounded-vec-alloc.md`). The real
+/// `research/postmortems/2026-04-24-stark-unbounded-vec-alloc.typ`). The real
 /// fix is upstream in `winter-utils::read_many` or a deeper
 /// pre-validation pass in this crate. Until either lands, this cap
 /// bounds *how much work* an attacker can force the parser to do before
@@ -116,8 +116,8 @@ impl From<VerifierError> for Error {
 /// handing it to the upstream deserializer. Catches the two `new_multi_\
 /// segment` assertions that winterfell's `TraceInfo::read_from` does not
 /// screen. Either would halt the firmware when the adversary-controlled
-/// bytes hit the assert (see `.claude/findings/2026-04-24-stark-cross-\
-/// field-panic.md`).
+/// bytes hit the assert (see `research/postmortems/2026-04-24-stark-cross-\
+/// field-panic.typ`).
 ///
 /// Layout reference: `vendor/winterfell/air/src/air/trace_info.rs:272`
 /// (the first four bytes of the proof are main width, aux width, aux rands,

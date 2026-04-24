@@ -4,6 +4,8 @@
 // scan vertically. Fixed column widths so long labels don't starve numeric
 // columns, wich is the usual failure mode with plain HTML tables.
 
+import { fmtMs, fmtProof } from '../lib/format';
+
 export interface Cell { us: number }
 
 export interface Row {
@@ -21,12 +23,6 @@ export interface Props {
 }
 
 const { targets, rows, showRatio = true } = Astro.props;
-
-const fmtMs = (us: number) =>
-	(us / 1000).toLocaleString('en-US', { maximumFractionDigits: 0 });
-
-const fmtProof = (bytes: number) =>
-	bytes >= 1000 ? `${(bytes / 1000).toFixed(1)} KB` : `${bytes} B`;
 ---
 
 <table class="bench-table">

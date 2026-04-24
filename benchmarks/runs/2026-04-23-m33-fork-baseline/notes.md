@@ -41,7 +41,7 @@ Stack peak grew slightly vs the opt=3 run (15604 vs 15276 bytes). Not a concern 
 
 This is the anchor. Every subsequent benchmark run that exercises the forked substrate-bn should be compared against this run, not the 988 ms crates.io number. The 26 ms head start is "free" — unrelated to any optimization we do, so crediting it to our work would misrepresent the wins.
 
-The two live optimization levers (see `.claude/findings/2026-04-23-no-umaal-codegen.md`):
+The two live optimization levers (see `research/postmortems/2026-04-23-no-umaal-codegen.typ`):
 
 1. **RAM-linked hot `.text`** to sidestep the RP2350's 16 KB XIP cache. One linker-script change, can be exercised without modifying the fork's source.
 2. **Hand-written ARMv8-M asm for `U256::mul`** in the fork, using UMAAL. Multi-session, requires constant-time discipline and cross-checks against arkworks.

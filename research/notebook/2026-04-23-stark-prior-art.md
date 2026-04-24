@@ -125,10 +125,10 @@ Pico 2W has 520 KB SRAM total. After firmware / heap / stack we
 realistically have 200-300 KB to dedicate to verify-time buffers.
 Winterfell Fibonacci proofs at default security are ~50 KB; hash-chain
 proofs ~80 KB; Miden VM execution proofs 200 KB+. The 200-300 KB
-headroom is tight for the larger categories — streaming verify would
+headroom is tight for the larger categories, streaming verify would
 help but that's a Phase 4 discussion.
 
-For the spike, we don't actually run a proof through the verifier —
+For the spike, we don't actually run a proof through the verifier,
 we just confirm the crate compiles `no_std`. Proof-size experiments
 come after.
 
@@ -326,4 +326,3 @@ spike: swap the dep to `winter-verifier` + `winter-fri` +
 disappears from the closure. If yes, use the direct form; if the
 umbrella pulls prover through re-exports, stick with the umbrella
 and rely on LTO. Phase 3.1 scope item.
-

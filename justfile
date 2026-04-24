@@ -167,8 +167,8 @@ docs:
                                                          {{out}}/2026-04-24-stark-allocator-matrix.pdf
     typst compile --root . research/reports/2026-04-23-umaal-sram-groth16.typ \
                                                          {{out}}/2026-04-23-umaal-sram-groth16.pdf
-    typst compile --root . research/reports/2026-04-25-babybear-quartic-cross-isa.typ \
-                                                         {{out}}/2026-04-25-babybear-quartic-cross-isa.pdf
+    typst compile --root . research/reports/2026-04-24-babybear-quartic-cross-isa.typ \
+                                                         {{out}}/2026-04-24-babybear-quartic-cross-isa.pdf
     typst compile --root . research/reports/2026-04-24-phase-3-3-revisited.typ \
                                                          {{out}}/2026-04-24-phase-3-3-revisited.pdf
 

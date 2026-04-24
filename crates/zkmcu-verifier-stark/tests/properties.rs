@@ -26,8 +26,8 @@ use zkmcu_verifier_stark::{fibonacci, fibonacci_babybear, parse_proof};
 // (`sanity_check_proof_header` in lib.rs) that screens the two `TraceInfo`
 // byte layouts known to hit assertions in `new_multi_segment`. The
 // properties below ran `#[ignore]`d while that wrapper was missing; they
-// are active again now. Background: `.claude/findings/2026-04-24-stark-\
-// cross-field-panic.md`.
+// are active again now. Background: `research/postmortems/2026-04-24-stark-\
+// cross-field-panic.typ`.
 
 proptest! {
     /// `parse_proof` must never panic on any byte sequence up to 8 KB.

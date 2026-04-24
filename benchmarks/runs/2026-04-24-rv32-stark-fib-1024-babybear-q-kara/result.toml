@@ -65,7 +65,7 @@ us_karatsuba  = 129_054
 us_delta      = -7_588              # -5.55 % wall clock
 # This is the M33-vs-RV32 asymmetry: Karatsuba helps the in-order Hazard3 but
 # NOT the pipelined Cortex-M33. See
-# .claude/findings/2026-04-24-karatsuba-isa-asymmetric.md.
+# research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ.
 
 [bench.vs_goldilocks_quadratic_tlsf]
 us_goldilocks_q_tlsf    = 112_400    # phase 3.2.z RV32 reference

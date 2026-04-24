@@ -3,7 +3,7 @@ date = "2026-04-24"
 target = "rp2350-cortex-m33"
 toolchain = "rustc 1.94.1"
 profile = "release, lto=fat, opt-level=s, codegen-units=1"
-commit = "98c7af5"
+commit = ""
 experiment = "bench-core refactor rebaseline: STARK / BabyBear x Quartic, TLSF, Cortex-M33 — HEADLINE"
 
 [hardware]
@@ -63,7 +63,7 @@ prior_us_median = 124_222
 delta_us = -28_596                   # -23.02 %, way outside noise range
 prior_cycles_median = 18_633_462
 delta_cycles = -4_289_445
-# See .claude/findings/2026-04-24-bench-core-babybear-speedup.md for
+# See research/postmortems/2026-04-24-bench-core-babybear-speedup.typ for
 # the register-allocation hypothesis. Short version: the
 # ExtensibleField<4>::mul hot loop was right at the edge of spilling on
 # Thumb-2's 13-ish usable GPRs. The closure-wrapped verify call shifted

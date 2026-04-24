@@ -4,7 +4,7 @@
 // (commit 98c7af5), every STARK config got re-measured. M33
 // BabyBear × Quartic-Karatsuba dropped 23 % from the previous
 // baseline, RV32 barely moved. This unseats the 1.04× cross-ISA
-// headline from 2026-04-25-babybear-quartic-cross-isa.typ.
+// headline from 2026-04-24-babybear-quartic-cross-isa.typ.
 
 #let gold_pre_m33   = toml("/benchmarks/runs/2026-04-24-m33-stark-fib-1024-q-tlsf/result.toml")
 #let gold_pre_rv32  = toml("/benchmarks/runs/2026-04-24-rv32-stark-fib-1024-q-tlsf/result.toml")
@@ -22,8 +22,8 @@
   date: "2026-04-24",
   kind: "report",
   abstract: [
-    Yeah so the phase 3.3 headline from last week's report
-    (`2026-04-25-babybear-quartic-cross-isa`) was that `BabyBear ×
+    Yeah so the phase 3.3 headline from the earlier report
+    (`2026-04-24-babybear-quartic-cross-isa`) was that `BabyBear ×
     Quartic-Karatsuba` narrowed the Cortex-M33 vs Hazard3 cross-ISA
     latency ratio from 1.51× (Goldilocks × Quadratic baseline) to
     *1.04×*, the cleanest ISA-levelling in the whole project. That
@@ -280,15 +280,15 @@ the spill flip in the first 30 minutes of IR staring or you dont.
 
 #v(1em)
 
-_Earlier phase-3.3 report_: `research/reports/2026-04-25-babybear-quartic-cross-isa.typ`
+_Earlier phase-3.3 report_: `research/reports/2026-04-24-babybear-quartic-cross-isa.typ`
 (immutable, cites pre-refactor numbers).
 
 _Bench-core refactor commit_: `98c7af5`.
 
 _Rebaseline TOMLs_: `benchmarks/runs/2026-04-24-bench-core-*/`.
 
-_Finding with the register-allocation write-up_:
-`.claude/findings/2026-04-24-bench-core-babybear-speedup.md`.
+_Postmortem with the register-allocation write-up_:
+`research/postmortems/2026-04-24-bench-core-babybear-speedup.typ`.
 
 _Winterfell fork_: `github.com/Niek-Kamer/winterfell` (unchanged).
 

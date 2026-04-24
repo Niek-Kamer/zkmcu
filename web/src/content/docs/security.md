@@ -23,7 +23,7 @@ Proof-system-specific notes:
 
 ### Adversarial unit tests
 
-23 tests under [`zkmcu-verifier/tests/adversarial.rs`](https://github.com/Niek-Kamer/zkmcu/blob/main/crates/zkmcu-verifier/tests/adversarial.rs) covering:
+41 tests under [`zkmcu-verifier/tests/adversarial.rs`](https://github.com/Niek-Kamer/zkmcu/blob/main/crates/zkmcu-verifier/tests/adversarial.rs) covering:
 
 - Empty, truncated, and oversized inputs to every parser
 - Field elements ≥ their respective moduli
@@ -71,7 +71,7 @@ Remote-timing-oracle resistance is a property zkmcu measures, not one it tries t
 | **STARK (TlsfHeap)** | **0.08 %** | Deterministic allocator brings variance to silicon floor |
 | STARK (LlffHeap) | ~0.25 % | Allocator noise obscures crypto timing |
 
-Under the recommended `TlsfHeap` allocator, all three verifiers hit sub-0.1 % iteration-to-iteration variance. That's below the noise floor of any non-lab-grade timing oracle (USB / BLE / network transports have millisecond-or-worse resolution). **This is not a claim of formal constant-time execution.** It's a claim that the observable timing channel in a realistic deployment looks indistinguishable from silicon noise. Those are different things, be honest with yourself about wich one your threat model actually needs.
+Under the recommended `TlsfHeap` allocator, all three verifiers hit sub-0.1 % iteration-to-iteration variance. That's below the noise floor of any non-lab-grade timing oracle (USB / BLE / network transports have millisecond-or-worse resolution). Ofcourse this is not the same as formal constant-time execution, it's a claim about what an attacker can actually observe in a realistic deployment: indistinguishable from silicon noise. Two different properties, be honest with yourself about wich one your threat model actually needs.
 
 If your application has secret data flowing into the verify code path (not the usual zkmcu use case), the picture changes. Both `substrate-bn` and `bls12_381` have scalar-dependent branches that a lab-grade attacker with full-cycle-precision measurement could exploit. zkmcu's threat model does not cover that.
 

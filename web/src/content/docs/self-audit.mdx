@@ -1,0 +1,101 @@
+---
+title: Self-audit
+description: What I checked in the zkmcu verifier family, how I checked it, what I found, and what is deliberately out of scope. Published as grant-review evidence and as an honest baseline before a third-party audit.
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+
+<div class="hero-badges">
+  <Badge text="Self-audit, not third-party" variant="caution" />
+  <Badge text="Zero blockers found" variant="success" />
+  <Badge text="Learning trail published" variant="tip" />
+</div>
+
+This is a self-audit. Ofcourse that's a weaker claim than a third-party one and I'm not going to pretend otherwise. I wrote the code and I'm writing the review. Take it as a structured honesty baseline: here's what I actually checked, here's the evidence, here's the list of things I deliberately did not check. If your threat model needs the deliberately-not-checked items, don't ship on this yet.
+
+## Bottom line
+
+- **Zero blockers, zero should-fix items found** against the current `main` of the three verifier crates + `vendor/bn` UMAAL asm + `zkmcu-bump-alloc` + the winterfell fork.
+- **Seven incidents caught before this audit**, all fixed same-or-next day, all published under [`research/postmortems/`](https://github.com/Niek-Kamer/zkmcu/tree/main/research/postmortems) with root cause + fix + rule extracted.
+- **One open question**: Semaphore verifying-key freshness in CI, see Known limitations.
+
+## What I checked
+
+**Parser safety across all three verifier families.** No `.unwrap()`, `.expect()`, `panic!`, `todo!`, or `unimplemented!` in library code. Every byte slice goes through a bounds-checked `chunk::<N>(bytes, offset)` helper or an explicit `.get()`. Verified by grep plus the clippy wall (`unwrap_used`, `panic`, `indexing_slicing`, `todo`, `unimplemented` all escalated to deny via `-D warnings`). The only remaining `unimplemented!()` lines sit in the `ExtensibleField<2,3>` stubs in `zkmcu-babybear`, wich are dead code because the project uses `ExtensibleField<4>` end-to-end.
+
+**Canonical encoding enforced, everywhere it matters.**
+- Fr strict `< r` on both BN254 and BLS12, stricter than `substrate-bn`'s silent-reduce default. Matters for nullifier-style apps where non-canonical encoding is a malleability vector.
+- BLS12 Fp 16-byte leading-zero padding validated in `strip_fp`. Any non-zero padding byte gets rejected as `Error::InvalidFp`.
+- Fp2 byte order is `(c1, c0)` on BN254 (EIP-197) and `(c0, c1)` on BLS12 (EIP-2537). Round-trip tested on both sides.
+
+**Curve membership and subgroup checks.**
+- BN254: `AffineG1::new` and `AffineG2::new` enforce on-curve. G2 subgroup via `check_order()`.
+- BLS12: `is_on_curve()` + `is_torsion_free()` are explicit and separate, so failure modes are distinguishable. Matters because BLS12 is not cofactor-1 on either group, a common footgun in BN254 precompile implementations historically.
+
+**Denial-of-service bounded at every allocation boundary.**
+- `MAX_NUM_IC = 1024`, `MAX_PUBLIC_INPUTS = 1023` on both curves. Enforced before allocation, with `checked_mul` on byte-length math so a `num_ic = u32::MAX` input can't overflow.
+- `MAX_PROOF_SIZE = 128 KB` on STARK proofs. Real Fibonacci-1024 proofs are ~30 KB, so 128 KB is generous headroom.
+- The unbounded `Vec::with_capacity` buried inside winterfell's deserializer was closed in our `vendor/winterfell/` fork via a `ByteReader::remaining_bytes()` cap on `read_many`. Full writeup at [`2026-04-24-stark-unbounded-vec-alloc`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-stark-unbounded-vec-alloc.typ).
+
+**UMAAL hand-written asm has a differential test.** Hand-rolling Montgomery multiply in ARMv8-M assembly is the kind of thing you only trust if there's a byte-identical reference path to compare against. There is: `mul_reduce_u32_ref` at `vendor/bn/src/arith.rs:824` is a u32-limb Separated-Operand-Scanning reference in pure Rust. The test module cross-checks asm output against the reference across randomised inputs. The `cortex-m33-asm` cfg is precisely scoped to `target_arch = "arm"` plus the feature, so host cross-checks exercise the reference path naturally.
+
+**Bump allocator is sound.** `zkmcu-bump-alloc` has 14 tests including a concurrent-allocation stress test. Atomic orderings are `SeqCst` on the success path (new allocation must serialise globally) and `Relaxed` on failure-retry (nothing to protect across threads). ABA-safe by construction, the bump pointer moves forward only, no freelist. Alignment respects `Layout::align()` across 1 / 4 / 8 / 16 / 32 / 64-byte variants. Every `unsafe` block has a `// SAFETY:` comment per the `undocumented_unsafe_blocks` lint.
+
+**STARK security config enforced at runtime.** `MinConjecturedSecurity(95)` is hardcoded inside each AIR's verify (`fibonacci.rs:182`, `fibonacci_babybear.rs:158`), not a compile-time option or a caller-supplied parameter. An attacker can't downgrade security by submitting a proof with weaker `ProofOptions`, the check fires before winterfell sees the proof. Pinned by regression tests.
+
+**Rule discipline.** Zero `unsafe` across the four host crates (`zkmcu-verifier`, `zkmcu-verifier-bls12`, `zkmcu-vectors`, `zkmcu-host-gen`). Verified by grep. Every `#[allow(...)]` in the workspace has a justifying comment, enforced by a CLAUDE.md-level project rule.
+
+## How I checked it
+
+- **84 adversarial tests** on the Groth16 parsers (41 BN254 under `crates/zkmcu-verifier/tests/adversarial.rs`, 43 BLS12 under `crates/zkmcu-verifier-bls12/tests/adversarial.rs`). Includes exhaustive single-bit flip of every byte in a known-good VK + proof + public-inputs buffer, zero mutations produce `Ok(true)`.
+- **19 adversarial tests** on the STARK wrapper, including regression fixtures for every fuzz-found crash artifact.
+- **16 property tests** with 256 generated cases per invocation via `proptest` (6 BN254 + 6 BLS12 + 4 STARK), covering byte-size-bucketed parse surfaces.
+- **Coverage-guided fuzz** via libFuzzer, 8 targets across all three verifier families plus the combined `bn254_verify_bytes` entry point. Latest run of `stark_parse_proof`: **91,498,083 executions, ~300 k exec/s, zero crashes, zero artifacts.** Corpus grew from 16 seeds to ~40 entries under coverage guidance.
+- **Differential tests** against four reference implementations:
+  - `arkworks` ↔ `substrate-bn` on BN254
+  - `arkworks` ↔ `bls12_381` on BLS12
+  - winterfell host prover ↔ firmware verifier on STARK Goldilocks + BabyBear
+  - UMAAL asm ↔ `mul_reduce_u32_ref` pure-Rust reference
+- **clippy at pedantic + nursery + cargo with `-D warnings`** on both host and firmware targets. Every crate opts in via `[lints] workspace = true`, so lint drift can't hide in one corner of the tree.
+- **Fuzz + test matrix runs in CI** via `just check-full`, wich fmt-checks, clippy-lints, runs the native test suite, builds all six firmware crates, and runs the fuzz smoke set in ~80 seconds.
+
+## What I did NOT check
+
+This is the honesty list. Deliberately out of scope for v0.1.0, not quietly skipped.
+
+- **Formal constant-time execution.** Observable-to-remote-attacker timing is in the silicon noise floor (std-dev 0.05–0.08 % under TlsfHeap), wich covers realistic timing oracles over USB / BLE / network transports. Full-cycle CT would require a whole-verifier audit across winterfell, `substrate-bn`, and `bls12_381` internals. If secret data ever flows into your verify path, zkmcu does not cover that threat model.
+- **Power analysis / EM side-channel.** Requires a ChipWhisperer-class lab. Treated as a separate follow-up project, not silently assumed.
+- **G2 subgroup correctness inside the upstream libraries.** Trusted from `substrate-bn` and `bls12_381`. I haven't independently verified their implementations of subgroup membership. Historically a bug class in BN254 precompile implementations, so it's on my external-audit list.
+- **STARK conjectured security.** The 95-bit figure relies on the list-decoding bound assumed by every deployed STARK today. Provable security is lower by a factor of 2 in queries. Acceptable in practice, flagged as "conjectured" not "proven" in every report.
+- **Trusted VK / AIR assumption.** Firmware loads the VK (Groth16) or AIR (STARK) from a trusted channel (provisioning flash, signed update). If your threat model has an attacker controlling the VK, that's a different model wich zkmcu deliberately does not defend against.
+- **Third-party audit.** None yet. This page is a self-audit, not a substitute.
+
+## Known limitations
+
+- **Silicon scope: RP2350 only.** Every number on this site comes from one SoC. Ports to nRF52840, STM32F405, Ledger ST33, Infineon SLE78 are straightforward in principle, not measured yet. This is the single most important missing piece for a wallet-vendor conversation.
+- **Semaphore VK freshness is not CI-gated.** The committed VK under `crates/zkmcu-vectors/data/semaphore-depth-10/` is loaded by `parse_semaphore.rs`, but not regenerated in CI against `scripts/gen-semaphore-proof/gen.ts`. If the Semaphore TS library bumps and changes the VK encoding the bench compares to a phantom. Closing this needs either a CI job running `gen.ts` or an explicit declaration that the committed VK is the authoritative fixture.
+- **Fibonacci AIR only on the STARK side.** Real STARK workloads (Miden VM, RISC-V zkVM, Cairo) need larger AIRs and the heap peak + verify cost will move up. Phase 4 territory.
+- **No C ABI.** Rust-only today. FFI surface for integration into existing C firmware projects is possible but not in v0.1.0.
+- **`commit` field in `result.toml` is blank.** Intentionally, until CI populates it automatically. See `benchmarks/schema.md`. Historical runs will stay blank rather than get guessed-at values.
+
+## Learning trail
+
+Every incident that shaped the current verifier surface has a dated postmortem under [`research/postmortems/`](https://github.com/Niek-Kamer/zkmcu/tree/main/research/postmortems). Seven writeups, each with context, root cause, fix, and a rule extracted:
+
+- [`2026-04-23-no-umaal-codegen`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-23-no-umaal-codegen.typ) — LLVM emits zero UMAAL on thumbv8m.main
+- [`2026-04-23-opt-level-3-regression`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-23-opt-level-3-regression.typ) — `opt-level=3` regressed Groth16 verify by 14.7 %
+- [`2026-04-24-stark-cross-field-panic`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-stark-cross-field-panic.typ) — two panic paths on adversarial STARK input, closed same day
+- [`2026-04-24-stark-unbounded-vec-alloc`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-stark-unbounded-vec-alloc.typ) — unbounded `Vec::with_capacity` in winterfell's deserialiser, closed in our fork
+- [`2026-04-24-karatsuba-isa-asymmetric`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-karatsuba-isa-asymmetric.typ) — Karatsuba helps Hazard3 but not Cortex-M33
+- [`2026-04-24-babybear-quartic-regresses`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-babybear-quartic-regresses.typ) — BabyBear × Quartic does not beat Goldilocks × Quadratic at 95-bit
+- [`2026-04-24-bench-core-babybear-speedup`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/postmortems/2026-04-24-bench-core-babybear-speedup.typ) — firmware harness refactor unlocked a 23 % M33 speedup by accident
+
+If you're a grant reviewer asking "does this author learn from mistakes", read any two of these. If you're a wallet vendor asking "do they fix parser bugs before shipping", read the two STARK postmortems, both closed within 24 hours.
+
+<Aside type="tip" title="What this page is useful for">
+  Reviewers evaluating zkmcu for a grant, a port, or a consulting engagement can use this page as a checklist: pick any claim and ask for the file:line or the test that backs it up. I tried to make every bullet above traceable to a specific piece of code or a published postmortem. If something is too vague, open an issue.
+</Aside>
+
+## Reporting a vulnerability
+
+If you find something open a [GitHub security advisory](https://github.com/Niek-Kamer/zkmcu/security/advisories) with repro steps and the affected `zkmcu-verifier` (or `-bls12`, `-stark`) version. Default disclosure window is 90 days from first report, earlier if I can ship a patch sooner. First-reporter credit goes in the release notes unless you ask otherwise.

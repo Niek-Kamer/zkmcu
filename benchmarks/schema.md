@@ -8,7 +8,7 @@ date = "2026-04-21"                  # ISO-8601 start date
 target = "rp2350-cortex-m33"         # canonical target slug
 toolchain = "rustc 1.94.1"
 profile = "release, lto=fat, opt-level=s, codegen-units=1"
-commit = "abc1234"                   # (optional) git SHA; empty string if uncommitted
+commit = ""                          # git SHA of the source tree when the run was taken; empty string until CI fills it automatically. Historical runs taken before the CI stamp landed are intentionally blank rather than guessed-at — a wrong SHA is worse than no SHA.
 
 [hardware]
 board = "Raspberry Pi Pico 2 W"

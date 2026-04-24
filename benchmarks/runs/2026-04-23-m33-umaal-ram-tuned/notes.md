@@ -55,7 +55,7 @@ The LDR drop is the entire story. 112 loads were former "reload b[j] or p[j] eve
 
 ## Anomalies and variance
 
-Iteration 1 of the g1_mul / g2_mul benchmarks came in at ~2x faster than iterations 2–6 (17 ms and 75 ms respectively). This is the Hamming-weight-dependent scalar-mul path noted in `.claude/docs/embedded-workflow.md` — the firmware seeds the test scalar with `iter + DWT::cycle_count()`, so iteration 1's scalar happened to have unusually few set bits. `result.toml` uses iterations 2–6 for the typical values.
+Iteration 1 of the g1_mul / g2_mul benchmarks came in at ~2x faster than iterations 2–6 (17 ms and 75 ms respectively). This is the Hamming-weight-dependent scalar-mul path: the firmware seeds the test scalar with `iter + DWT::cycle_count()`, so iteration 1's scalar happened to have unusually few set bits. `result.toml` uses iterations 2–6 for the typical values.
 
 Full-verify benchmarks are not scalar-dependent and show tight ±0.05 ms variance across 5 iterations.
 
