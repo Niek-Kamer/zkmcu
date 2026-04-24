@@ -19,7 +19,14 @@ fugit = "0.3"
 heapless = "0.9"
 panic-halt = "1.0"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
-substrate-bn = { workspace = true, features = ["cortex-m33-asm"] }
+# Direct path dep to the substrate-bn fork, wich adds ARMv8-M UMAAL asm
+# behind the `cortex-m33-asm` feature. Workspace root's [patch.crates-io]
+# also points at this path so `workspace = true` would resolve to the same
+# fork, but rust-analyzer can't follow the patch + workspace-inheritance +
+# features combo together and flags `cortex-m33-asm` as "Unknown Feature".
+# Going direct here sidesteps the false positive without changing the
+# resolved build graph. Only this firmware crate needs the feature.
+substrate-bn = { path = "../../vendor/bn", features = ["cortex-m33-asm"], default-features = false }
 usb-device = "0.3"
 usbd-serial = "0.2"
 zkmcu-vectors = { path = "../zkmcu-vectors" }
