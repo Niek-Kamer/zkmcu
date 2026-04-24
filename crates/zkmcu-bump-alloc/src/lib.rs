@@ -35,7 +35,7 @@
 //!
 //! Limitations:
 //!
-//! - Individual allocations can never be freed — `dealloc` is a no-op.
+//! - Individual allocations can never be freed, `dealloc` is a no-op.
 //!   Memory is only reclaimed by calling [`BumpAlloc::reset_to`] with a
 //!   previously-captured watermark.
 //! - The reset is `unsafe`: the caller must prove no live references
@@ -186,7 +186,7 @@ unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         // Optimisation: if the allocation being resized is the *topmost*
         // allocation in the arena (its end address equals `current`),
-        // then resizing in place just moves the bump pointer — no copy,
+        // then resizing in place just moves the bump pointer, no copy,
         // no leak. This is the Vec::push / reserve case, which is the
         // #1 reason a naive bump allocator explodes on realistic
         // workloads: each Vec growth leaks the old capacity otherwise.
@@ -240,6 +240,13 @@ unsafe impl GlobalAlloc for BumpAlloc {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::must_use_candidate,
+    clippy::integer_division
+)]
 mod tests {
     extern crate std;
 
@@ -298,7 +305,7 @@ mod tests {
 
     #[test]
     fn realloc_grows_in_place_on_top_of_bump() {
-        // Single growing Vec scenario — each realloc should extend the
+        // Single growing Vec scenario, each realloc should extend the
         // bump pointer without leaking.
         let (_buf, alloc) = make_arena(1024);
         let layout = Layout::from_size_align(16, 1).expect("layout");
@@ -319,7 +326,7 @@ mod tests {
         assert!(!p.is_null());
         assert_eq!(alloc.used_bytes(), 64);
 
-        // One more grow — still on top.
+        // One more grow, still on top.
         let l3 = Layout::from_size_align(64, 1).expect("layout");
         // SAFETY: same.
         let p = unsafe { alloc.realloc(p, l3, 128) };
@@ -330,7 +337,7 @@ mod tests {
     #[test]
     fn realloc_falls_back_when_not_on_top() {
         // Two allocations: A, B. Growing A (not on top) must alloc new,
-        // copy, and leak the old slot — no overlap corruption.
+        // copy, and leak the old slot, no overlap corruption.
         let (_buf, alloc) = make_arena(1024);
         let la = Layout::from_size_align(16, 1).expect("layout");
         let lb = Layout::from_size_align(16, 1).expect("layout");
@@ -360,5 +367,302 @@ mod tests {
         }
         // used_bytes accounts for A (leaked) + B + new A: 16 + 16 + 32 = 64.
         assert_eq!(alloc.used_bytes(), 64);
+    }
+
+    // ---- Edge cases and boundary conditions ----------------------------
+
+    #[test]
+    fn alloc_respects_various_alignments() {
+        // Each power-of-two alignment up to 128 bytes must produce a
+        // correctly-aligned pointer. Catches any silent drift in the
+        // align-mask computation when align > pointer-size.
+        let (_buf, alloc) = make_arena(4096);
+        for align_log2 in 0u32..=7 {
+            let align = 1usize << align_log2;
+            let layout = Layout::from_size_align(17, align).expect("layout");
+            // SAFETY: arena has capacity; no outstanding refs across iters.
+            let p = unsafe { alloc.alloc(layout) };
+            assert!(!p.is_null(), "alloc failed at align={align}");
+            assert_eq!(
+                (p as usize) % align,
+                0,
+                "pointer {p:p} not aligned to {align}"
+            );
+        }
+    }
+
+    #[test]
+    fn alloc_zero_size_returns_aligned_nonnull() {
+        // Zero-size allocations are well-defined in `GlobalAlloc`. Our impl
+        // should return an aligned non-null pointer (the bump pointer at
+        // the current watermark, rounded up to `align`) and not advance
+        // `current` past it.
+        let (_buf, alloc) = make_arena(1024);
+        let layout = Layout::from_size_align(0, 16).expect("layout");
+        let before = alloc.watermark();
+        // SAFETY: trait contract allows zero-size requests.
+        let p = unsafe { alloc.alloc(layout) };
+        assert!(!p.is_null());
+        assert_eq!((p as usize) % 16, 0);
+        // Watermark may have advanced to reach alignment, but not by more
+        // than `align - 1` bytes.
+        let advance = alloc.watermark().saturating_sub(before);
+        assert!(advance < 16, "zero-size alloc advanced {advance} > align-1");
+    }
+
+    #[test]
+    fn alloc_at_exact_arena_boundary() {
+        // Allocating the last available byte: must succeed, next alloc
+        // must return null.
+        let (_buf, alloc) = make_arena(64);
+        let fill = Layout::from_size_align(64, 1).expect("layout");
+        // SAFETY: arena size == request size.
+        let p = unsafe { alloc.alloc(fill) };
+        assert!(!p.is_null(), "exact-fit alloc failed");
+        assert_eq!(alloc.remaining_bytes(), 0);
+
+        let one_more = Layout::from_size_align(1, 1).expect("layout");
+        // SAFETY: OOM is allowed via null return.
+        let p2 = unsafe { alloc.alloc(one_more) };
+        assert!(p2.is_null(), "post-boundary alloc must return null");
+    }
+
+    #[test]
+    fn realloc_shrink_on_top_retreats_current() {
+        // Shrinking a top-of-bump allocation should move `current`
+        // backwards, otherwise shrink leaks the tail.
+        let (_buf, alloc) = make_arena(1024);
+        let layout = Layout::from_size_align(128, 8).expect("layout");
+        // SAFETY: arena has room.
+        let p = unsafe { alloc.alloc(layout) };
+        assert!(!p.is_null());
+        assert_eq!(alloc.used_bytes(), 128);
+
+        // Shrink to 32 bytes, still on top.
+        // SAFETY: `p` is the topmost allocation.
+        let p2 = unsafe { alloc.realloc(p, layout, 32) };
+        assert!(!p2.is_null());
+        assert_eq!(p2, p, "in-place shrink must keep same pointer");
+        assert_eq!(alloc.used_bytes(), 32, "shrink must free the tail");
+    }
+
+    #[test]
+    fn watermark_reset_round_trip_reuses_memory() {
+        // Capture watermark, alloc, reset, alloc again, the second round
+        // should land at the same address as the first, proving reset
+        // actually reclaims memory.
+        let (_buf, alloc) = make_arena(1024);
+        let layout = Layout::from_size_align(64, 8).expect("layout");
+        let w = alloc.watermark();
+        // SAFETY: arena has room.
+        let p1 = unsafe { alloc.alloc(layout) };
+        assert!(!p1.is_null());
+        // SAFETY: nothing references the allocation.
+        unsafe { alloc.reset_to(w) };
+        // SAFETY: arena has room again after reset.
+        let p2 = unsafe { alloc.alloc(layout) };
+        assert_eq!(
+            p1, p2,
+            "after reset, same layout must land at the same address"
+        );
+    }
+
+    #[test]
+    fn init_places_watermark_at_start() {
+        // Fresh allocator after `init` should have zero used bytes,
+        // full remaining, and the watermark must equal the start address.
+        let (buf, alloc) = make_arena(1024);
+        assert_eq!(alloc.used_bytes(), 0);
+        assert_eq!(alloc.remaining_bytes(), 1024);
+        assert_eq!(alloc.watermark(), buf.as_ptr() as usize);
+    }
+
+    #[test]
+    fn remaining_plus_used_equals_capacity_across_allocs() {
+        let (_buf, alloc) = make_arena(1024);
+        for size in [1usize, 7, 16, 31, 64, 100] {
+            let layout = Layout::from_size_align(size, 8).expect("layout");
+            // SAFETY: total < arena capacity, verified below.
+            let p = unsafe { alloc.alloc(layout) };
+            assert!(!p.is_null());
+            assert_eq!(
+                alloc.used_bytes() + alloc.remaining_bytes(),
+                1024,
+                "used + remaining drifted from capacity after size={size}"
+            );
+        }
+    }
+
+    #[test]
+    fn concurrent_allocs_dont_overlap() {
+        use std::sync::Arc;
+        use std::thread;
+
+        // Shared arena, N threads each alloc M disjoint 64-byte slots.
+        // Assert: every returned pointer is unique and in-range. The
+        // core invariant of the CAS loop.
+        // 8 threads × 256 allocs × 64 bytes = 128 KB needed. Allocate 256 KB
+        // arena so the race has slack and no thread ever hits OOM (OOM would
+        // hide an ordering bug, not expose one).
+        const ARENA: usize = 256 * 1024;
+        const THREADS: usize = 8;
+        const PER_THREAD: usize = 256;
+
+        let buf = Arc::new(std::sync::Mutex::new(vec![0u8; ARENA]));
+        let alloc = Arc::new(BumpAlloc::new());
+        // SAFETY: single initialisation, buffer outlives the allocator.
+        unsafe {
+            let mut g = buf.lock().unwrap();
+            alloc.init(g.as_mut_ptr(), ARENA);
+        }
+
+        let mut handles = Vec::with_capacity(THREADS);
+        for _ in 0..THREADS {
+            let alloc = Arc::clone(&alloc);
+            handles.push(thread::spawn(move || {
+                let layout = Layout::from_size_align(64, 8).expect("layout");
+                let mut ptrs = Vec::with_capacity(PER_THREAD);
+                for _ in 0..PER_THREAD {
+                    // SAFETY: size * thread_count * per-thread < ARENA.
+                    let p = unsafe { alloc.alloc(layout) };
+                    assert!(!p.is_null(), "OOM during concurrent alloc");
+                    ptrs.push(p as usize);
+                }
+                ptrs
+            }));
+        }
+
+        let mut all: Vec<usize> = Vec::with_capacity(THREADS * PER_THREAD);
+        for h in handles {
+            all.extend(h.join().expect("thread panicked"));
+        }
+        all.sort_unstable();
+        for w in all.windows(2) {
+            assert!(
+                w[1] >= w[0] + 64,
+                "pointers {:#x} and {:#x} overlap",
+                w[0],
+                w[1]
+            );
+        }
+        assert_eq!(all.len(), THREADS * PER_THREAD);
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::must_use_candidate,
+    clippy::integer_division
+)]
+mod proptests {
+    extern crate std;
+
+    use super::*;
+    use core::alloc::Layout;
+    use proptest::prelude::*;
+    use std::vec;
+    use std::vec::Vec;
+
+    const ARENA: usize = 8 * 1024;
+
+    /// One operation in a fuzzed alloc sequence.
+    #[derive(Debug, Clone)]
+    enum Op {
+        /// Allocate `size` bytes at `align`.
+        Alloc { size: usize, align_log2: u32 },
+        /// Reset to the currently-captured watermark (or skip if none).
+        Reset,
+        /// Capture the current bump pointer as a watermark for later reset.
+        Checkpoint,
+    }
+
+    fn op_strategy() -> impl Strategy<Value = Op> {
+        prop_oneof![
+            (0usize..256, 0u32..=5).prop_map(|(size, align_log2)| Op::Alloc { size, align_log2 }),
+            Just(Op::Reset),
+            Just(Op::Checkpoint),
+        ]
+    }
+
+    proptest! {
+        /// Any sequence of alloc / checkpoint / reset operations must
+        /// leave the allocator in a consistent state: every returned
+        /// pointer is in-range, aligned to its request, and never
+        /// overlaps any other live allocation. `used_bytes +
+        /// remaining_bytes == ARENA` at every step.
+        #[test]
+        fn random_sequences_preserve_invariants(
+            ops in prop::collection::vec(op_strategy(), 1..100)
+        ) {
+            let mut buf = vec![0u8; ARENA];
+            let alloc = BumpAlloc::new();
+            // SAFETY: `buf` outlives the allocator for this test.
+            unsafe { alloc.init(buf.as_mut_ptr(), ARENA); }
+            let start = buf.as_ptr() as usize;
+            let end = start + ARENA;
+
+            let mut checkpoint: Option<usize> = None;
+            let mut live: Vec<(usize, usize)> = Vec::new(); // (ptr, size) of allocs above checkpoint
+
+            for op in ops {
+                match op {
+                    Op::Alloc { size, align_log2 } => {
+                        let align = 1usize << align_log2;
+                        let layout = Layout::from_size_align(size, align).expect("layout");
+                        // SAFETY: trait contract satisfied.
+                        let p = unsafe { alloc.alloc(layout) };
+                        if p.is_null() {
+                            continue; // OOM is a valid outcome
+                        }
+                        let addr = p as usize;
+                        prop_assert!(
+                            addr >= start && addr + size <= end,
+                            "alloc {addr:#x}+{size} outside arena [{start:#x}, {end:#x})"
+                        );
+                        prop_assert_eq!(
+                            addr % align, 0,
+                            "alloc {:#x} not aligned to {}", addr, align
+                        );
+                        // Non-overlap against all currently-live allocs.
+                        for &(other, other_size) in &live {
+                            let no_overlap = addr + size <= other || other + other_size <= addr;
+                            prop_assert!(
+                                no_overlap,
+                                "alloc {addr:#x}+{size} overlaps existing {other:#x}+{other_size}"
+                            );
+                        }
+                        live.push((addr, size));
+                    }
+                    Op::Checkpoint => {
+                        checkpoint = Some(alloc.watermark());
+                        // All earlier "live" allocs are below the checkpoint;
+                        // we only track allocs made after a checkpoint so
+                        // `Reset` can invalidate them cleanly.
+                        live.clear();
+                    }
+                    Op::Reset => {
+                        if let Some(w) = checkpoint {
+                            // Drop every pointer we tracked above the checkpoint
+                            // before reset, so no live reference survives the call.
+                            live.clear();
+                            // SAFETY: `live.clear()` above forgets all pointers we
+                            // handed out above `w`; no reference survives, so
+                            // retreating `current` below them is sound.
+                            unsafe {
+                                alloc.reset_to(w);
+                            }
+                        }
+                    }
+                }
+                prop_assert_eq!(
+                    alloc.used_bytes() + alloc.remaining_bytes(),
+                    ARENA,
+                    "used + remaining drifted from arena size"
+                );
+            }
+        }
     }
 }

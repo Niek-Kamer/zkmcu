@@ -9,3 +9,8 @@ description = "no_std bump-allocator GlobalAlloc with watermark save/restore, fo
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+# Property-based alloc sequences: random mixes of alloc / realloc with
+# bounded sizes, asserting in-range + aligned + non-overlapping pointers.
+proptest = "1.6"
