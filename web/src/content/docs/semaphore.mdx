@@ -12,21 +12,21 @@ import { Aside, Badge, CardGrid, Card } from '@astrojs/starlight/components';
   <Badge text="variance 0.030 %" variant="tip" />
 </div>
 
-Synthetic `x² = y` benchmarks are fine for infrastructure testing, but they don't answer the question that matters: *can this actually verify the proofs people use in production?* So we took a real [Semaphore](https://semaphore.pse.dev) v4.14.2 Groth16 proof (Merkle tree depth 10, 4 public inputs) produced by snarkjs under the CDN-hosted production trusted setup, and ran it through `zkmcu-verifier` on a Raspberry Pi Pico 2 W.
+Synthetic `x² = y` benchmarks are fine for wiring things up, but they don't answer the question that actually matters: *can this verify the proofs people use in production?* So I took a real [Semaphore](https://semaphore.pse.dev) v4.14.2 Groth16 proof (Merkle tree depth 10, 4 public inputs), produced by snarkjs under the CDN-hosted production trusted setup, and ran it through `zkmcu-verifier` on a $7 Pi Pico 2 W.
 
-**1,176 ms on Cortex-M33, 1,564 ms on Hazard3 RV32**, every iteration returning `ok=true`, iteration-to-iteration variance **0.030 %** — the tightest measurement in the whole project. Same proof bytes that Ethereum's Semaphore precompile accepts at the other end of the wire.
+**1,176 ms on Cortex-M33, 1,564 ms on Hazard3 RV32**, every iteration returning `ok=true`, iteration-to-iteration variance **0.030 %**. That's the tightest measurement in the whole project. Same proof bytes that Ethereum's Semaphore precompile accepts at the other end of the wire.
 
 ## What "real" means here
 
 The proof that lands on the MCU traces through this pipeline:
 
-1. **VK**: extracted from [`vendor/semaphore/packages/proof/src/verification-keys.json`](https://github.com/Niek-Kamer/zkmcu/blob/main/crates/zkmcu-vectors/data/semaphore-depth-10/vk.bin) at depth 10 — the actual trusted-setup artifact the Semaphore team shipped for v4.14.2
-2. **Prover side**: `@semaphore-protocol/proof` 4.14.2 → snarkjs → production snark-artifacts (tag 4.13.0) fetched from the Semaphore CDN. Same code paths the JavaScript SDK uses when generating a Semaphore proof for on-chain submission
-3. **Wire format**: snarkjs emits the proof in Ethereum's EIP-197 byte order. `zkmcu-host-gen` converts from snarkjs JSON to the `.bin` files that land in `crates/zkmcu-vectors/data/semaphore-depth-10/`
-4. **On-device verify**: `zkmcu-verifier` parses those bytes and runs the Groth16 pairing check with `substrate-bn`
+1. **VK**: extracted from [`vendor/semaphore/packages/proof/src/verification-keys.json`](https://github.com/Niek-Kamer/zkmcu/blob/main/crates/zkmcu-vectors/data/semaphore-depth-10/vk.bin) at depth 10. The actual trusted-setup artifact the Semaphore team shipped for v4.14.2.
+2. **Prover side**: `@semaphore-protocol/proof` 4.14.2 → snarkjs → production snark-artifacts (tag 4.13.0) fetched from the Semaphore CDN. Same code paths the JavaScript SDK uses when generating a Semaphore proof for on-chain submission.
+3. **Wire format**: snarkjs emits the proof in Ethereum's EIP-197 byte order. `zkmcu-host-gen` converts from snarkjs JSON to the `.bin` files that land in `crates/zkmcu-vectors/data/semaphore-depth-10/`.
+4. **On-device verify**: `zkmcu-verifier` parses those bytes and runs the Groth16 pairing check with `substrate-bn`.
 
 <Aside type="note">
-Every committed Semaphore byte we verify has already been verified by three independent stacks: `@semaphore-protocol/proof`'s own `verifyProof` on the prover host, `zkmcu-verifier` on the prover host, and `zkmcu-verifier` on the Pico 2 W. If any one of them disagreed, the bytes wouldn't be in the repo.
+Every committed Semaphore byte I verify has already been verified by three independent stacks: `@semaphore-protocol/proof`'s own `verifyProof` on the prover host, `zkmcu-verifier` on the prover host, and `zkmcu-verifier` on the Pico 2 W. If any of them disagreed, the bytes wouldn't be in the repo.
 </Aside>
 
 ## The numbers
@@ -39,20 +39,20 @@ Every committed Semaphore byte we verify has already been verified by three inde
 | Measured Δ vs prediction | +1.4 % | −3.5 % |
 | All iterations return `ok=true` | yes | yes |
 
-Both predictions inside noise on first measurement — the closest prediction-vs-reality match in the project's phase-2 arc. Full raw data: [`benchmarks/runs/2026-04-22-m33-semaphore-depth10/`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-22-m33-semaphore-depth10) and [`-rv32-semaphore-depth10/`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-22-rv32-semaphore-depth10).
+Both predictions inside noise on first measurement. Closest prediction-vs-reality match in the project's phase-2 arc, honestly I was a bit surprised. Full raw data: [`benchmarks/runs/2026-04-22-m33-semaphore-depth10/`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-22-m33-semaphore-depth10) and [`-rv32-semaphore-depth10/`](https://github.com/Niek-Kamer/zkmcu/tree/main/benchmarks/runs/2026-04-22-rv32-semaphore-depth10).
 
 Full analysis in the prediction report: [`2026-04-22-semaphore-baseline.typ`](https://github.com/Niek-Kamer/zkmcu/blob/main/research/reports/2026-04-22-semaphore-baseline.typ).
 
 ## What this unlocks
 
-The Semaphore verifier call that runs on Ethereum's precompile during every anonymous group message now runs **unmodified** on a $7 MCU. Practical applications that become possible once the verify is on-device:
+The Semaphore verifier call that runs on Ethereum's precompile during every anonymous group message now runs **unmodified** on a $7 MCU. Practical applications that open up once the verify is on-device:
 
 <CardGrid>
   <Card title="Hardware wallets that verify before signing" icon="laptop">
     Today your phone runs the Semaphore verify and your Ledger / Trezor just signs the resulting transaction. A compromised phone can trick the hw wallet into authorising a bogus Semaphore action. zkmcu lets the hw wallet's secure element run the verify itself, so the signing step can refuse if the proof doesn't actually hold up.
   </Card>
   <Card title="Offline Semaphore gates" icon="seti:lock">
-    Turnstile, door lock, voting booth that accepts a Semaphore-style "I'm in this group without revealing which member" proof without any server call. Hardware + zkmcu firmware + a Semaphore VK baked in at provisioning — that's the whole stack.
+    Turnstile, door lock, voting booth that accepts a Semaphore-style "I'm in this group without revealing wich member" proof without any server call. Hardware + zkmcu firmware + a Semaphore VK baked in at provisioning. That's the whole stack.
   </Card>
   <Card title="Peer-to-peer private vouchers" icon="approve-check-circle">
     Person A hands Person B a ZK-proven payment note or access credential. Person B's device verifies locally. No on-chain step needed for the verification side of the exchange (settlement can happen separately).
@@ -93,8 +93,8 @@ The hardcoded inputs in `gen.ts` (identity seed, message, scope, tree depth) mak
 
 ## What this does *not* claim
 
-- Not every Semaphore-shaped circuit will verify in exactly 1,176 ms. Tree depth affects witness size, not VK or public-input count — but a firmware implementing `pairing_batch` the same way lands on the same timing profile. Different depth changes the proving cost on the host, not the verify cost on the MCU.
-- Not a constant-time implementation. Verify duration varies observably with public-input Hamming weight (see [benchmarks](/benchmarks/)) because `substrate-bn` uses a sliding-window NAF. Acceptable for verify-only threat models where proof + public inputs are already public; not acceptable if secret data flows into the verify path.
-- Not a performance lower bound. `substrate-bn`'s pure-Rust implementation doesn't use ARMv8-M `UMAAL` / `SMLAL` intrinsics, which would plausibly cut verify by 2–3×. That's future optimization work.
+- Not every Semaphore-shaped circuit will verify in exactly 1,176 ms. Tree depth affects witness size, not VK or public-input count, so a firmware implementing `pairing_batch` the same way lands on the same timing profile. Different depth changes the proving cost on the host, not the verify cost on the MCU.
+- Not a constant-time implementation. Verify duration varies observably with public-input Hamming weight (see [benchmarks](/benchmarks/)) because `substrate-bn` uses a sliding-window NAF. Acceptable for verify-only threat models where proof + public inputs are already public, not acceptable if secret data flows into the verify path.
+- Not a performance lower bound. `substrate-bn`'s pure-Rust implementation doesn't use ARMv8-M `UMAAL` / `SMLAL` intrinsics, wich would plausibly cut verify by 2-3×. That's future optimization work, ofcourse.
 
 See the [Security](/security/) page for the full threat model.

@@ -1,18 +1,18 @@
 ---
 // Structured renderer for cross-target benchmark comparisons. Numbers
-// right-align via tabular-nums; units render smaller + dimmed so the digits
+// right-align via tabular-nums, units render smaller + dimmed so the digits
 // scan vertically. Fixed column widths so long labels don't starve numeric
-// columns — the failure mode plain HTML tables have.
+// columns, wich is the usual failure mode with plain HTML tables.
 
-export type Cell = { us: number };
+export interface Cell { us: number }
 
-export type Row = {
+export interface Row {
 	label: string;
 	sublabel?: string;
 	emphasize?: boolean;
 	cells: Cell[];
 	proofBytes: number;
-};
+}
 
 export interface Props {
 	targets: string[];
@@ -52,11 +52,16 @@ const fmtProof = (bytes: number) =>
 						<span class="n">{fmtMs(cell.us)}</span><span class="u">ms</span>
 					</td>
 				))}
-				{showRatio && row.cells.length >= 2 && (
-					<td class="num-col ratio-col">
-						<span class="n">{(row.cells[1].us / row.cells[0].us).toFixed(2)}</span><span class="u">×</span>
-					</td>
-				)}
+				{(() => {
+					const first = row.cells[0];
+					const second = row.cells[1];
+					if (!showRatio || !first || !second) return null;
+					return (
+						<td class="num-col ratio-col">
+							<span class="n">{(second.us / first.us).toFixed(2)}</span><span class="u">×</span>
+						</td>
+					);
+				})()}
 				<td class="num-col proof-col">
 					<span class="n">{fmtProof(row.proofBytes)}</span>
 				</td>

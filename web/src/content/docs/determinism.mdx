@@ -1,6 +1,6 @@
 ---
 title: Deterministic timing
-description: Why STARK verify timing variance dropped from 0.46 % to 0.08 % on the same silicon, the allocator, not the crypto, was the noise source.
+description: Why STARK verify timing variance dropped from 0.46 % to 0.08 % on the same silicon. The allocator, not the crypto, was the noise source.
 ---
 
 import { Aside, Badge, CardGrid, Card } from '@astrojs/starlight/components';
@@ -11,7 +11,7 @@ import { Aside, Badge, CardGrid, Card } from '@astrojs/starlight/components';
   <Badge text="side-channel adjacent" variant="tip" />
 </div>
 
-The STARK verify path allocates ~400 `Vec`s internally. Under a general-purpose allocator those allocations produce enough timing jitter to turn an otherwise-deterministic crypto routine into one that's 10× noisier than what the silicon can actually resolve. This page is the writeup of how we tracked that down and what it means for anyone writing side-channel-sensitive firmware.
+The STARK verify path allocates ~400 `Vec`s internally. Under a general-purpose allocator those allocations produce enough timing jitter to turn an otherwise-deterministic crypto routine into one that's 10× noisier than wich the silicon can actually resolve. This page is how I tracked that down and what it means if you're writing side-channel-sensitive firmware.
 
 ## The anomaly
 
@@ -20,13 +20,13 @@ Phase 3.1 measured STARK Fibonacci verify on RP2350:
 - Cortex-M33: median 43.8 ms, iteration-to-iteration variance **0.30 %**
 - Hazard3 RV32: median 64.1 ms, variance **0.69 %**
 
-For context, BN254 Groth16 and BLS12-381 Groth16 on the *same silicon* measure variance in the **0.03-0.07 %** range. Pairing-based verifiers barely allocate during verify; they're dominated by stack-only tower-arithmetic and cycle-counter noise. 10× that baseline is not "slightly noisy", it's an anomaly that deserves a root cause.
+For context, BN254 Groth16 and BLS12-381 Groth16 on the *same silicon* measure variance in the **0.03-0.07 %** range. Pairing-based verifiers barely allocate during verify, they're dominated by stack-only tower-arithmetic and cycle-counter noise. 10× that baseline is not "slightly noisy", it's an anomaly that deserves a root cause.
 
 ## Three hypotheses, three experiments
 
 ### Phase 3.2.x, hoist `proof.clone()` out of the timed window
 
-The first hypothesis: `winterfell::verify` takes the `Proof` by value, so the firmware has to `proof.clone()` inside the timed window to preserve the original. That clone allocates ~30 KB of Vecs and runs the allocator path's worst case.
+First hypothesis was simple: `winterfell::verify` takes the `Proof` by value, so the firmware has to `proof.clone()` inside the timed window to preserve the original. That clone allocates ~30 KB of Vecs and hits the allocator path's worst case. Seemed like the obvious candidate.
 
 Experiment: change the firmware loop from
 
@@ -52,13 +52,13 @@ Result:
 | Clone in window | 0.33 % | 0.29 % |
 | Clone outside window | **0.245 %** | **0.46 %** (worse!) |
 
-Modest improvement on M33 (~25 % of jitter was the clone), no improvement on RV32, and on RV32 variance actually *went up*, the clone had been slightly stabilising the loop. The hypothesis was largely disconfirmed.
+Modest improvement on M33 (~25 % of the jitter was the clone), zero improvement on RV32, and on RV32 variance actually *went up*. Turns out the clone had been slightly stabilising the loop. So yeah, hypothesis mostly disconfirmed.
 
-Takeaway: allocator jitter inside winterfell's verify path itself, the ~400 internal `Vec` allocations, is the dominant source, not the single outer clone.
+Takeaway: allocator jitter inside winterfell's verify path itself, the ~400 internal `Vec` allocations, is wich dominates. Not the single outer clone.
 
 ### Phase 3.2.y, BumpAlloc with watermark reset
 
-If internal allocations are the problem, remove the allocator from the picture entirely. We wrote a custom [`zkmcu-bump-alloc`](https://github.com/Niek-Kamer/zkmcu/tree/main/crates/zkmcu-bump-alloc) global allocator: atomic-CAS bump pointer, no-op `dealloc`, in-place `realloc` when the resized allocation is on top of the bump, watermark save / restore. Between iterations the firmware calls `HEAP.reset_to(watermark)` to discard everything the previous iteration allocated, so *every verify starts with byte-identical allocator state*.
+If internal allocations are the problem, remove the allocator from the picture entirely. I wrote a custom [`zkmcu-bump-alloc`](https://github.com/Niek-Kamer/zkmcu/tree/main/crates/zkmcu-bump-alloc) global allocator: atomic-CAS bump pointer, no-op `dealloc`, in-place `realloc` when the resized allocation is on top of the bump, watermark save / restore. Between iterations the firmware calls `HEAP.reset_to(watermark)` to discard everything the previous iteration allocated, so *every verify starts with byte-identical allocator state*.
 
 ```rust
 let reset_point = HEAP.watermark();        // captured after parse_proof
@@ -78,15 +78,15 @@ Result:
 | Median verify | **67.95 ms** (1.7 ms faster than LlffHeap) | **82.17 ms** (10.2 ms faster than LlffHeap) |
 | Std-dev variance | **0.080 %** | **0.076 %** |
 
-Variance dropped to silicon baseline. And as a side effect, *median verify got faster*, the LlffHeap free-list walk had been paying 1.7 ms on M33 and **10.2 ms on Hazard3** as pure overhead. Bump alloc's O(1) path eliminates it.
+Variance dropped to silicon baseline. And as a side effect, *median verify actually got faster*. The LlffHeap free-list walk had been paying 1.7 ms on M33 and **10.2 ms on Hazard3** as pure overhead. Bump alloc's O(1) path removes it entirely.
 
-Catch: bump alloc with no-op `dealloc` is memory-hungry. Heap peak jumps from 93.5 KB (LlffHeap) to 314 KB (bump). That's *above the 128 KB hardware-wallet tier*. Bump alloc proves the crypto can be timing-deterministic, but it isn't a production allocator.
+Catch ofcourse: bump alloc with no-op `dealloc` is memory-hungry. Heap peak jumps from 93.5 KB (LlffHeap) to 314 KB (bump). That's *above the 128 KB hardware-wallet tier*. So bump alloc proves the crypto can be timing-deterministic, but it's not a production allocator.
 
 ### Phase 3.2.z, TlsfHeap for production
 
-The third hypothesis: an O(1) general-purpose allocator can give most of the determinism of bump alloc while retaining normal `dealloc` semantics, so heap peak stays at LlffHeap's 93.5 KB.
+Third hypothesis: an O(1) general-purpose allocator can give most of the determinism of bump alloc while keeping normal `dealloc` semantics, so heap peak stays at LlffHeap's 93.5 KB.
 
-`embedded-alloc::TlsfHeap`, two-level segregated fit, O(1) alloc and free, is the test.
+`embedded-alloc::TlsfHeap`, two-level segregated fit, O(1) alloc and free. That was the test.
 
 Result:
 
@@ -98,11 +98,11 @@ Result:
 
 TLSF's std-dev matches BumpAlloc's. Heap peak matches LlffHeap's (byte-identical, because both hold the same live allocations). Median is 5 ms slower than LlffHeap, the price of O(1) worst-case bound. For hardware wallets where verify runs at human-action speed, that's invisible.
 
-**TlsfHeap is the zkmcu production default for STARK verify.** It's the first configuration that's both silicon-baseline-variance and 128-KB-tier-compliant.
+**TlsfHeap is the zkmcu production default for STARK verify.** First configuration that's both silicon-baseline-variance and 128-KB-tier-compliant.
 
 ## Why this matters for hardware wallets
 
-Timing-deterministic verify is side-channel resistance without writing constant-time code. For the pairing-based verifiers `substrate-bn` and zkcrypto `bls12_381` already give us ~0.05 % variance naturally because they don't allocate much during verify. STARK verify was the outlier, winterfell's design allocates heavily, which turned into observable timing jitter.
+Timing-deterministic verify is side-channel resistance without writing constant-time code by hand. The pairing-based verifiers already give us ~0.05 % variance naturally because `substrate-bn` and `bls12_381` don't allocate much during verify. STARK was the outlier, winterfell's design allocates heavily, wich turned into observable timing jitter.
 
 <Aside type="note" title="What this isn't">
   Neither `TlsfHeap` nor `BumpAlloc` makes zkmcu "formally constant-time". A proper CT proof would need a secret-dependent-branch audit across the whole verifier stack, including winterfell's internal code paths. What we're measuring here is *timing jitter per verify call*, i.e. how consistently the same proof verifies to the same number of cycles. That's the property that actually matters for remote-timing attacks against a device running in a controlled environment.
@@ -112,10 +112,10 @@ Real applications where this property is the deciding factor:
 
 <CardGrid>
   <Card title="Hardware wallet verify-before-sign" icon="laptop">
-    An attacker who measures verify duration across many proofs should not be able to distinguish "the VK the wallet trusts" from a decoy. With 0.08 % variance at 75 ms, the side-channel signal is in the noise floor of any non-lab-grade timing oracle.
+    An attacker who measures verify duration across many proofs shouldn't be able to distinguish "the VK the wallet trusts" from a decoy. At 0.08 % variance on 75 ms, the side-channel signal is in the noise floor of any non-lab-grade timing oracle.
   </Card>
   <Card title="Network timing oracles" icon="external">
-    Devices running over USB-CDC or BLE reveal timing at millisecond resolution to any host observer. 0.08 % variance = ~60 μs spread = well below the noise floor of those transports.
+    Devices running over USB-CDC or BLE reveal timing at millisecond resolution to any host observer. 0.08 % variance ≈ 60 μs spread, well below the noise floor of those transports.
   </Card>
   <Card title="Air-gapped credential readers" icon="seti:lock">
     Turnstile that accepts a ZK credential. Ditto: the physical timing-channel an attacker could measure is dominated by mechanical delay, not verify jitter.
@@ -124,7 +124,7 @@ Real applications where this property is the deciding factor:
 
 ## The cross-ISA surprise
 
-The allocator choice had a second, unexpected consequence: *it changed the Cortex-M33-vs-Hazard3 performance ratio by 30 %*.
+The allocator choice had a second, fairly unexpected consequence: *it changed the Cortex-M33-vs-Hazard3 performance ratio by 30 %*.
 
 | Config | RV32 / M33 |
 |---|---:|
@@ -134,11 +134,11 @@ The allocator choice had a second, unexpected consequence: *it changed the Corte
 
 BumpAlloc (branch-free CAS-bump) gives us the "pure crypto" cross-ISA ratio: 1.21×. That's the honest number for comparing Cortex-M33 vs Hazard3 on STARK verify workload, stripped of allocator overhead.
 
-LlffHeap adds free-list-walk cost, which Hazard3 pays more for than M33 (weaker branch prediction on pointer chase), widening the gap to 1.33×.
+LlffHeap adds free-list-walk cost, wich Hazard3 pays more for than M33 (weaker branch prediction on pointer chase), widening the gap to 1.33×.
 
-TlsfHeap adds bitmap-walk cost, which Hazard3 *also* pays more for but differently (many small conditional branches around the two-level bitmap), widening the gap further to 1.51×.
+TlsfHeap adds bitmap-walk cost, wich Hazard3 *also* pays more for but differently (many small conditional branches around the two-level bitmap), widening the gap further to 1.51×.
 
-**Implication for cross-ISA crypto benchmarks:** the allocator you pick can swing the "M33 vs Hazard3" answer by 30 %. Any published microarchitecture comparison of `no_std` crypto workloads that uses a stock general-purpose allocator is partially measuring the allocator, not the workload. Future zkmcu reports will disclose allocator choice prominently, and the allocator-matrix report (linked below) is the reference for what a full disclosure should look like.
+**Implication for cross-ISA crypto benchmarks:** the allocator you pick can swing the "M33 vs Hazard3" answer by 30 %. Any published microarchitecture comparison of `no_std` crypto workloads that uses a stock general-purpose allocator is partially measuring the allocator, not the workload. Future zkmcu reports will always disclose allocator choice up front, and the allocator-matrix report linked below is the reference for what a full disclosure should look like.
 
 ## Full reports
 

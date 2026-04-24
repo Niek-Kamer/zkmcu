@@ -1,10 +1,10 @@
 ---
 title: zkmcu
-description: no_std Rust family of SNARK and STARK verifiers for ARM Cortex-M and RISC-V microcontrollers. BN254, BLS12-381, and winterfell STARK, all under 128 KB SRAM, timing-deterministic to silicon noise floor.
+description: no_std Rust verifiers for Cortex-M and RISC-V microcontrollers. BN254 Groth16, BLS12-381 Groth16, and winterfell STARK, all under 128 KB SRAM on a $7 Pico 2 W.
 hero:
   tagline: |
-    no_std Rust family of SNARK and STARK verifiers for microcontrollers.
-    BN254, BLS12-381, and winterfell STARK, all under 128 KB SRAM, measured on a $7 Raspberry Pi Pico 2 W.
+    Three no_std Rust verifiers for microcontrollers. BN254 Groth16, BLS12-381 Groth16, and winterfell STARK.
+    All three fit under 128 KB SRAM on a $7 Pico 2 W. Ofcourse nobody had published this before, so I had to find out myself.
   actions:
     - text: Get started
       link: /getting-started/
@@ -23,16 +23,13 @@ hero:
 import { Card, CardGrid, Code, Aside, Badge } from '@astrojs/starlight/components';
 
 <div class="hero-badges">
-  <Badge text="v0.1.0" variant="success" />
   <Badge text="no_std Rust" variant="note" />
-  <Badge text="BN254 + BLS12-381 + STARK" variant="note" />
   <Badge text="128 KB SRAM tier" variant="tip" />
-  <Badge text="MIT OR Apache-2.0" variant="tip" />
 </div>
 
 ## In five lines
 
-Bring in one of the verifier crates, feed the proof bytes, get a result.
+Yeah so the API is pretty much three crates, one function each. Pull in wichever one you need, hand it bytes, check the `bool`.
 
 ```rust
 use zkmcu_verifier::verify_bytes;                   // BN254 / EIP-197
@@ -44,43 +41,50 @@ use zkmcu_verifier_stark::fibonacci::verify;        // winterfell STARK, Fibonac
 let ok = verify_bytes(&vk_bytes, &proof_bytes, &public_bytes)?;
 ```
 
-All three verifiers: `no_std`, pure Rust, one function call, measured on silicon.
+All three: `no_std`, pure Rust, one function call. Every number on this page comes from a real bench on a real RP2350, not a simulator.
 
 ## Measured on silicon
 
+<a class="hero-stat" href="/semaphore/">
+  <div class="hero-stat__num">1 176 ms</div>
+  <div class="hero-stat__label">Real Semaphore v4 proof, verified on a $7 MCU</div>
+  <div class="hero-stat__body">
+    BN254 Groth16, 4 public inputs, the actual Ethereum-Semaphore trusted setup. Same VK wich the `0x08` precompile accepts. No simplifications, no off-device preprocess, no cheating.
+  </div>
+</a>
+
 <CardGrid>
   <Card title="75 ms" icon="rocket">
-    **STARK verify at 95-bit security** on Cortex-M33 @ 150 MHz. Fibonacci AIR, quadratic extension over Goldilocks, TlsfHeap allocator. Silicon-baseline timing variance (0.08 %). [More](/stark/)
-  </Card>
-  <Card title="1 176 ms" icon="approve-check-circle">
-    **Real Semaphore v4 proof** on the same chip. BN254 Groth16, 4 public inputs, production trusted setup, same VK Ethereum's precompile accepts. [More](/semaphore/)
+    **STARK verify at 95-bit security.** Winterfell Fibonacci AIR over Goldilocks, quadratic extension, TlsfHeap allocator. Variance sits at 0.08 %, wich is basically the silicon noise floor. [More](/stark/)
   </Card>
   <Card title="2 015 ms" icon="puzzle">
-    BLS12-381 Groth16 verify, same chip. First public `no_std` BLS12 verifier on Cortex-M.
+    BLS12-381 Groth16, same $7 silicon. First public `no_std` BLS12 verifier on Cortex-M, as far as I can find. If anyone knows of an earlier one, tell me and I'll update.
   </Card>
   <Card title="≈ 97 KB" icon="document">
-    Total RAM during verify, *all three verifier families*. Fits the 128 KB SRAM class of shipping hardware-wallet silicon.
+    Total RAM during verify, for all three families. Fits the 128 KB SRAM tier wich is what actual hardware-wallet silicon (ST33, STM32F405, nRF52) ships with.
   </Card>
 </CardGrid>
 
-<Aside type="note" title="Why this matters">
-  Every current SNARK / STARK verifier ships for phones or servers. Hardware wallets, offline credential validators, IoT attestation tags, nothing runs ZK verification on-device today because no open-source `no_std` verifier existed. zkmcu closes that gap on any 128 KB SRAM-class MCU, for *all three* dominant proof-system families: Ethereum's BN254 precompile format, BLS12-381's EIP-2537 format, and winterfell's Goldilocks-based STARK.
+<Aside type="note" title="Why this even exists">
+  Every SNARK and STARK verifier out there ships for phones or servers. Hardware wallets, offline credential readers, IoT tags, none of them verify ZK proofs on-device. Not because it was impossible, just because nobody had shipped an open-source `no_std` verifier to try it with.
+
+  So I figured someone had to actually benchmark wether it fits, and here we are. All three dominant proof-system families, one 128 KB SRAM budget: Ethereum's BN254 precompile format, BLS12-381 for EIP-2537, and winterfell's Goldilocks-based STARK.
 </Aside>
 
 ## What it's for
 
 <CardGrid>
   <Card title="Hardware wallets" icon="laptop">
-    Local ZK verification on the secure element, so a compromised phone can't trick the hw wallet into rubber-stamping a bogus Semaphore / Tornado / Aztec-style action. Timing-deterministic under TLSF, side-channel resistance baked in.
+    ZK verify on the secure element itself, so a compromised phone can't feed the wallet a bogus Semaphore or Tornado action and get rubber-stamped. Under TlsfHeap the timing is deterministic to silicon noise floor, so side-channel resistance is mostly free.
   </Card>
   <Card title="Offline credentials" icon="seti:lock">
-    Transit turnstiles, festivals, borders. Verify a privacy-preserving credential fully offline, no server round-trip. Both Groth16 and STARK verify paths covered.
+    Transit turnstiles, festivals, borders. Verify a privacy-preserving credential with no network, no server round-trip. Groth16 and STARK both work, pick wichever your issuer uses.
   </Card>
   <Card title="IoT attestation" icon="linux">
-    Small devices verifying each other's SNARK-attested provenance directly, without a cloud relay in the loop. STARK verify's 75 ms speed makes per-packet verification viable.
+    Small devices checking each other's SNARK-attested provenance without a cloud relay in the middle. At 75 ms per STARK, you can actually verify per-packet without falling over.
   </Card>
   <Card title="Cross-chain / zkVM proofs" icon="external">
-    BLS12-381 sync-committee proofs, Filecoin PoSt, Aleo proofs, winterfell / Miden VM traces, anything on a BN254, BLS12-381, or Goldilocks-STARK stack.
+    BLS12-381 sync-committee proofs, Filecoin PoSt, Aleo, winterfell / Miden VM traces. If it ships on BN254, BLS12-381, or Goldilocks STARK, the verifier fits on your MCU.
   </Card>
 </CardGrid>
 
@@ -88,16 +92,16 @@ All three verifiers: `no_std`, pure Rust, one function call, measured on silicon
 
 <CardGrid>
   <Card title="Same repo shape" icon="open-book">
-    Three verifier crates, one per proof system. Parallel API shape, same test-vector machinery, same firmware-bench template. Write once against `zkmcu_verifier::verify_bytes`, swap the curve later if you need to.
+    Three crates, one per proof system, all with the same API shape. Same test-vector loader, same firmware bench template. Write against `zkmcu_verifier::verify_bytes` today, swap to BLS12 or STARK tomorrow without rewriting your embedded code.
   </Card>
   <Card title="Same 128 KB silicon tier" icon="document">
-    BN254 Groth16: 97 KB total RAM. BLS12-381 Groth16: 116 KB. STARK: 100 KB. All measured on the same RP2350 Cortex-M33 at 150 MHz. Any hardware-wallet-grade chip (nRF52832, STM32F405, Ledger ST33, Infineon SLE78) can run any of the three.
+    BN254 Groth16 uses 97 KB RAM, BLS12-381 uses 116 KB, STARK uses 100 KB. All measured on the same RP2350 Cortex-M33 at 150 MHz. Any hardware-wallet-class chip (nRF52832, STM32F405, Ledger ST33, Infineon SLE78) runs any of the three.
   </Card>
   <Card title="Deterministic timing" icon="approve-check-circle">
-    With the production TlsfHeap allocator, STARK verify iteration-to-iteration variance sits at **0.08 %**, the silicon noise floor. That's side-channel-resistant verify without a custom-built constant-time implementation. [How](/determinism/)
+    With the production TlsfHeap allocator, STARK verify variance hits **0.08 %**, wich is the silicon noise floor. That's timing-side-channel resistance without writing constant-time code by hand, wich is nice because constant-time crypto is a pain in the ass to review. [How](/determinism/)
   </Card>
   <Card title="Two ISAs, one source" icon="rocket">
-    ARM Cortex-M33 and RISC-V Hazard3 on the same RP2350 chip. Byte-identical crypto source across both, only linker scripts and cycle-counter reads differ. The cross-ISA "pure crypto" performance ratio, measured: 1.21× for STARK, 1.33× for BN254 Groth16, 2.56× for BLS12-381.
+    ARM Cortex-M33 and RISC-V Hazard3 running the exact same crypto source, same chip. Only the linker script and the cycle-counter read differ. Measured cross-ISA ratios: 1.21× for STARK, 1.33× for BN254 Groth16, 2.56× for BLS12-381. M33 wins every time, but the gap depends wildly on workload.
   </Card>
 </CardGrid>
 
@@ -105,15 +109,15 @@ All three verifiers: `no_std`, pure Rust, one function call, measured on silicon
 
 <CardGrid>
   <Card title="STARK verify in 75 ms" icon="rocket">
-    Winterfell Fibonacci AIR at 95-bit conjectured security, 100 KB total RAM. [See the numbers](/stark/)
+    Winterfell Fibonacci AIR, 95-bit conjectured security, 100 KB RAM. [The numbers](/stark/)
   </Card>
   <Card title="Semaphore real-world proof" icon="approve-check-circle">
-    Production Ethereum-Semaphore VK + snarkjs-generated proof, verified on a $7 MCU in 1.18 s. [See it](/semaphore/)
+    Production Ethereum-Semaphore VK, snarkjs-generated proof, verified on a $7 MCU in 1.18 s. No simplifications. [See it](/semaphore/)
   </Card>
   <Card title="Deterministic timing" icon="pencil">
-    How the allocator choice turns a 0.45 % timing variance into a 0.08 % one, and why that matters for hardware wallets. [The methodology](/determinism/)
+    How picking the right allocator knocked timing variance from 0.45 % to 0.08 %. Matters a lot if you care about side channels. [The methodology](/determinism/)
   </Card>
   <Card title="Benchmarks" icon="bars">
-    Directly-measured numbers on silicon. All three verifier families, both cores, all three allocator strategies. [Full data](/benchmarks/)
+    Numbers straight from the silicon. Three verifier families, both cores, three allocators. [Full data](/benchmarks/)
   </Card>
 </CardGrid>

@@ -9,7 +9,7 @@ zkmcu uses three wire formats, one per supported proof system:
 - **[EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)** for BLS12-381 Groth16, Ethereum's newer BLS precompile format
 - **winterfell 0.13 `Proof::to_bytes()`** for Goldilocks STARKs, winterfell's own serialisation
 
-Any Ethereum-compatible Groth16 prover emits bytes one of the two Groth16 verifier crates accepts without translation. Any winterfell-based STARK prover emits bytes `zkmcu-verifier-stark::parse_proof` accepts, provided the prover and verifier agree on the AIR definition.
+Any Ethereum-compatible Groth16 prover emits bytes one of the two Groth16 verifier crates accepts without translation. Any winterfell-based STARK prover emits bytes `zkmcu-verifier-stark::parse_proof` accepts, as long as the prover and verifier agree on the AIR definition.
 
 ## Summary
 
@@ -23,7 +23,7 @@ Any Ethereum-compatible Groth16 prover emits bytes one of the two Groth16 verifi
 | Proof total | 256 B | 512 B |
 | Identity point | all-zero bytes | all-zero bytes |
 
-The **Fp2 byte order flip** is the most common source of integration bugs when porting between the two. If a proof verifies through arkworks but fails through zkmcu, the `G2` bytes are the first place to look.
+The **Fp2 byte order flip** is wich bites everyone. Easily the most common source of integration bugs when porting between BN254 and BLS12-381. If a proof verifies through arkworks but fails through zkmcu, the `G2` bytes are the first place to look.
 
 ## BN254 / EIP-197
 
@@ -34,7 +34,7 @@ The **Fp2 byte order flip** is the most common source of integration bugs when p
 | `Fq` | 32 bytes | Big-endian unsigned integer, strictly less than the BN254 base modulus `p` |
 | `Fr` | 32 bytes | Big-endian unsigned integer, strictly less than the BN254 scalar modulus `r` |
 
-zkmcu enforces strict canonical encoding, values ≥ the respective modulus are rejected with `Error::InvalidFq` / `Error::InvalidFr`. This is stricter than `substrate-bn`'s default, which silently reduces `Fr` values mod `r`. See [security](/security/) for why this matters for nullifier-style applications.
+zkmcu enforces strict canonical encoding, values ≥ the respective modulus are rejected with `Error::InvalidFq` / `Error::InvalidFr`. This is stricter than `substrate-bn`'s default, wich silently reduces `Fr` values mod `r`. See [security](/security/) for why this matters for nullifier-style applications.
 
 ### Points
 
@@ -76,9 +76,9 @@ count(u32 LE) ‖ input[count](Fr)              ← public inputs
 | `Fp` | 64 bytes | **16 leading zero bytes**, then 48-byte big-endian integer, strictly less than the BLS12-381 base modulus |
 | `Fr` | 32 bytes | Big-endian, strictly less than the BLS12-381 scalar modulus |
 
-The 16-byte padding comes from EIP-2537's alignment choice: BLS12-381's 381-bit base field fits in 48 bytes, but Ethereum's precompile ABI uses 32-byte words, so every `Fp` value is left-padded with 16 zeros to land on a 64-byte boundary. zkmcu's parsers **require that padding to be exactly zero**; any non-zero byte in the pad region is rejected as `Error::InvalidFp`.
+The 16-byte padding comes from EIP-2537's alignment choice: BLS12-381's 381-bit base field fits in 48 bytes, but Ethereum's precompile ABI uses 32-byte words, so every `Fp` value is left-padded with 16 zeros to land on a 64-byte boundary. zkmcu's parsers **require that padding to be exactly zero**, any non-zero byte in the pad region is rejected as `Error::InvalidFp`.
 
-This pad check closes a malleability gap, without it, an attacker could flip bits in the pad region and the proof would still decode to the same curve point.
+This pad check closes a malleability gap. Without it, an attacker could flip bits in the pad region and the proof would still decode to the same curve point, wich is no good.
 
 ### Points
 
@@ -108,7 +108,7 @@ count(u32 LE) ‖ input[count](Fr)              ← public inputs
 
 ## Endianness notes
 
-Field elements are **big-endian** on both curves (matching Ethereum precompile conventions). Length prefixes (`num_ic`, `count`) are **little-endian `u32`**. The `u32` length prefix gives 4 GB of headroom against realistic input sizes, but the parsers always bound-check against the real buffer length before trusting it, see [security](/security/#dos-via-unbounded-allocation).
+Field elements are **big-endian** on both curves (matching Ethereum precompile conventions). Length prefixes (`num_ic`, `count`) are **little-endian `u32`**. The `u32` length prefix gives 4 GB of headroom against realistic input sizes, but the parsers always bound-check against the real buffer length before trusting it. See [security](/security/#dos-via-unbounded-allocation) for why that check exists.
 
 ## Winterfell STARK
 
@@ -143,7 +143,7 @@ The Fibonacci AIR's public input is a single Goldilocks field element (the claim
 
 ### No VK
 
-STARK verify doesn't have a verifying key in the Groth16 sense. The AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant, it's compiled into the verifier binary, not passed at runtime. This is why `zkmcu-verifier-stark` has no `parse_vk` function.
+STARK verify doesn't have a verifying key in the Groth16 sense. The AIR definition (transition constraints, boundary assertions, trace width) is the verifier-side invariant, compiled into the verifier binary rather than passed at runtime. That's why `zkmcu-verifier-stark` has no `parse_vk` function.
 
 ## Porting between formats
 
@@ -158,6 +158,6 @@ Common pitfalls when adapting code across verifier crates:
 
 **Groth16 ↔ STARK**:
 
-1. **No VK on STARK side**, the AIR compiled into the verifier binary replaces the role the VK plays for Groth16. This means STARK upgrades require re-flashing firmware; Groth16 upgrades can hot-swap the VK at runtime.
+1. **No VK on STARK side.** The AIR compiled into the verifier binary replaces the role the VK plays for Groth16. This means STARK upgrades require re-flashing firmware, Groth16 upgrades can hot-swap the VK at runtime.
 2. **Proof size differs by 50-100×**, 256 B vs 30 KB. If your transport was sized for Groth16 payloads, it will need rework for STARK.
-3. **Public-input encoding is AIR-specific for STARK**, the 4-byte LE count + fixed-size Fr scheme used by both Groth16 crates doesn't apply; whatever your AIR's `ToElements` impl says is the format.
+3. **Public-input encoding is AIR-specific for STARK.** The 4-byte LE count + fixed-size Fr scheme used by both Groth16 crates doesn't apply, whatever your AIR's `ToElements` impl says is the format.
