@@ -37,6 +37,12 @@ bls12_381 = { workspace = true }
 group = { workspace = true }
 pairing = { workspace = true }
 
+# BN254 Rust reference for generating UMAAL KAT fixtures. Host target never
+# activates `cortex-m33-asm`, so this resolves to the pure-Rust mul_reduce,
+# wich is the intended reference for the Pico 2 W firmware to verify its
+# asm path against.
+substrate-bn = { workspace = true }
+
 # JSON for importing external VK fixtures (Semaphore). Only reaches this
 # dep at build time when the `semaphore` subcommand is invoked; main
 # BN254/BLS12-381 paths don't touch it.
@@ -48,4 +54,5 @@ serde_json = "1.0"
 # sibling `zkmcu-verifier-stark` uses the same crate with `no_std`; both
 # sides must share the AIR definition via the path dep below.
 winterfell = { workspace = true, features = ["std"] }
+zkmcu-babybear = { path = "../zkmcu-babybear" }
 zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }

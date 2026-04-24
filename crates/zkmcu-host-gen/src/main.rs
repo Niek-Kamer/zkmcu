@@ -8,7 +8,7 @@
 //!   cargo run -p zkmcu-host-gen --release -- semaphore              # Semaphore depth-10 VK import
 //!   cargo run -p zkmcu-host-gen --release -- semaphore --depth 1    # pick a specific depth
 
-// This binary is a one-shot CLI — printing to stdout is the point of its existence.
+// This binary is a one-shot CLI, printing to stdout is the whole point of its existence.
 #![allow(clippy::print_stdout)]
 // Bin-crate internal modules talk only to each other; pub items here don't need
 // to be "reachable" from outside the crate in the lint's sense.
@@ -21,6 +21,8 @@ pub(crate) mod bn254;
 mod circuits;
 mod semaphore;
 mod stark;
+mod stark_babybear;
+mod umaal_kat;
 
 fn vectors_data_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -78,13 +80,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || has_arg("bls12-381")
         || has_arg("bls12_381")
         || has_arg("semaphore")
-        || has_arg("stark");
+        || has_arg("stark")
+        || has_arg("stark-babybear")
+        || has_arg("stark_babybear")
+        || has_arg("umaal-kat")
+        || has_arg("umaal_kat");
 
     if !any_explicit || has_arg("bn254") {
         bn254::run(&out_root)?;
     }
     if !any_explicit || has_arg("bls12-381") || has_arg("bls12_381") {
         bls12_381::run(&out_root)?;
+    }
+    if !any_explicit || has_arg("umaal-kat") || has_arg("umaal_kat") {
+        umaal_kat::run(&out_root)?;
     }
     if has_arg("semaphore") {
         let depth = parse_depth(&args)?;
@@ -93,6 +102,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if has_arg("stark") {
         stark::run(&out_root)?;
+    }
+    if has_arg("stark-babybear") || has_arg("stark_babybear") {
+        stark_babybear::run(&out_root)?;
     }
 
     Ok(())

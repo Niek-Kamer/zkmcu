@@ -6,14 +6,14 @@
 // The main entry does all the hardware bring-up inline; splitting it up would
 // fragment the init sequence without clarifying it.
 #![allow(clippy::too_many_lines)]
-// Unrecoverable init failures panic into panic_halt — that halt is the whole
-// point, and it's strictly safer than continuing with bad hardware state.
+// Unrecoverable init failures panic into panic_halt, wich is the whole
+// point. Continuing with bad hardware state is strictly worse than halting.
 #![allow(clippy::panic)]
 
 use core::fmt::Write as _;
 use core::mem::MaybeUninit;
 
-use bn::{pairing, Fr, Group, G1, G2};
+use bn::{pairing, Fq, Fr, Group, G1, G2};
 use core::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicUsize, Ordering};
 use cortex_m::peripheral::DWT;
@@ -29,7 +29,7 @@ use usbd_serial::SerialPort;
 type Timer0 = hal::Timer<hal::timer::CopyableTimer0>;
 
 /// A `GlobalAlloc` wrapper around `embedded_alloc::LlffHeap` that records peak
-/// simultaneous allocation. Added for heap-peak benchmarking — the raw
+/// simultaneous allocation. Added for heap-peak benchmarking because the raw
 /// `LlffHeap` doesn't expose peak-tracking, only current usage. Overhead is
 /// two relaxed atomic ops per alloc/dealloc, negligible compared to the work
 /// `substrate-bn` does inside those allocations.
@@ -48,7 +48,7 @@ impl TrackingHeap {
         }
     }
 
-    /// SAFETY: same contract as `LlffHeap::init` — call exactly once before any
+    /// SAFETY: same contract as `LlffHeap::init`, call exactly once before any
     /// allocation; the `[start, start + size)` region must be valid, aligned,
     /// and owned exclusively by the heap for the duration of the program.
     unsafe fn init(&self, start: usize, size: usize) {
@@ -95,7 +95,7 @@ static HEAP: TrackingHeap = TrackingHeap::empty();
 
 // Measured peak heap usage during one verify: ~81.3 KB (see
 // benchmarks/runs/2026-04-22-m33-heap-peak/). A 96 KB arena gives ~18 %
-// margin above peak — enough to absorb allocator fragmentation without being
+// margin above peak, enough to absorb allocator fragmentation without being
 // generous. 96 KB + ~16 KB stack + ~1 KB statics ≈ 113 KB of RAM in use, so
 // this build fits comfortably on any 128 KB SRAM-class MCU or secure element.
 const HEAP_SIZE: usize = 96 * 1024;
@@ -204,6 +204,15 @@ fn main() -> ! {
         b"zkmcu boot: heap=96K sys=150MHz core=cortex-m33\r\n",
     );
 
+    // Self-test the UMAAL asm before any measurement. If the asm miscomputes
+    // `Fq::mul`, any verify number we emit below would be meaningless, so
+    // halt instead of publishing a corrupted baseline.
+    if !run_umaal_kat(&mut usb_dev, &mut serial, timer) {
+        loop {
+            usb_dev.poll(&mut [&mut serial]);
+        }
+    }
+
     // Parse the test vector once at startup so we don't time the parse or thrash the heap.
     let test_vector = zkmcu_vectors::square().expect("square test vector parse");
     let squares_5 = zkmcu_vectors::squares_5().expect("squares-5 test vector parse");
@@ -212,8 +221,8 @@ fn main() -> ! {
     let sys_hz: u64 = u64::from(SYS_HZ);
 
     // One-shot stack + cycle + heap measurement at boot, for every test vector.
-    // Each row: peak stack, peak heap, verify latency for one circuit size —
-    // the pairs across rows give the scaling of verify cost with public
+    // Each row: peak stack, peak heap, verify latency for one circuit size.
+    // The pairs across rows give the scaling of verify cost with public
     // inputs without needing to tear down the main loop.
     boot_measure(
         &mut usb_dev,
@@ -499,7 +508,7 @@ fn measure_verify_stack_peak(
         #[allow(clippy::as_conversions)]
         let val = unsafe { (addr as *const u32).read_volatile() };
         if val != STACK_SENTINEL {
-            // Add the margin back — those bytes are part of verify's frame
+            // Add the margin back, those bytes are part of verify's frame
             // chain but we deliberately didn't paint them to avoid clobbering
             // the measuring function's own frame.
             return (result, Some(paint_top - addr + STACK_PAINT_MARGIN), cycles);
@@ -562,4 +571,67 @@ fn print_result<B: UsbBus>(
         us / 1000,
     );
     write_line(usb_dev, serial, timer, out.as_bytes());
+}
+
+/// Pre-benchmark self-test: run the UMAAL KAT vectors through `Fq::mul`.
+///
+/// On this firmware `substrate-bn` is built with `cortex-m33-asm`, so every
+/// `Fq::mul` dispatches through the hand-written ARMv8-M UMAAL assembly in
+/// `mul_reduce_armv8m`. The committed fixture bytes were produced on host
+/// by the same library without the asm feature (pure Rust `mul_reduce_rust`).
+/// Byte-identical output across both paths over 256 random limb patterns is
+/// strong evidence the asm agrees with the Rust reference on this silicon +
+/// toolchain combination. A miscompute halts before any benchmark number is
+/// printed, so a corrupted asm can't silently influence the headline figure.
+///
+/// Returns true on all-pass, false on first miscompute (with details already
+/// emitted to serial).
+fn run_umaal_kat<B: UsbBus>(
+    usb_dev: &mut UsbDevice<'_, B>,
+    serial: &mut SerialPort<'_, B>,
+    timer: Timer0,
+) -> bool {
+    let bytes = zkmcu_vectors::UMAAL_KAT;
+    let rec = zkmcu_vectors::UMAAL_KAT_RECORD_SIZE;
+    let n = bytes.len() / rec;
+
+    let t0 = DWT::cycle_count();
+
+    for i in 0..n {
+        let base = i * rec;
+        let a_bytes = bytes.get(base..base + 32).expect("KAT a in range");
+        let b_bytes = bytes.get(base + 32..base + 64).expect("KAT b in range");
+        let expected = bytes
+            .get(base + 64..base + 96)
+            .expect("KAT product in range");
+
+        let a = Fq::from_slice(a_bytes).expect("KAT a parses as Fq");
+        let b = Fq::from_slice(b_bytes).expect("KAT b parses as Fq");
+        let got = a * b;
+
+        let mut got_bytes = [0u8; 32];
+        got.to_big_endian(&mut got_bytes)
+            .expect("Fq serialise into 32 bytes");
+
+        if got_bytes.as_slice() != expected {
+            let mut out: String<128> = String::new();
+            let _ = writeln!(
+                &mut out,
+                "UMAAL KAT: FAIL at record {i} of {n}, asm diverges from Rust reference"
+            );
+            write_line(usb_dev, serial, timer, out.as_bytes());
+            return false;
+        }
+    }
+
+    let t1 = DWT::cycle_count();
+    let cycles = u64::from(t1.wrapping_sub(t0));
+    let us = cycles.saturating_mul(1_000_000) / u64::from(SYS_HZ);
+    let mut out: String<128> = String::new();
+    let _ = writeln!(
+        &mut out,
+        "UMAAL KAT: {n}/{n} OK ({cycles} cycles, {us} us, asm agrees with Rust reference)"
+    );
+    write_line(usb_dev, serial, timer, out.as_bytes());
+    true
 }

@@ -37,7 +37,7 @@ static SEMAPHORE_DEPTH_10_PUBLIC: &[u8] = include_bytes!("../data/semaphore-dept
 
 /// The "square" vector: proves knowledge of `x` such that `x^2 = y`, with `y` public.
 ///
-/// Smallest meaningful Groth16 circuit — one constraint, one public input. Useful as a
+/// Smallest meaningful Groth16 circuit, one constraint, one public input. Useful as a
 /// sanity check for the verifier before layering on heavier circuits.
 pub fn square() -> Result<TestVector, Error> {
     Ok(TestVector {
@@ -86,3 +86,17 @@ pub fn semaphore_depth_10() -> Result<TestVector, Error> {
         public: parse_public(SEMAPHORE_DEPTH_10_PUBLIC)?,
     })
 }
+
+/// UMAAL Known-Answer Test vectors for BN254 Fq multiplication.
+///
+/// Layout: N records of 96 bytes each, `(a, b, a*b)` with every value a
+/// 32-byte big-endian Fq element. Generated on host via substrate-bn's
+/// pure-Rust `mul_reduce` path; firmware flashed with the `cortex-m33-asm`
+/// feature runs each record through the ARMv8-M UMAAL asm and asserts
+/// byte-identical product. Any divergence is a miscompute in the asm (or a
+/// toolchain regression) that would otherwise silently cascade into
+/// forged-proof acceptance in a Groth16 verify.
+pub const UMAAL_KAT: &[u8] = include_bytes!("../data/umaal-kat/kat.bin");
+
+/// Size of one UMAAL KAT record (`a ‖ b ‖ a*b`, 32 B big-endian each).
+pub const UMAAL_KAT_RECORD_SIZE: usize = 96;
