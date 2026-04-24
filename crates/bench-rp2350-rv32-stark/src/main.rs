@@ -14,17 +14,38 @@ use rp235x_hal as hal;
 use usb_device::class_prelude::*;
 use usb_device::prelude::*;
 use usbd_serial::SerialPort;
-use zkmcu_verifier_stark::fibonacci::{self, PublicInputs};
+// Base-field selector. Default is Goldilocks + Quadratic (phase 3.2);
+// `--features babybear` swaps to BabyBear + Quartic (phase 3.3).
+#[cfg(not(feature = "babybear"))]
+use zkmcu_verifier_stark::fibonacci as fib;
+#[cfg(feature = "babybear")]
+use zkmcu_verifier_stark::fibonacci_babybear as fib;
+
+use fib::PublicInputs;
 use zkmcu_verifier_stark::{parse_proof, Proof};
 
 type Timer0 = hal::Timer<hal::timer::CopyableTimer0>;
 
+#[cfg(not(feature = "babybear"))]
+const VEC_LABEL: &str = "stark-fib-1024";
+#[cfg(feature = "babybear")]
+const VEC_LABEL: &str = "stark-fib-1024-babybear";
+
 // Baked-in Fibonacci STARK proof. See bench-rp2350-m33-stark/src/main.rs
 // for the rationale on direct include_bytes! (same pattern as BLS12).
+#[cfg(not(feature = "babybear"))]
 static FIB_PROOF: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
+#[cfg(not(feature = "babybear"))]
 static FIB_PUBLIC: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
 
-// TlsfHeap — phase 3.2.z. O(1) two-level segregated fit. Pairs with
+#[cfg(feature = "babybear")]
+static FIB_PROOF: &[u8] =
+    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024-babybear/proof.bin");
+#[cfg(feature = "babybear")]
+static FIB_PUBLIC: &[u8] =
+    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024-babybear/public.bin");
+
+// TlsfHeap, phase 3.2.z. O(1) two-level segregated fit. Pairs with
 // the M33 TLSF firmware to measure whether TLSF gives bump-allocator-
 // level variance (0.08 % IQR) while still supporting dealloc so heap
 // peak stays in the 128 KB production tier.
@@ -140,17 +161,17 @@ fn main() -> ! {
         usb_dev.poll(&mut [&mut serial]);
     }
 
-    write_line(
-        &mut usb_dev,
-        &mut serial,
-        timer,
-        b"zkmcu boot: heap=256K sys=150MHz core=hazard3 alloc=tlsf proof=stark-fib-1024\r\n",
+    let mut boot_line: String<128> = String::new();
+    let _ = writeln!(
+        &mut boot_line,
+        "zkmcu boot: heap=256K sys=150MHz core=hazard3 alloc=tlsf proof={VEC_LABEL}\r",
     );
+    write_line(&mut usb_dev, &mut serial, timer, boot_line.as_bytes());
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
     let proof = parse_proof(FIB_PROOF).expect("parse stark proof");
-    let public = fibonacci::parse_public(FIB_PUBLIC).expect("parse stark public");
+    let public = fib::parse_public(FIB_PUBLIC).expect("parse stark public");
 
     boot_measure(
         &mut usb_dev,
@@ -172,11 +193,11 @@ fn main() -> ! {
             iter,
             b"stark_verify start\r\n",
         );
-        // Clone outside the timed window — same pattern as phase 3.2.x
+        // Clone outside the timed window, same pattern as phase 3.2.x
         // and 3.2.y.
         let cloned = proof.clone();
         let t0 = mcycle64();
-        let result = fibonacci::verify(cloned, public);
+        let result = fib::verify(cloned, public);
         let t1 = mcycle64();
         let cycles = t1.wrapping_sub(t0);
         let verdict = match result {
@@ -219,13 +240,13 @@ fn boot_measure<B: UsbBus>(
         Ok(()) => "ok=true",
         Err(_) => "ok=false",
     };
-    // heap_peak not measured on RV32 — no TrackingHeap wrapper (same as
+    // heap_peak not measured on RV32, no TrackingHeap wrapper (same as
     // all prior RV32 STARK runs). Expect ~80-100 KB based on M33 TLSF
     // run once measured.
     let mut out: String<192> = String::new();
     let _ = writeln!(
         &mut out,
-        "[boot] vec=stark-fib-1024 stack={stack_bytes} cycles={cycles} us={us} ms={} {verdict}",
+        "[boot] vec={VEC_LABEL} stack={stack_bytes} cycles={cycles} us={us} ms={} {verdict}",
         us / 1000
     );
     write_line(usb_dev, serial, timer, out.as_bytes());
@@ -271,7 +292,7 @@ fn measure_verify_stack_peak(
     }
 
     let t0 = mcycle64();
-    let result = fibonacci::verify(proof, public);
+    let result = fib::verify(proof, public);
     let t1 = mcycle64();
     let cycles = t1.wrapping_sub(t0);
 

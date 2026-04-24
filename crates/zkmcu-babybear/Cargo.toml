@@ -1,0 +1,17 @@
+[package]
+name = "zkmcu-babybear"
+version = "0.1.0"
+description = "no_std BabyBear (15 * 2^27 + 1) prime field for winterfell, targeting 32-bit microcontrollers"
+keywords = ["no-std", "stark", "babybear", "cryptography", "finite-field"]
+categories = ["cryptography", "embedded", "no-std"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+winterfell = { workspace = true }
+winter-utils = { workspace = true }

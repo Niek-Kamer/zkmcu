@@ -9,6 +9,11 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Phase 3.3, swap baked-in vectors and AIR to BabyBear + Quartic. Needs
+# `zkmcu-host-gen stark-babybear` to have produced the vectors first.
+babybear = []
+
 [dependencies]
 critical-section = "1.2"
 embedded-alloc = { version = "0.7", features = ["tlsf"] }

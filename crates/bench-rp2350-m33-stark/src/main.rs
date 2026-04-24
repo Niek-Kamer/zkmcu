@@ -17,15 +17,38 @@ use rp235x_hal as hal;
 use usb_device::class_prelude::*;
 use usb_device::prelude::*;
 use usbd_serial::SerialPort;
-use zkmcu_verifier_stark::fibonacci::{self, PublicInputs};
+// Base-field selector. Default is the Goldilocks + Quadratic baseline
+// (phase 3.2). Enabling `--features babybear` swaps to the 31-bit BabyBear
+// base field with the quartic extension added by the Niek-Kamer/winterfell
+// fork (phase 3.3). Gated here rather than duplicating the whole firmware.
+#[cfg(not(feature = "babybear"))]
+use zkmcu_verifier_stark::fibonacci as fib;
+#[cfg(feature = "babybear")]
+use zkmcu_verifier_stark::fibonacci_babybear as fib;
+
+use fib::PublicInputs;
 use zkmcu_verifier_stark::{parse_proof, Proof};
 
 type Timer0 = hal::Timer<hal::timer::CopyableTimer0>;
 
+#[cfg(not(feature = "babybear"))]
+const VEC_LABEL: &str = "stark-fib-1024";
+#[cfg(feature = "babybear")]
+const VEC_LABEL: &str = "stark-fib-1024-babybear";
+
+#[cfg(not(feature = "babybear"))]
 static FIB_PROOF: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/proof.bin");
+#[cfg(not(feature = "babybear"))]
 static FIB_PUBLIC: &[u8] = include_bytes!("../../zkmcu-vectors/data/stark-fib-1024/public.bin");
 
-// TrackingHeap over TlsfHeap — phase 3.2.z. TLSF gives O(1) alloc/free
+#[cfg(feature = "babybear")]
+static FIB_PROOF: &[u8] =
+    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024-babybear/proof.bin");
+#[cfg(feature = "babybear")]
+static FIB_PUBLIC: &[u8] =
+    include_bytes!("../../zkmcu-vectors/data/stark-fib-1024-babybear/public.bin");
+
+// TrackingHeap over TlsfHeap, phase 3.2.z. TLSF gives O(1) alloc/free
 // (two-level segregated fit), which should be deterministic enough to
 // bring variance close to the bump allocator's 0.08 % IQR while still
 // supporting dealloc so heap_peak stays at production-viable ~90 KB
@@ -47,7 +70,7 @@ impl TrackingHeap {
 
     /// # Safety
     ///
-    /// Same contract as `TlsfHeap::init` — call exactly once before any
+    /// Same contract as `TlsfHeap::init`, call exactly once before any
     /// allocation happens, with a valid start address and size.
     unsafe fn init(&self, start: usize, size: usize) {
         // SAFETY: delegated under the same contract.
@@ -165,17 +188,17 @@ fn main() -> ! {
         usb_dev.poll(&mut [&mut serial]);
     }
 
-    write_line(
-        &mut usb_dev,
-        &mut serial,
-        timer,
-        b"zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof=stark-fib-1024\r\n",
+    let mut boot_line: String<128> = String::new();
+    let _ = writeln!(
+        &mut boot_line,
+        "zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof={VEC_LABEL}\r",
     );
+    write_line(&mut usb_dev, &mut serial, timer, boot_line.as_bytes());
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
     let proof = parse_proof(FIB_PROOF).expect("parse stark proof");
-    let public = fibonacci::parse_public(FIB_PUBLIC).expect("parse stark public");
+    let public = fib::parse_public(FIB_PUBLIC).expect("parse stark public");
 
     boot_measure(
         &mut usb_dev,
@@ -201,7 +224,7 @@ fn main() -> ! {
         // this is worth ~0.1 pp of variance reduction).
         let cloned = proof.clone();
         let t0 = DWT::cycle_count();
-        let result = fibonacci::verify(cloned, public);
+        let result = fib::verify(cloned, public);
         let t1 = DWT::cycle_count();
         let cycles = u64::from(t1.wrapping_sub(t0));
         let verdict = match result {
@@ -252,7 +275,7 @@ fn boot_measure<B: UsbBus>(
     let mut out: String<224> = String::new();
     let _ = writeln!(
         &mut out,
-        "[boot] vec=stark-fib-1024 stack={stack_bytes} heap_base={heap_before} heap_peak={heap_peak} cycles={cycles} us={us} ms={} {verdict}",
+        "[boot] vec={VEC_LABEL} stack={stack_bytes} heap_base={heap_before} heap_peak={heap_peak} cycles={cycles} us={us} ms={} {verdict}",
         us / 1000
     );
     write_line(usb_dev, serial, timer, out.as_bytes());
@@ -298,7 +321,7 @@ fn measure_verify_stack_peak(
     }
 
     let t0 = DWT::cycle_count();
-    let result = fibonacci::verify(proof, public);
+    let result = fib::verify(proof, public);
     let t1 = DWT::cycle_count();
     let cycles = u64::from(t1.wrapping_sub(t0));
 

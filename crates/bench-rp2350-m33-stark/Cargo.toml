@@ -9,6 +9,12 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Phase 3.3, swap the baked-in vectors and AIR from Goldilocks + Quadratic
+# to BabyBear + Quartic. Requires the `stark-babybear` host-gen subcommand
+# to have been run at least once so the vector files exist on disk.
+babybear = []
+
 [dependencies]
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7"
