@@ -1,0 +1,14 @@
+{
+  // Extension recommendations that pair with .vscode/settings.json. When
+  // someone opens this repo in VS Code, it nudges them to install these.
+  // Skip if you already have equivalents from another language setup.
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml",
+    "biomejs.biome",
+    "astro-build.astro-vscode",
+    "myriad-dreamin.tinymist",
+    "nefrob.vscode-just-syntax"
+  ],
+  "unwantedRecommendations": []
+}

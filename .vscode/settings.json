@@ -1,0 +1,86 @@
+{
+  // Project-local VS Code config for zkmcu. Mirrors .zed/settings.json
+  // so VS Code contributors get the same rust-analyzer scope out of the
+  // box. If you tweak this, tweak .zed/settings.json too.
+
+  // Without --workspace, clippy defaults to `default-members` from
+  // Cargo.toml, wich is exactly the 7 host crates. The 6 firmware crates
+  // (bench-rp2350-*) stay out because they need their own embedded target
+  // from each crate's .cargo/config.toml.
+  //
+  // Same command `just lint-host` runs. Run `just lint-m33`,
+  // `just lint-m33-bls12`, `just lint-m33-stark`, `just lint-rv32`,
+  // `just lint-rv32-bls12`, `just lint-rv32-stark` to check firmware.
+  "rust-analyzer.check.overrideCommand": [
+    "cargo",
+    "clippy",
+    "--message-format=json-diagnostic-rendered-ansi",
+    "--all-targets",
+    "--release",
+    "--",
+    "-D",
+    "warnings"
+  ],
+
+  "rust-analyzer.files.excludeDirs": [
+    "target",
+    "research/out",
+    "web/.next",
+    "web/node_modules",
+    "web/dist"
+  ],
+
+  // arkworks leans hard on derive macros. Turn this off and you'll get
+  // phantom "unresolved import" errors from ark-relations / ark-groth16.
+  "rust-analyzer.procMacro.enable": true,
+
+  "rust-analyzer.inlayHints.parameterHints.enable": true,
+  "rust-analyzer.inlayHints.typeHints.enable": true,
+  "rust-analyzer.inlayHints.chainingHints.enable": false,
+
+  // Organize imports on save, same as Zed's source.organizeImports.
+  "[rust]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // Keep prose + config files un-formatted on save (matches the Zed
+  // language blocks). The file formatters here are often opinionated in
+  // ways that fight our manual layout.
+  "[markdown]": {
+    "editor.formatOnSave": false
+  },
+  "[toml]": {
+    "editor.formatOnSave": false
+  },
+
+  // Typst sources live under research/. File-association only matters if
+  // the Tinymist extension (myriad-dreamin.tinymist) is installed, wich
+  // we recommend via .vscode/extensions.json.
+  "files.associations": {
+    "*.typ": "typst"
+  },
+
+  // Hide generated output from the File Explorer panel. Not the same as
+  // rust-analyzer.files.excludeDirs above (that one controls LSP scope).
+  "files.exclude": {
+    "**/.git": true,
+    "**/target": true,
+    "**/node_modules": true,
+    "**/research/out": true,
+    "**/web/.next": true,
+    "**/web/dist": true
+  },
+
+  // Same directories kept out of workspace search results.
+  "search.exclude": {
+    "**/target": true,
+    "**/node_modules": true,
+    "**/research/out": true,
+    "**/web/.next": true,
+    "**/web/dist": true,
+    "**/bun.lock": true,
+    "**/Cargo.lock": true
+  }
+}
