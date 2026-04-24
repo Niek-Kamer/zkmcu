@@ -4,6 +4,7 @@ members = [
     "crates/zkmcu-verifier",
     "crates/zkmcu-verifier-bls12",
     "crates/zkmcu-verifier-stark",
+    "crates/zkmcu-babybear",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/zkmcu-bump-alloc",
@@ -16,13 +17,16 @@ members = [
 ]
 # Vendored third-party crates are kept out of the workspace so their own
 # tests / profiles / lints don't inherit ours (and ours don't inherit theirs).
-exclude = ["vendor/bn"]
+# The `fuzz/` crate is also excluded: cargo-fuzz builds with its own profile
+# + `#![no_main]` and wants a separate target/ tree.
+exclude = ["vendor/bn", "vendor/winterfell", "fuzz"]
 # Default build targets exclude the firmware crates, which need embedded targets.
 # Build them explicitly from inside their crate directories.
 default-members = [
     "crates/zkmcu-verifier",
     "crates/zkmcu-verifier-bls12",
     "crates/zkmcu-verifier-stark",
+    "crates/zkmcu-babybear",
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/zkmcu-bump-alloc",
@@ -95,6 +99,11 @@ pairing = "0.23"
 # .text size on the firmware is meaningfully inflated.
 winterfell = { version = "0.13", default-features = false }
 
+# winter-utils direct dep for `AsBytes` and `Randomizable` — these traits are
+# needed to implement `FieldElement` but are not re-exported by the winterfell
+# umbrella. Version pinned to match winterfell 0.13 so both sides agree.
+winter-utils = { version = "0.13", default-features = false }
+
 # arkworks — used only by zkmcu-host-gen (host/std)
 ark-bn254 = "0.5"
 ark-bls12-381 = "0.5"
@@ -116,6 +125,20 @@ ark-std = "0.5"
 [patch.crates-io]
 embedded-hal = { git = "https://github.com/Niek-Kamer/embedded-hal", branch = "main", package = "embedded-hal" }
 substrate-bn = { path = "vendor/bn", package = "substrate-bn" }
+
+# winterfell fork: we add a `FieldExtension::Quartic` variant + `QuartExtension<B>`
+# wrapper so BabyBear can hit 95-bit conjectured security. Every winter-* sub-crate
+# must be patched for the cross-crate `use` paths to land on the fork, not crates.io.
+winterfell        = { path = "vendor/winterfell/winterfell" }
+winter-math       = { path = "vendor/winterfell/math" }
+winter-air        = { path = "vendor/winterfell/air" }
+winter-prover     = { path = "vendor/winterfell/prover" }
+winter-verifier   = { path = "vendor/winterfell/verifier" }
+winter-crypto     = { path = "vendor/winterfell/crypto" }
+winter-fri        = { path = "vendor/winterfell/fri" }
+winter-utils      = { path = "vendor/winterfell/utils/core" }
+winter-maybe-async = { path = "vendor/winterfell/utils/maybe_async" }
+winter-rand-utils = { path = "vendor/winterfell/utils/rand" }
 
 [profile.release]
 codegen-units = 1

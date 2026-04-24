@@ -1,0 +1,9 @@
+# Runtime-mutated by libFuzzer. `seeds/` stays committed.
+corpus/
+# cargo-fuzz's independent build tree.
+target/
+# libFuzzer crash-artifact dumps from failed runs.
+artifacts/
+# Cargo lock for the fuzz crate, we don't publish it so lockfile churn
+# across machines is noise, not signal.
+Cargo.lock

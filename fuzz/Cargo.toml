@@ -1,0 +1,97 @@
+[package]
+name = "zkmcu-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+# cargo-fuzz metadata, must live on the `[package]` table so `cargo fuzz
+# list` / `run` picks this crate up.
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+# Verifier crates under fuzz. Path deps (not workspace = true) because this
+# crate is NOT part of the workspace (see top-level `exclude = ["fuzz"]`),
+# which keeps cargo-fuzz's separate `target/` tree and nightly rustflags
+# from colliding with the main workspace build.
+zkmcu-verifier = { path = "../crates/zkmcu-verifier" }
+zkmcu-verifier-bls12 = { path = "../crates/zkmcu-verifier-bls12" }
+zkmcu-verifier-stark = { path = "../crates/zkmcu-verifier-stark" }
+
+# Required indirectly by path dep resolution (babybear is a zkmcu-verifier-stark dep).
+zkmcu-babybear = { path = "../crates/zkmcu-babybear" }
+
+[[bin]]
+name = "bn254_parse_vk"
+path = "fuzz_targets/bn254_parse_vk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bn254_parse_proof"
+path = "fuzz_targets/bn254_parse_proof.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bn254_parse_public"
+path = "fuzz_targets/bn254_parse_public.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bn254_verify_bytes"
+path = "fuzz_targets/bn254_verify_bytes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bls12_parse_vk"
+path = "fuzz_targets/bls12_parse_vk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bls12_parse_proof"
+path = "fuzz_targets/bls12_parse_proof.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bls12_parse_public"
+path = "fuzz_targets/bls12_parse_public.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "stark_parse_proof"
+path = "fuzz_targets/stark_parse_proof.rs"
+test = false
+doc = false
+bench = false
+
+# Mirror the workspace's [patch.crates-io] block because this crate is
+# workspace-excluded, without these, transitive deps resolve to the
+# crates.io versions and the fork changes (UMAAL asm, Quartic extension,
+# the `read_many` bound that closes the DoS) never reach the fuzz binary.
+[patch.crates-io]
+substrate-bn = { path = "../vendor/bn", package = "substrate-bn" }
+
+winterfell        = { path = "../vendor/winterfell/winterfell" }
+winter-math       = { path = "../vendor/winterfell/math" }
+winter-air        = { path = "../vendor/winterfell/air" }
+winter-prover     = { path = "../vendor/winterfell/prover" }
+winter-verifier   = { path = "../vendor/winterfell/verifier" }
+winter-crypto     = { path = "../vendor/winterfell/crypto" }
+winter-fri        = { path = "../vendor/winterfell/fri" }
+winter-utils      = { path = "../vendor/winterfell/utils/core" }
+winter-maybe-async = { path = "../vendor/winterfell/utils/maybe_async" }
