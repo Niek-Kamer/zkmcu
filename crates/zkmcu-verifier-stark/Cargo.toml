@@ -16,3 +16,16 @@ workspace = true
 
 [dependencies]
 winterfell = { workspace = true }
+# Needed for `SliceReader` + `Deserializable` so we can detect trailing
+# bytes after `Proof::read_from`. Winterfell's `Proof::from_bytes` helper
+# explicitly documents that extra bytes are tolerated, that's a
+# malleability class we close at the wrapper.
+winter-utils = { workspace = true }
+zkmcu-babybear = { path = "../zkmcu-babybear" }
+
+[dev-dependencies]
+# Adversarial tests: seeded RNG for bit-flip sampling (exhaustive bit-flip
+# is infeasible on ~30 KB proofs) and proptest for parser fuzz.
+proptest = "1.6"
+rand = "0.8"
+rand_chacha = "0.3"

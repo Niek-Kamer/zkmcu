@@ -1,4 +1,4 @@
-//! Fibonacci AIR — the STARK hello-world.
+//! Fibonacci AIR, the STARK hello-world.
 //!
 //! The circuit has a 2-column trace `(s_0, s_1)`:
 //!
@@ -15,7 +15,7 @@
 //! `Fib(2i + 2)`. For a trace of length `N = 1024`, the asserted result
 //! is `Fib(2048)` over the Goldilocks field.
 //!
-//! This matches the AIR that `zkmcu-host-gen` uses on the prover side —
+//! This matches the AIR that `zkmcu-host-gen` uses on the prover side,
 //! the two sides MUST agree exactly on trace width, constraint degrees,
 //! number of assertions, and their positions. Any drift and the proof
 //! will decode but fail verification with a constraint-violation error.
@@ -25,7 +25,7 @@ use alloc::{vec, vec::Vec};
 use winterfell::crypto::hashers::Blake3_256;
 use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
 use winterfell::math::fields::f64::BaseElement;
-use winterfell::math::{FieldElement, ToElements};
+use winterfell::math::{FieldElement, StarkField, ToElements};
 use winterfell::{
     AcceptableOptions, Air, AirContext, Assertion, EvaluationFrame, Proof, ProofOptions, TraceInfo,
     TransitionConstraintDegree,
@@ -40,7 +40,7 @@ pub const PUBLIC_SIZE: usize = 8;
 /// Public inputs for the Fibonacci AIR: the claimed N-th Fibonacci value.
 #[derive(Debug, Clone, Copy)]
 pub struct PublicInputs {
-    /// The claimed result — `Fib(2 * trace_length)` over Goldilocks.
+    /// The claimed result, `Fib(2 * trace_length)` over Goldilocks.
     pub result: BaseElement,
 }
 
@@ -58,12 +58,12 @@ pub struct FibAir {
 
 // The `Air::new` contract requires trace-width / degree / assertion-count
 // invariants to hold at construction. They're enforced via `assert_eq!`,
-// which clippy flags as a panic path — but this is required by the
+// wich clippy flags as a panic path, but it's required by the
 // upstream trait and called by the winterfell verifier internally, not
 // by external user input.
 //
 // `evaluate_transition` indexes `current[0..1]` / `next[0..1]` / `result[0..1]`
-// by position — the Air trait's contract guarantees these slices are sized
+// by position. The Air trait's contract guarantees these slices are sized
 // to match the declared trace width (2) and constraint count (2) that we
 // fixed in `new()`. Silencing `indexing_slicing` here is the cleanest
 // expression of the constraint math.
@@ -124,8 +124,15 @@ impl Air for FibAir {
 ///
 /// Returns [`Error::PublicDeserialization`] if the buffer is shorter than
 /// [`PUBLIC_SIZE`]. The field element reduction is handled by
-/// [`BaseElement::new`] — any `u64` value in `[0, 2^64)` is accepted.
+/// [`BaseElement::new`], any `u64` value in `[0, 2^64)` is accepted.
 pub fn parse_public(bytes: &[u8]) -> Result<PublicInputs, Error> {
+    // Strict length: exactly [`PUBLIC_SIZE`] bytes. Earlier shape used
+    // `first_chunk::<PUBLIC_SIZE>` wich accepted any length ≥ PUBLIC_SIZE
+    // and silently ignored the tail, a malleability surface for callers
+    // that hash the public-input bytes as a nullifier or replay tag.
+    if bytes.len() != PUBLIC_SIZE {
+        return Err(Error::PublicDeserialization);
+    }
     let chunk: &[u8; PUBLIC_SIZE] = bytes
         .first_chunk::<PUBLIC_SIZE>()
         .ok_or(Error::PublicDeserialization)?;
@@ -139,7 +146,7 @@ pub fn parse_public(bytes: &[u8]) -> Result<PublicInputs, Error> {
 ///
 /// Hash: Blake3-256 over Goldilocks. Vector commitment: binary Merkle tree.
 /// Random coin: winterfell's default. Security threshold: 95-bit
-/// conjectured — matches the prover's `FieldExtension::Quadratic`
+/// conjectured, matches the prover's `FieldExtension::Quadratic`
 /// configuration over Goldilocks.
 ///
 /// Phase 3.1 ran this verifier at `MinConjecturedSecurity(63)` with
@@ -159,6 +166,18 @@ pub fn verify(proof: Proof, public: PublicInputs) -> Result<(), Error> {
     type Hasher = Blake3_256<BaseElement>;
     type Coin = DefaultRandomCoin<Hasher>;
     type Vc = MerkleTree<Hasher>;
+
+    // Field-modulus sanity: reject proofs whose embedded `Context.field_\
+    // modulus_bytes` doesn't match this AIR's `BaseField`. Closes Path 1
+    // from the finding. Without it, a cross-field proof reaches
+    // `from_bytes_with_padding` inside winterfell and panics when the
+    // byte slice is wider than `ELEMENT_BYTES`. We map mismatch to
+    // `ProofDeserialization` because semantically the proof's metadata
+    // disagrees with the verifier's AIR, same class of failure as a
+    // malformed byte header.
+    if proof.context.field_modulus_bytes() != BaseElement::get_modulus_le_bytes().as_slice() {
+        return Err(Error::ProofDeserialization);
+    }
 
     let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
     winterfell::verify::<FibAir, Hasher, Coin, Vc>(proof, public, &min_opts).map_err(Error::from)

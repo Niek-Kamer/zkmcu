@@ -4,3 +4,6 @@
 [submodule "vendor/bn"]
 	path = vendor/bn
 	url = https://github.com/Niek-Kamer/bn.git
+[submodule "vendor/winterfell"]
+	path = vendor/winterfell
+	url = https://github.com/Niek-Kamer/winterfell.git
