@@ -1,48 +1,61 @@
-# 2026-04-24 — RV32 STARK BabyBear x Quartic, bench-core rebaseline
+# 2026-04-24 — RV32 STARK BabyBear x Quartic (Karatsuba), bench-core rebaseline
 
-Same winterfell fork (Quartic extension added in
-`Niek-Kamer/winterfell`), same zkmcu-babybear base-field impl,
-just rebuilt against `bench-core`.
+Correction up front: earlier versions of this note labeled the
+extension mul as "schoolbook 16-mult". Thats wrong. `zkmcu-babybear`
+has had the 9-mult Karatsuba + sparse `mul_by_W = 11` version as
+the default code path since phase 3.3 commit `b794d20`. The
+`-q-kara` pre-refactor TOML (129.05 ms) is the matching baseline,
+not the `-q` one (136.64 ms, schoolbook).
 
 ## Headline
 
-**stark_verify (Fibonacci N=1024, BabyBear x Quartic, schoolbook
-16-mult): 128.02 ms median, −6.31 % vs 136.64 ms pre-refactor.**
+**stark_verify (Fibonacci N=1024, BabyBear x Quartic, Karatsuba):
+128.02 ms median, −0.80 % vs the 129.05 ms pre-refactor Karatsuba
+baseline.**
 
-Solid but boring compared to the M33 BabyBear result (−23.0 % on
-same refactor). The cross-ISA asymmetry is the real story here, not
-the -6 %.
+Essentially flat. Within run-to-run noise. The same refactor that
+dropped M33 BabyBear by 23 % barely touched RV32, wich is the
+cross-ISA asymmetry story.
 
-## The register-allocation hypothesis, strengthened
+## Register-pressure hypothesis, now stronger
 
 If the bench-core refactor had caused a global codegen shift
 (function layout, icache, inlining), both ISAs would have moved by
-similar magnitudes. The fact that M33 BabyBear dropped 23 % and RV32
-BabyBear dropped only 6 % on the same source code change — that
-asymmetry is what a register-pressure-specific effect looks like.
+comparable magnitudes. On matched Karatsuba code: M33 moved from
+124.22 → 95.63 ms (-23.0 %), RV32 moved from 129.05 → 128.02 ms
+(-0.80 %). The 30x magnitude gap between ISA deltas is way outside
+any plausible uniform-codegen explanation.
 
-Thumb-2 has ~13 usable GPRs, RV32IMAC has 31. The quartic-extension
-mul is at the edge of spilling on Thumb-2 and probably wasn't
-spilling at all on RV32. So when the closure-wrap shifted where
-captures live, M33 picked up a big win and RV32 picked up whatever
-the baseline codegen improvements were (better dead-code elim in
-the call graph, maybe some minor inlining win).
+What fits: Thumb-2's 13 usable GPRs put the Karatsuba extension-mul
+inner loop right at the spill boundary. Closure-wrapping shifted
+where captures live in the frame and freed a register in the hot
+loop. RV32IMAC has 31 GPRs, was never register-tight, so nothing
+to unlock there.
 
-## Phase 3.3 ratios
+## Phase 3.3 story update — RV32 side
 
-BabyBear x Quartic vs Goldilocks x Quadratic on RV32: **1.186x
-(+18.6 %)**, down from the pre-refactor 1.217x (+21.7 %). Also
-down from the original +15 % figure with Karatsuba — but Karatsuba
-isn't re-measured yet.
+The original phase 3.3 headline framed BabyBear-Karatsuba as the
+config that narrows the cross-ISA gap:
 
-Cross-ISA: RV32 BabyBear / M33 BabyBear = 128.02 / 95.63 = 1.339x.
-That's *wider* than the pre-refactor ratio (136.64 / 124.21 =
-1.100x) because M33 got the bigger refactor win. The "BabyBear
-narrows the cross-ISA gap to 1.04x" claim from the phase 3.3 memo
-was about the Karatsuba variant specifically and needs re-checking
-under bench-core.
+| Config | M33 | RV32 | RV32/M33 |
+|---|---:|---:|---:|
+| Goldilocks x Quadratic (pre-refactor) | 74.65 | 112.40 | 1.506x |
+| BabyBear x Quadratic schoolbook (pre-refactor) | 124.21 | 136.64 | 1.100x |
+| **BabyBear x Quartic-Karatsuba (pre-refactor)** | **124.22** | **129.05** | **1.039x** ← was the headline |
+| BabyBear x Quartic-Karatsuba (bench-core) | 95.63 | 128.02 | **1.339x** ← now this |
+
+The 1.04x narrowing was a pre-refactor artifact. Under bench-core
+the cross-ISA ratio widened back to 1.34x, which is bigger than
+pre-refactor Goldilocks (1.47x-1.51x is a fair comparison since
+Goldilocks also saw small wins from the refactor).
+
+So the phase 3.3 cross-ISA story needs a qualifier: "narrowed to
+1.04x under the specific pre-refactor register allocation that was
+shipping with zkmcu-babybear commit b794d20, an artifact that
+bench-core's closure wrapping ended up erasing on M33."
 
 ## Heap + variance
 
-`heap_peak = 91_362 B`, byte-identical to M33 sibling. First time
-measured. Variance (max-min)/median = 0.23 %, tight.
+`heap_peak = 91_362 B`, byte-identical to M33 BabyBear-Kara
+sibling. First time measured on RV32. Variance
+(max-min)/median = 0.23 %, tight.

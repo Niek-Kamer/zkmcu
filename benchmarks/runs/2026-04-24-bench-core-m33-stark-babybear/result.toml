@@ -40,7 +40,7 @@ field = "BabyBear (2^31 - 2^27 + 1), F_{p^4}"
 hash = "Blake3-256"
 security_bits_conjectured = 95
 extension_degree = 4
-extension_mul_algo = "schoolbook 16-mult"     # Karatsuba variant measured separately
+extension_mul_algo = "Karatsuba 9-mult + sparse mul_by_W = 11"  # default in zkmcu-babybear since phase 3.3 commit b794d20
 
 [bench.stark_verify_fib_1024_babybear_q_tlsf]
 iterations = 17                      # iters 2-18 from the captured log
@@ -54,12 +54,15 @@ result = "ok"
 # Variance: (max - min) / median = 0.18 %
 
 [bench.vs_prior_baseline]
-# 2026-04-24-m33-stark-fib-1024-babybear-q was the reference (same day,
-# same silicon, pre-refactor firmware).
-prior_us_median = 124_211
-delta_us = -28_585                   # -23.01 %, way outside noise range
-prior_cycles_median = 18_631_706
-delta_cycles = -4_287_689            # -4.3 M cycles
+# 2026-04-24-m33-stark-fib-1024-babybear-q-kara was the matching reference
+# (same day, same silicon, same Karatsuba code, pre-refactor firmware).
+# Note: the non-kara pre-refactor sibling landed at 124.21 ms too on M33,
+# so this delta holds whichever baseline you compare against — M33 was
+# not benefiting meaningfully from Karatsuba to begin with.
+prior_us_median = 124_222
+delta_us = -28_596                   # -23.02 %, way outside noise range
+prior_cycles_median = 18_633_462
+delta_cycles = -4_289_445
 # See .claude/findings/2026-04-24-bench-core-babybear-speedup.md for
 # the register-allocation hypothesis. Short version: the
 # ExtensibleField<4>::mul hot loop was right at the edge of spilling on
