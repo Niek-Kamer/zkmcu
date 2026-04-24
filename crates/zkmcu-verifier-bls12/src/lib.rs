@@ -1,4 +1,4 @@
-//! # zkmcu-verifier-bls12 — Groth16 / BLS12-381 on microcontrollers
+//! # zkmcu-verifier-bls12: Groth16 / BLS12-381 on microcontrollers
 //!
 //! A `no_std` Rust verifier for Groth16 zk-SNARK proofs over the BLS12-381
 //! pairing-friendly curve, designed to run on ARM Cortex-M and RISC-V
@@ -26,7 +26,7 @@
 //! - `Fp`: 64 bytes. 16 leading zero bytes followed by a 48-byte big-endian
 //!   integer strictly less than the BLS12-381 base modulus.
 //! - `Fr`: 32 bytes big-endian, strictly less than the BLS12-381 scalar
-//!   modulus. (Same shape as BN254's `Fr` — the scalar fields are both ~255
+//!   modulus. (Same shape as BN254's `Fr`, the scalar fields are both ~255
 //!   bits.)
 //! - `G1`: 128 bytes, `x ‖ y`. Point at infinity encodes as all zeros.
 //! - `G2`: 256 bytes, `x ‖ y` where each is Fp2 in `(c0 ‖ c1)` order.
@@ -91,15 +91,33 @@ pub const G2_SIZE: usize = FP_SIZE * 4;
 /// Serialised size of a Groth16 proof (`A ‖ B ‖ C`). Always 512 bytes.
 pub const PROOF_SIZE: usize = G1_SIZE + G2_SIZE + G1_SIZE;
 
+/// Maximum accepted `num_ic` in a verifying key (size of `gamma_abc_g1`).
+///
+/// Real Groth16 circuits use single-digit to low-hundreds `num_ic` entries;
+/// 1024 is a generous ceiling that still prevents pathological VKs with
+/// millions of claimed entries from fitting in memory and draining compute.
+/// Matches the cap in the BN254 sibling crate ([`zkmcu-verifier`]).
+///
+/// [`zkmcu-verifier`]: https://crates.io/crates/zkmcu-verifier
+pub const MAX_NUM_IC: usize = 1024;
+
+/// Maximum accepted public-input count.
+///
+/// Always exactly `MAX_NUM_IC - 1`, since `num_ic = public_inputs + 1` for any
+/// well-formed Groth16 VK. Kept as a separate constant for API clarity at the
+/// `parse_public` boundary.
+pub const MAX_PUBLIC_INPUTS: usize = MAX_NUM_IC - 1;
+
 // ---- Error type --------------------------------------------------------
 
 /// Anything the parser or verifier can fail with.
 ///
-/// All variants are recoverable — no panic path ever returns an `Error`.
+/// All variants are recoverable, no panic path ever returns an `Error`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// Input buffer shorter than the wire format required, or a claimed
-    /// `num_ic` / `count` field pointed past the buffer end.
+    /// The input buffer length does not match the wire format: too short for
+    /// the declared structure, or longer (trailing bytes that would introduce
+    /// malleability if callers ever use the raw bytes as a semantic identity).
     TruncatedInput,
     /// An `Fp` encoding had non-zero bytes in the 16-byte leading-zero
     /// padding region, or the 48-byte value was outside the BLS12-381
@@ -109,15 +127,28 @@ pub enum Error {
     /// encoding). Rejection is delegated to [`bls12_381::Scalar::from_bytes`],
     /// which enforces strict `< r`.
     InvalidFr,
-    /// A `G1` encoding did not decode to a point on the BLS12-381 curve
-    /// (or failed subgroup check).
-    InvalidG1,
-    /// A `G2` encoding did not decode to a point on the BLS12-381 twist
-    /// (or failed subgroup check).
-    InvalidG2,
-    /// `public.len() + 1 != vk.ic.len()` — the number of public inputs
+    /// A `G1` point's `(x, y)` did not satisfy the curve equation
+    /// `y² = x³ + 4`.
+    InvalidG1Curve,
+    /// A `G1` point was on the curve but not in the order-`r` subgroup.
+    /// BLS12-381 G1 has cofactor `h1 = (x-1)²/3 ≈ 2^125`, so an adversary
+    /// can plant a non-subgroup point; the subgroup check defends against
+    /// that soundness break.
+    InvalidG1Subgroup,
+    /// A `G2` point's `(x, y)` did not satisfy the twist equation
+    /// `y² = x³ + 4(1+u)`.
+    InvalidG2Curve,
+    /// A `G2` point was on the twist but not in the order-`r` subgroup.
+    /// Same soundness concern as [`Error::InvalidG1Subgroup`], on the twist.
+    InvalidG2Subgroup,
+    /// `public.len() + 1 != vk.ic.len()`, the number of public inputs
     /// does not match the VK's `gamma_abc_g1` table size.
     PublicInputCount,
+    /// A VK declared `num_ic` above [`MAX_NUM_IC`], or a public-inputs buffer
+    /// declared `count` above [`MAX_PUBLIC_INPUTS`]. Real Groth16 circuits use
+    /// single-digit to low-hundreds entries; the cap prevents pathologically
+    /// large inputs that fit in memory but would cause degenerate verify work.
+    InputLimitExceeded,
 }
 
 // ---- Data types --------------------------------------------------------
@@ -136,7 +167,7 @@ pub struct VerifyingKey {
     pub gamma: G2Affine,
     /// `δ` in G2.
     pub delta: G2Affine,
-    /// `gamma_abc_g1` — one entry per public input, plus a leading constant term.
+    /// `gamma_abc_g1`, one entry per public input plus a leading constant term.
     pub ic: Vec<G1Affine>,
 }
 
@@ -163,9 +194,12 @@ pub struct Proof {
 ///
 /// Returns [`Error::TruncatedInput`] if any buffer is shorter than the wire
 /// format requires, [`Error::InvalidFp`] / [`Error::InvalidFr`] /
-/// [`Error::InvalidG1`] / [`Error::InvalidG2`] for malformed field
-/// elements or off-curve points, and [`Error::PublicInputCount`] if the
-/// number of public inputs doesn't match the VK's `gamma_abc_g1` table.
+/// [`Error::InvalidG1Curve`] / [`Error::InvalidG1Subgroup`] /
+/// [`Error::InvalidG2Curve`] / [`Error::InvalidG2Subgroup`] for malformed
+/// field elements or off-curve / off-subgroup points,
+/// [`Error::InputLimitExceeded`] if the VK or public-input count exceeds
+/// the implementation cap, and [`Error::PublicInputCount`] if the number of
+/// public inputs doesn't match the VK's `gamma_abc_g1` table.
 pub fn verify_bytes(vk: &[u8], proof: &[u8], public: &[u8]) -> Result<bool, Error> {
     let vk = parse_vk(vk)?;
     let proof = parse_proof(proof)?;
@@ -184,7 +218,7 @@ pub fn verify_bytes(vk: &[u8], proof: &[u8], public: &[u8]) -> Result<bool, Erro
 /// # Errors
 ///
 /// Returns [`Error::PublicInputCount`] if `public.len() + 1 != vk.ic.len()`.
-/// Otherwise infallible — all byte-level validation happens during parsing.
+/// Otherwise infallible, all byte-level validation happens during parsing.
 ///
 /// [`multi_miller_loop`]: pairing::MultiMillerLoop::multi_miller_loop
 pub fn verify(vk: &VerifyingKey, proof: &Proof, public: &[Scalar]) -> Result<bool, Error> {
@@ -277,7 +311,22 @@ fn read_g1(bytes: &[u8], offset: usize) -> Result<G1Affine, Error> {
     zkc.get_mut(48..)
         .expect("zkc is 96 bytes")
         .copy_from_slice(&y);
-    Option::from(G1Affine::from_uncompressed(&zkc)).ok_or(Error::InvalidG1)
+    // `from_uncompressed_unchecked` parses the Fp values (enforces `< p`) but
+    // does *not* check `is_on_curve` or `is_torsion_free`. We run those
+    // checks explicitly so the two failure modes surface distinctly,
+    // `from_uncompressed` folds both into a single `None`, which erases
+    // information a caller (or an audit) may want. See the sibling
+    // documentation on [`Error::InvalidG1Curve`] and
+    // [`Error::InvalidG1Subgroup`].
+    let p: G1Affine =
+        Option::from(G1Affine::from_uncompressed_unchecked(&zkc)).ok_or(Error::InvalidFp)?;
+    if !bool::from(p.is_on_curve()) {
+        return Err(Error::InvalidG1Curve);
+    }
+    if !bool::from(p.is_torsion_free()) {
+        return Err(Error::InvalidG1Subgroup);
+    }
+    Ok(p)
 }
 
 /// Parse a 256-byte `G2` point starting at the given offset. All-zero
@@ -319,7 +368,16 @@ fn read_g2(bytes: &[u8], offset: usize) -> Result<G2Affine, Error> {
     zkc.get_mut(144..192)
         .expect("zkc is 192 bytes")
         .copy_from_slice(&yc0);
-    Option::from(G2Affine::from_uncompressed(&zkc)).ok_or(Error::InvalidG2)
+    // Same split rationale as in `read_g1`.
+    let p: G2Affine =
+        Option::from(G2Affine::from_uncompressed_unchecked(&zkc)).ok_or(Error::InvalidFp)?;
+    if !bool::from(p.is_on_curve()) {
+        return Err(Error::InvalidG2Curve);
+    }
+    if !bool::from(p.is_torsion_free()) {
+        return Err(Error::InvalidG2Subgroup);
+    }
+    Ok(p)
 }
 
 /// Parse a 32-byte big-endian scalar. Rejects non-canonical encodings
@@ -343,10 +401,12 @@ fn read_fr(bytes: &[u8], offset: usize) -> Result<Scalar, Error> {
 /// # Errors
 ///
 /// Returns [`Error::TruncatedInput`] for a short buffer or an adversarial
-/// `num_ic` pointing past the buffer end (checked before allocation —
+/// `num_ic` pointing past the buffer end (checked before allocation,
 /// prevents a `4 TB`-class `DoS` from a malicious VK). Point / field errors
-/// surface as [`Error::InvalidG1`] / [`Error::InvalidG2`] /
-/// [`Error::InvalidFp`].
+/// surface as [`Error::InvalidG1Curve`] / [`Error::InvalidG1Subgroup`] /
+/// [`Error::InvalidG2Curve`] / [`Error::InvalidG2Subgroup`] /
+/// [`Error::InvalidFp`]. Over-limit inputs surface as
+/// [`Error::InputLimitExceeded`].
 pub fn parse_vk(bytes: &[u8]) -> Result<VerifyingKey, Error> {
     const HEADER: usize = G1_SIZE + 3 * G2_SIZE;
 
@@ -358,6 +418,13 @@ pub fn parse_vk(bytes: &[u8]) -> Result<VerifyingKey, Error> {
     let num_ic = read_u32_le(bytes, HEADER)? as usize;
     let ic_start = HEADER + 4;
 
+    // Defence in depth: reject VKs whose declared num_ic exceeds the cap even
+    // if a pathologically large buffer would otherwise satisfy the
+    // byte-length check. Matches the BN254 sibling crate.
+    if num_ic > MAX_NUM_IC {
+        return Err(Error::InputLimitExceeded);
+    }
+
     // Validate num_ic against actual buffer length *before* allocating. On
     // 32-bit targets (MCU) `num_ic * G1_SIZE` could overflow; use checked
     // arithmetic.
@@ -365,7 +432,8 @@ pub fn parse_vk(bytes: &[u8]) -> Result<VerifyingKey, Error> {
     let ic_end = ic_start
         .checked_add(ic_bytes)
         .ok_or(Error::TruncatedInput)?;
-    if bytes.len() < ic_end {
+    // Strict length, reject trailing bytes. Same rationale as the BN254 sibling.
+    if bytes.len() != ic_end {
         return Err(Error::TruncatedInput);
     }
 
@@ -393,6 +461,11 @@ pub fn parse_vk(bytes: &[u8]) -> Result<VerifyingKey, Error> {
 /// Same shape as [`parse_vk`]: truncation / malformed field element /
 /// off-curve point.
 pub fn parse_proof(bytes: &[u8]) -> Result<Proof, Error> {
+    // Strict length. A BLS12-381 Groth16 proof is exactly [`PROOF_SIZE`]
+    // bytes; trailing bytes are a malleability class we close at the parser.
+    if bytes.len() != PROOF_SIZE {
+        return Err(Error::TruncatedInput);
+    }
     let a = read_g1(bytes, 0)?;
     let b = read_g2(bytes, G1_SIZE)?;
     let c = read_g1(bytes, G1_SIZE + G2_SIZE)?;
@@ -412,11 +485,16 @@ pub fn parse_proof(bytes: &[u8]) -> Result<Proof, Error> {
 pub fn parse_public(bytes: &[u8]) -> Result<Vec<Scalar>, Error> {
     let count = read_u32_le(bytes, 0)? as usize;
 
+    if count > MAX_PUBLIC_INPUTS {
+        return Err(Error::InputLimitExceeded);
+    }
+
     let inputs_bytes = count.checked_mul(FR_SIZE).ok_or(Error::TruncatedInput)?;
     let end = 4usize
         .checked_add(inputs_bytes)
         .ok_or(Error::TruncatedInput)?;
-    if bytes.len() < end {
+    // Strict length.
+    if bytes.len() != end {
         return Err(Error::TruncatedInput);
     }
 

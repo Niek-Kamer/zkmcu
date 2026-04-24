@@ -24,7 +24,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use zkmcu_verifier_bls12::{
-    parse_proof, parse_public, parse_vk, verify, Error, FR_SIZE, G1_SIZE, G2_SIZE, PROOF_SIZE,
+    parse_proof, parse_public, parse_vk, verify, Error, FP_SIZE, FR_SIZE, G1_SIZE, G2_SIZE,
+    MAX_NUM_IC, MAX_PUBLIC_INPUTS, PROOF_SIZE,
 };
 
 // ---- Helpers -----------------------------------------------------------
@@ -75,11 +76,13 @@ fn parse_vk_truncated_before_ic() {
 #[test]
 fn parse_vk_claimed_ic_count_overflows() {
     // Header valid, num_ic = u32::MAX. ic_start + num_ic * G1_SIZE must not
-    // panic / overflow; checked arithmetic must surface TruncatedInput.
+    // panic / overflow. Caught by the MAX_NUM_IC cap before byte-length
+    // validation runs (u32::MAX ≫ 1024), so the reported error is
+    // InputLimitExceeded rather than TruncatedInput.
     let (mut vk, _, _) = known_good();
     let header = G1_SIZE + 3 * G2_SIZE;
     vk[header..header + 4].copy_from_slice(&u32::MAX.to_le_bytes());
-    assert!(matches!(parse_vk(&vk), Err(Error::TruncatedInput)));
+    assert!(matches!(parse_vk(&vk), Err(Error::InputLimitExceeded)));
 }
 
 #[test]
@@ -105,7 +108,7 @@ fn parse_vk_field_element_above_modulus() {
     }
     assert!(matches!(
         parse_vk(&vk),
-        Err(Error::InvalidFp | Error::InvalidG1)
+        Err(Error::InvalidFp | Error::InvalidG1Curve | Error::InvalidG1Subgroup)
     ));
 }
 
@@ -157,7 +160,7 @@ fn parse_proof_field_element_above_modulus() {
     }
     assert!(matches!(
         parse_proof(&proof),
-        Err(Error::InvalidFp | Error::InvalidG1)
+        Err(Error::InvalidFp | Error::InvalidG1Curve | Error::InvalidG1Subgroup)
     ));
 }
 
@@ -169,7 +172,7 @@ fn parse_proof_point_not_on_curve() {
     let mut proof = vec![0u8; PROOF_SIZE];
     proof[63] = 1; // A.x = 1 (last byte of the 64-byte Fp encoding)
     proof[127] = 1; // A.y = 1
-    assert!(matches!(parse_proof(&proof), Err(Error::InvalidG1)));
+    assert!(matches!(parse_proof(&proof), Err(Error::InvalidG1Curve)));
 }
 
 #[test]
@@ -219,10 +222,15 @@ fn parse_public_scalar_above_modulus() {
 
 #[test]
 fn parse_public_count_astronomical() {
-    // count = 2^31, one Fr. Must not allocate a gigantic Vec or panic.
+    // count = 2^31, one Fr. Must not allocate a gigantic Vec or panic. Caught
+    // by the MAX_PUBLIC_INPUTS cap, so the reported error is
+    // InputLimitExceeded rather than TruncatedInput.
     let mut bytes = 0x8000_0000u32.to_le_bytes().to_vec();
     bytes.extend_from_slice(&[0u8; FR_SIZE]);
-    assert!(matches!(parse_public(&bytes), Err(Error::TruncatedInput)));
+    assert!(matches!(
+        parse_public(&bytes),
+        Err(Error::InputLimitExceeded)
+    ));
 }
 
 // ---- verify ------------------------------------------------------------
@@ -272,7 +280,7 @@ fn verify_rejects_bitflip_in_every_vk_byte() {
 
     assert_eq!(
         accepted, 0,
-        "{accepted} single-bit-flip VK mutations produced Ok(true) — this is a security bug. \
+        "{accepted} single-bit-flip VK mutations produced Ok(true), this is a security bug. \
          parse_errors={parse_errors}, verify_false={verify_false}"
     );
 }
@@ -299,7 +307,7 @@ fn verify_rejects_bitflip_in_every_proof_byte() {
 
     assert_eq!(
         accepted, 0,
-        "{accepted} single-bit-flip proof mutations produced Ok(true) — security bug"
+        "{accepted} single-bit-flip proof mutations produced Ok(true), security bug"
     );
 }
 
@@ -327,7 +335,7 @@ fn verify_rejects_bitflip_in_every_public_byte() {
 
     assert_eq!(
         accepted, 0,
-        "{accepted} single-bit-flip public-input mutations produced Ok(true) — security bug"
+        "{accepted} single-bit-flip public-input mutations produced Ok(true), security bug"
     );
 }
 
@@ -370,4 +378,248 @@ fn verify_rejects_all_zero_proof() {
 
     let result = verify(&vk, &proof, &public).expect("verify runs");
     assert!(!result, "all-zero proof accepted against real vk");
+}
+
+// ---- Input limits (MAX_NUM_IC, MAX_PUBLIC_INPUTS) ----------------------
+
+#[test]
+fn parse_vk_num_ic_at_limit_plus_one() {
+    // num_ic = MAX_NUM_IC + 1. Buffer is padded large enough that byte-length
+    // validation would pass, the InputLimitExceeded check must fire first.
+    let header = G1_SIZE + 3 * G2_SIZE;
+    let over = u32::try_from(MAX_NUM_IC + 1).unwrap();
+    let body_size = header + 4 + (over as usize) * G1_SIZE;
+    let mut vk = vec![0u8; body_size];
+    // Header can be all zeros; only the num_ic field matters for this test.
+    vk[header..header + 4].copy_from_slice(&over.to_le_bytes());
+    assert!(matches!(parse_vk(&vk), Err(Error::InputLimitExceeded)));
+}
+
+#[test]
+fn parse_vk_num_ic_at_limit_parses() {
+    // num_ic = MAX_NUM_IC must still be accepted structurally. All-zero
+    // header + identity ic entries yields a semantically garbage VK, but
+    // parse_vk's contract is structural validity, not semantic correctness.
+    let header = G1_SIZE + 3 * G2_SIZE;
+    let at = u32::try_from(MAX_NUM_IC).unwrap();
+    let body_size = header + 4 + (at as usize) * G1_SIZE;
+    let mut vk = vec![0u8; body_size];
+    vk[header..header + 4].copy_from_slice(&at.to_le_bytes());
+    let parsed = parse_vk(&vk).expect("num_ic = MAX_NUM_IC must parse");
+    assert_eq!(parsed.ic.len(), MAX_NUM_IC);
+}
+
+#[test]
+fn parse_public_count_at_limit_plus_one() {
+    let over = u32::try_from(MAX_PUBLIC_INPUTS + 1).unwrap();
+    let mut bytes = over.to_le_bytes().to_vec();
+    bytes.extend(vec![0u8; (over as usize) * FR_SIZE]);
+    assert!(matches!(
+        parse_public(&bytes),
+        Err(Error::InputLimitExceeded)
+    ));
+}
+
+#[test]
+fn parse_public_count_at_limit_parses() {
+    // count = MAX_PUBLIC_INPUTS with all-zero Fr values (zero is canonical).
+    let at = u32::try_from(MAX_PUBLIC_INPUTS).unwrap();
+    let mut bytes = at.to_le_bytes().to_vec();
+    bytes.extend(vec![0u8; (at as usize) * FR_SIZE]);
+    let parsed = parse_public(&bytes).expect("count = MAX_PUBLIC_INPUTS must parse");
+    assert_eq!(parsed.len(), MAX_PUBLIC_INPUTS);
+}
+
+// ---- Strict-length (reject trailing bytes) ----------------------------
+
+#[test]
+fn parse_vk_rejects_trailing_byte() {
+    let (mut vk, _, _) = known_good();
+    vk.push(0x00);
+    assert!(matches!(parse_vk(&vk), Err(Error::TruncatedInput)));
+}
+
+#[test]
+fn parse_proof_rejects_trailing_byte() {
+    let (_, mut proof, _) = known_good();
+    proof.push(0x00);
+    assert!(matches!(parse_proof(&proof), Err(Error::TruncatedInput)));
+}
+
+#[test]
+fn parse_public_rejects_trailing_byte() {
+    let (_, _, mut public) = known_good();
+    public.push(0x00);
+    assert!(matches!(parse_public(&public), Err(Error::TruncatedInput)));
+}
+
+// ---- Single-point identity substitutions ------------------------------
+//
+// Same structure as the BN254 sibling's identity tests. Groth16 pairing
+// check is `e(A, B) · e(-α, β) · e(-vk_x, γ) · e(-C, δ) = 1`. Any single
+// point at identity collapses its factor to `Gt::one()` and weakens the
+// equation. Parser accepts EIP-2537 all-zero G1/G2 as identity (128/256
+// bytes of zeros), so we simply zero the relevant region of a known-good
+// VK/proof pair and assert verify rejects.
+
+fn zero_range(bytes: &mut [u8], start: usize, end: usize) {
+    for b in bytes.iter_mut().take(end).skip(start) {
+        *b = 0;
+    }
+}
+
+#[test]
+fn verify_rejects_proof_a_identity() {
+    let (vk_b, mut proof_b, public_b) = known_good();
+    zero_range(&mut proof_b, 0, G1_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "proof with A = identity accepted, soundness bug");
+}
+
+#[test]
+fn verify_rejects_proof_b_identity() {
+    let (vk_b, mut proof_b, public_b) = known_good();
+    zero_range(&mut proof_b, G1_SIZE, G1_SIZE + G2_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "proof with B = identity accepted");
+}
+
+#[test]
+fn verify_rejects_proof_c_identity() {
+    let (vk_b, mut proof_b, public_b) = known_good();
+    zero_range(&mut proof_b, G1_SIZE + G2_SIZE, PROOF_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "proof with C = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_alpha_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    zero_range(&mut vk_b, 0, G1_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with alpha = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_beta_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    zero_range(&mut vk_b, G1_SIZE, G1_SIZE + G2_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with beta = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_gamma_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    zero_range(&mut vk_b, G1_SIZE + G2_SIZE, G1_SIZE + 2 * G2_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with gamma = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_delta_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    zero_range(&mut vk_b, G1_SIZE + 2 * G2_SIZE, G1_SIZE + 3 * G2_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with delta = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_ic0_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    let ic0_start = G1_SIZE + 3 * G2_SIZE + 4;
+    zero_range(&mut vk_b, ic0_start, ic0_start + G1_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with ic[0] = identity accepted");
+}
+
+#[test]
+fn verify_rejects_vk_ic1_identity() {
+    let (mut vk_b, proof_b, public_b) = known_good();
+    let ic1_start = G1_SIZE + 3 * G2_SIZE + 4 + G1_SIZE;
+    zero_range(&mut vk_b, ic1_start, ic1_start + G1_SIZE);
+    let vk = parse_vk(&vk_b).unwrap();
+    let proof = parse_proof(&proof_b).unwrap();
+    let public = parse_public(&public_b).unwrap();
+    let result = verify(&vk, &proof, &public).expect("verify runs");
+    assert!(!result, "VK with ic[1] = identity accepted");
+}
+
+// ---- G1/G2 curve + subgroup checks (pins zkcrypto's is_on_curve +
+// is_torsion_free wiring) -----------------------------------------------
+
+#[test]
+fn parse_proof_rejects_off_curve_g2() {
+    // Plant B = (x = Fp2(1, 0), y = Fp2(1, 0)). Twist equation
+    // y² = x³ + 4·(1+u) is not satisfied: y² = 1, x³ + b' has a non-zero
+    // imaginary part since b' does. Curve-equation check fires.
+    //
+    // EIP-2537 G2 encoding: x.c0 ‖ x.c1 ‖ y.c0 ‖ y.c1, each a 64-byte Fp.
+    // Set the last byte of x.c0 (offset B + 63) and y.c0 (offset B + 191).
+    let b_off = G1_SIZE;
+    let mut proof = vec![0u8; PROOF_SIZE];
+    proof[b_off + FP_SIZE - 1] = 1; // B.x.c0 = 1
+    proof[b_off + FP_SIZE * 3 - 1] = 1; // B.y.c0 = 1
+    assert!(
+        matches!(parse_proof(&proof), Err(Error::InvalidG2Curve)),
+        "expected InvalidG2Curve for off-twist G2, got {:?}",
+        parse_proof(&proof)
+    );
+}
+
+#[test]
+fn parse_proof_rejects_off_subgroup_g1() {
+    // Load the host-generated on-curve-but-off-subgroup G1 fixture. Plant it
+    // at A (offset 0 in the proof); B and C stay identity. The parser must
+    // reject with InvalidG1Subgroup specifically, if it returns
+    // InvalidG1Curve the fixture or the curve check is wrong.
+    let g1_offsub = load_from("off-subgroup", "g1.bin");
+    assert_eq!(g1_offsub.len(), G1_SIZE, "fixture size");
+
+    let mut proof = vec![0u8; PROOF_SIZE];
+    proof[..G1_SIZE].copy_from_slice(&g1_offsub);
+    assert!(
+        matches!(parse_proof(&proof), Err(Error::InvalidG1Subgroup)),
+        "expected InvalidG1Subgroup, got {:?}",
+        parse_proof(&proof)
+    );
+}
+
+#[test]
+fn parse_proof_rejects_off_subgroup_g2() {
+    // Same idea, G2 fixture planted at B (offset G1_SIZE).
+    let g2_offsub = load_from("off-subgroup", "g2.bin");
+    assert_eq!(g2_offsub.len(), G2_SIZE, "fixture size");
+
+    let mut proof = vec![0u8; PROOF_SIZE];
+    proof[G1_SIZE..G1_SIZE + G2_SIZE].copy_from_slice(&g2_offsub);
+    assert!(
+        matches!(parse_proof(&proof), Err(Error::InvalidG2Subgroup)),
+        "expected InvalidG2Subgroup, got {:?}",
+        parse_proof(&proof)
+    );
 }

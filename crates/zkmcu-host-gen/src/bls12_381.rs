@@ -6,13 +6,13 @@
 //! Groth16 verifier must accept the proof, AND the EIP-2537 bytes must
 //! round-trip through the zkcrypto `bls12_381` crate and pass a
 //! hand-rolled Groth16 pairing check. If either side disagrees the build
-//! aborts — catches wire-format bugs (Fp padding, Fp2 byte order)
+//! aborts. Catches wire-format bugs (Fp padding, Fp2 byte order)
 //! before the bytes pollute the committed .bin files.
 //!
 //! ## Wire format (EIP-2537)
 //!
 //! - Fp: 64 bytes. 16 zero bytes + 48 bytes big-endian value.
-//! - Fp2: 128 bytes, order `(c0 ‖ c1)` — *opposite* of EIP-197's BN254 order.
+//! - Fp2: 128 bytes, order `(c0 ‖ c1)`, *opposite* of EIP-197's BN254 order.
 //! - G1: 128 bytes, `x ‖ y`.
 //! - G2: 256 bytes, `x ‖ y` where each is Fp2, so `x.c0 ‖ x.c1 ‖ y.c0 ‖ y.c1`.
 //! - Point at infinity: all zeros.
@@ -20,9 +20,9 @@
 use std::fs;
 use std::path::Path;
 
-use ark_bls12_381::{Bls12_381, Fq, Fr};
+use ark_bls12_381::{Bls12_381, Fq, Fq2, Fr, G1Affine, G2Affine};
 use ark_ec::AffineRepr;
-use ark_ff::{BigInteger, PrimeField, Zero};
+use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 use ark_groth16::Groth16;
 use ark_snark::SNARK;
 use rand_chacha::rand_core::SeedableRng;
@@ -306,7 +306,7 @@ fn cross_check_zkcrypto(vk_bytes: &[u8], proof_bytes: &[u8], public_bytes: &[u8]
     assert!(
         zkc_verify::verify(&vk, &proof, &public),
         "EIP-2537 cross-check failed: arkworks says ok, zkcrypto says reject. \
-         Wire format bug (likely Fp2 order or Fp padding) — refusing to write vectors."
+         Wire format bug (likely Fp2 order or Fp padding), refusing to write vectors."
     );
 }
 
@@ -333,7 +333,7 @@ fn generate_square(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let native_ok = Groth16::<Bls12_381>::verify(&vk, &[y], &proof)?;
     assert!(
         native_ok,
-        "native arkworks verify failed (BLS12-381 square) — refusing to write bad vectors"
+        "native arkworks verify failed (BLS12-381 square), refusing to write bad vectors"
     );
 
     let vk_bytes = encode_vk(&vk);
@@ -390,7 +390,7 @@ fn generate_squares_n<const N: usize>(
     let native_ok = Groth16::<Bls12_381>::verify(&vk, &ys, &proof)?;
     assert!(
         native_ok,
-        "native arkworks verify failed (BLS12-381 {slug}) — refusing to write bad vectors"
+        "native arkworks verify failed (BLS12-381 {slug}), refusing to write bad vectors"
     );
 
     let vk_bytes = encode_vk(&vk);
@@ -414,10 +414,186 @@ fn generate_squares_n<const N: usize>(
     Ok(())
 }
 
+// ---- Off-subgroup adversarial fixtures ---------------------------------
+//
+// `zkmcu-verifier-bls12` splits its G1/G2 error into curve and subgroup
+// variants and wants a regression test that pins the subgroup check: load a
+// point that is on the curve but outside the prime-order subgroup, confirm
+// the verifier rejects with the Subgroup variant. zkcrypto's `bls12_381`
+// hides Fp/Fp2 from its public API, so we generate these fixtures here
+// using arkworks (wich exposes full curve internals) and commit the raw
+// EIP-2537-encoded bytes for the verifier test to consume.
+
+/// Iterate small Fq values, solve `y² = x³ + 4` via `Fq::sqrt`, and return the
+/// first affine point that is on the curve but NOT in the order-r subgroup.
+///
+/// BLS12-381 G1 cofactor h1 = (x-1)²/3 ≈ 2^125, so ~all on-curve points are
+/// off-subgroup. We still iterate in case the first x happens to hit the
+/// rare subgroup coset.
+fn find_off_subgroup_g1() -> Option<G1Affine> {
+    let b: Fq = <ark_bls12_381::g1::Config as ark_ec::short_weierstrass::SWCurveConfig>::COEFF_B;
+    let mut x = Fq::zero();
+    for _ in 0..10_000 {
+        x += Fq::one();
+        let y_sq = x * x * x + b;
+        if let Some(y) = y_sq.sqrt() {
+            let p = G1Affine::new_unchecked(x, y);
+            if p.is_on_curve() && !p.is_in_correct_subgroup_assuming_on_curve() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+/// Same idea over Fq2 for BLS12-381 G2. Twist b = 4·(1+u).
+fn find_off_subgroup_g2() -> Option<G2Affine> {
+    let b: Fq2 = <ark_bls12_381::g2::Config as ark_ec::short_weierstrass::SWCurveConfig>::COEFF_B;
+    let mut xc0 = Fq::zero();
+    for _ in 0..10_000 {
+        xc0 += Fq::one();
+        let x = Fq2 {
+            c0: xc0,
+            c1: Fq::zero(),
+        };
+        let y_sq = x * x * x + b;
+        if let Some(y) = y_sq.sqrt() {
+            let p = G2Affine::new_unchecked(x, y);
+            if p.is_on_curve() && !p.is_in_correct_subgroup_assuming_on_curve() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+/// Strip one 64-byte EIP-2537 Fp slice to 48 value bytes, asserting that
+/// the 16-byte leading pad is zero. Panics on malformed input, this helper
+/// runs *only* on freshly-emitted host-gen bytes, so a failure is a
+/// generator bug and should abort the build.
+fn strip_fp_bytes(fp: &[u8]) -> [u8; 48] {
+    assert_eq!(fp.len(), FP_SIZE, "Fp slice must be FP_SIZE bytes");
+    let (pad, value) = fp.split_at(16);
+    assert!(
+        pad.iter().all(|&b| b == 0),
+        "Fp pad must be zero (generator bug)"
+    );
+    let mut out = [0u8; 48];
+    out.copy_from_slice(value);
+    out
+}
+
+/// Cross-check the emitted EIP-2537 bytes against zkcrypto: they must decode
+/// with `from_uncompressed_unchecked`, pass `is_on_curve`, and fail
+/// `is_torsion_free`. If zkcrypto disagrees we refuse to commit the fixture.
+fn cross_check_off_subgroup_g1(bytes: &[u8; G1_SIZE]) {
+    use bls12_381 as bls;
+    use group::Curve;
+
+    assert!(!bytes.iter().all(|&b| b == 0), "fixture must not be zero");
+    let x = strip_fp_bytes(
+        bytes
+            .get(..FP_SIZE)
+            .expect("G1_SIZE = 2 * FP_SIZE, first half in range"),
+    );
+    let y = strip_fp_bytes(
+        bytes
+            .get(FP_SIZE..G1_SIZE)
+            .expect("G1_SIZE = 2 * FP_SIZE, second half in range"),
+    );
+    let mut zkc = [0u8; 96];
+    zkc.get_mut(..48)
+        .expect("zkc is 96 bytes")
+        .copy_from_slice(&x);
+    zkc.get_mut(48..)
+        .expect("zkc is 96 bytes")
+        .copy_from_slice(&y);
+    let p: bls::G1Affine = Option::from(bls::G1Affine::from_uncompressed_unchecked(&zkc))
+        .expect("zkcrypto rejected off-subgroup G1 fixture at byte level");
+    let p_proj = bls::G1Projective::from(p).to_affine();
+    assert!(
+        bool::from(p.is_on_curve()),
+        "zkcrypto says off-subgroup G1 fixture is off-curve (generator bug)"
+    );
+    assert!(
+        !bool::from(p_proj.is_torsion_free()),
+        "zkcrypto says off-subgroup G1 fixture is in subgroup (generator bug)"
+    );
+}
+
+fn cross_check_off_subgroup_g2(bytes: &[u8; G2_SIZE]) {
+    use bls12_381 as bls;
+    use group::Curve;
+
+    assert!(!bytes.iter().all(|&b| b == 0), "fixture must not be zero");
+    // EIP-2537 G2 = x.c0 ‖ x.c1 ‖ y.c0 ‖ y.c1. zkcrypto wants c1-first.
+    let chunk = |start: usize| -> [u8; 48] {
+        strip_fp_bytes(
+            bytes
+                .get(start..start + FP_SIZE)
+                .expect("G2_SIZE = 4 * FP_SIZE, chunk in range"),
+        )
+    };
+    let xc0 = chunk(0);
+    let xc1 = chunk(FP_SIZE);
+    let yc0 = chunk(FP_SIZE * 2);
+    let yc1 = chunk(FP_SIZE * 3);
+    let mut zkc = [0u8; 192];
+    zkc.get_mut(0..48)
+        .expect("zkc is 192 bytes")
+        .copy_from_slice(&xc1);
+    zkc.get_mut(48..96)
+        .expect("zkc is 192 bytes")
+        .copy_from_slice(&xc0);
+    zkc.get_mut(96..144)
+        .expect("zkc is 192 bytes")
+        .copy_from_slice(&yc1);
+    zkc.get_mut(144..192)
+        .expect("zkc is 192 bytes")
+        .copy_from_slice(&yc0);
+    let p: bls::G2Affine = Option::from(bls::G2Affine::from_uncompressed_unchecked(&zkc))
+        .expect("zkcrypto rejected off-subgroup G2 fixture at byte level");
+    let p_proj = bls::G2Projective::from(p).to_affine();
+    assert!(
+        bool::from(p.is_on_curve()),
+        "zkcrypto says off-subgroup G2 fixture is off-curve (generator bug)"
+    );
+    assert!(
+        !bool::from(p_proj.is_torsion_free()),
+        "zkcrypto says off-subgroup G2 fixture is in subgroup (generator bug)"
+    );
+}
+
+fn generate_off_subgroup(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let dir = out_root.join("off-subgroup");
+    fs::create_dir_all(&dir)?;
+
+    let g1 = find_off_subgroup_g1()
+        .expect("no off-subgroup G1 candidate in 10000 iterations (cofactor math is off)");
+    let g1_bytes = g1_to_eip2537(&g1);
+    cross_check_off_subgroup_g1(&g1_bytes);
+    fs::write(dir.join("g1.bin"), g1_bytes)?;
+
+    let g2 = find_off_subgroup_g2()
+        .expect("no off-subgroup G2 candidate in 10000 iterations (cofactor math is off)");
+    let g2_bytes = g2_to_eip2537(&g2);
+    cross_check_off_subgroup_g2(&g2_bytes);
+    fs::write(dir.join("g2.bin"), g2_bytes)?;
+
+    println!(
+        "wrote bls12-381/off-subgroup/ g1={} B g2={} B (on-curve, off-subgroup; both stacks agree)",
+        g1_bytes.len(),
+        g2_bytes.len()
+    );
+
+    Ok(())
+}
+
 pub fn run(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let dir = out_root.join("bls12-381");
     fs::create_dir_all(&dir)?;
     generate_square(&dir)?;
     generate_squares_n::<5>(&dir, "squares-5", 0xB15C_0DE5)?;
+    generate_off_subgroup(&dir)?;
     Ok(())
 }
