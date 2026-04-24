@@ -2196,8 +2196,6 @@ dependencies = [
 [[package]]
 name = "winter-air"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef01227f23c7c331710f43b877a8333f5f8d539631eea763600f1a74bf018c7c"
 dependencies = [
  "libm",
  "winter-crypto",
@@ -2209,8 +2207,6 @@ dependencies = [
 [[package]]
 name = "winter-crypto"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cdb247bc142438798edb04067ab72a22cf815f57abbd7b78a6fa986fc101db8"
 dependencies = [
  "blake3",
  "sha3",
@@ -2221,8 +2217,6 @@ dependencies = [
 [[package]]
 name = "winter-fri"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd592b943f9d65545683868aaf1b601eb66e52bfd67175347362efff09101d3a"
 dependencies = [
  "winter-crypto",
  "winter-math",
@@ -2232,8 +2226,6 @@ dependencies = [
 [[package]]
 name = "winter-math"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7aecfb48ee6a8b4746392c8ff31e33e62df8528a3b5628c5af27b92b14aef1ea"
 dependencies = [
  "winter-utils",
 ]
@@ -2241,8 +2233,6 @@ dependencies = [
 [[package]]
 name = "winter-maybe-async"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d31a19dae58475d019850e25b0170e94b16d382fbf6afee9c0e80fdc935e73e"
 dependencies = [
  "quote",
  "syn 2.0.117",
@@ -2251,8 +2241,6 @@ dependencies = [
 [[package]]
 name = "winter-prover"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84cc631ed56cd39b78ef932c1ec4060cc6a44d114474291216c32f56655b3048"
 dependencies = [
  "tracing",
  "winter-air",
@@ -2266,14 +2254,10 @@ dependencies = [
 [[package]]
 name = "winter-utils"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9951263ef5317740cd0f49e618db00c72fabb70b75756ea26c4d5efe462c04dd"
 
 [[package]]
 name = "winter-verifier"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0425ea81f8f703a1021810216da12003175c7974a584660856224df04b2e2fdb"
 dependencies = [
  "winter-air",
  "winter-crypto",
@@ -2285,8 +2269,6 @@ dependencies = [
 [[package]]
 name = "winterfell"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43f824ddd5aec8ca6a54307f20c115485a8a919ea94dd26d496d856ca6185f4f"
 dependencies = [
  "winter-air",
  "winter-prover",
@@ -2428,8 +2410,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "zkmcu-babybear"
+version = "0.1.0"
+dependencies = [
+ "winter-utils",
+ "winterfell",
+]
+
+[[package]]
 name = "zkmcu-bump-alloc"
 version = "0.1.0"
+dependencies = [
+ "proptest",
+]
 
 [[package]]
 name = "zkmcu-host-gen"
@@ -2451,7 +2444,9 @@ dependencies = [
  "rand_chacha 0.3.1",
  "serde",
  "serde_json",
+ "substrate-bn",
  "winterfell",
+ "zkmcu-babybear",
  "zkmcu-verifier-stark",
 ]
 
@@ -2466,7 +2461,12 @@ dependencies = [
 name = "zkmcu-verifier"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
  "proptest",
+ "rand 0.8.6",
+ "rand_chacha 0.3.1",
  "substrate-bn",
 ]
 
@@ -2484,7 +2484,12 @@ dependencies = [
 name = "zkmcu-verifier-stark"
 version = "0.1.0"
 dependencies = [
+ "proptest",
+ "rand 0.8.6",
+ "rand_chacha 0.3.1",
+ "winter-utils",
  "winterfell",
+ "zkmcu-babybear",
 ]
 
 [[package]]
@@ -2492,3 +2497,7 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[patch.unused]]
+name = "winter-rand-utils"
+version = "0.13.1"
