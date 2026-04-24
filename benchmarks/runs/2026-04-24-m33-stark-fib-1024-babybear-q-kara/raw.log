@@ -1,0 +1,42 @@
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof=stark-fib-1024-babybear
+
+[boot] vec=stark-fib-1024-babybear stack=5264 heap_base=61404 heap_peak=91362 cycles=18661554 us=124410 ms=124 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=18635020 us=124233 ms=124 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=18638713 us=124258 ms=124 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=18634304 us=124228 ms=124 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=18632621 us=124217 ms=124 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=18601724 us=124011 ms=124 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=18630117 us=124200 ms=124 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=18600047 us=124000 ms=124 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=18628730 us=124191 ms=124 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=18625796 us=124171 ms=124 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=18647878 us=124319 ms=124 ok=true
+(serial capture interrupted during iterations 11-14; resumed at iter 15)
+[15] stark_verify: cycles=18631864 us=124212 ms=124 ok=true
+[16] stark_verify: cycles=18649415 us=124329 ms=124 ok=true
+[17] stark_verify: cycles=18635820 us=124238 ms=124 ok=true
+[18] stark_verify: cycles=18625541 us=124170 ms=124 ok=true
+[19] stark_verify: cycles=18648745 us=124324 ms=124 ok=true
+[20] stark_verify: cycles=18639099 us=124260 ms=124 ok=true
+[21] stark_verify: cycles=18626912 us=124179 ms=124 ok=true
+[22] stark_verify: cycles=18636893 us=124245 ms=124 ok=true

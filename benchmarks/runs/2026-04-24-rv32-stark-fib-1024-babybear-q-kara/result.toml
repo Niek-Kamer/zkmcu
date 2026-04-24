@@ -1,0 +1,89 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "phase 3.3 v2: 9-mult Karatsuba + sparse mul_by_W quartic extension arithmetic on Hazard3"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1 (Niek-Kamer fork, FieldExtension::Quartic)"
+"zkmcu-babybear"       = "0.1.0 (Karatsuba ExtensibleField<4>::mul + sparse mul_by_W)"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"       = "0.7.0"
+"riscv"                = "0.11"
+"riscv-rt"             = "0.12"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 209560                # -212 B vs schoolbook (Karatsuba is tighter on Hazard3 codegen)
+data_bytes = 0
+bss_bytes  = 524288
+heap_bytes = 262144
+stack_peak_bytes = 5176             # -64 B vs schoolbook
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark_babybear (Fibonacci prover, Quartic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (15 * 2^27 + 1), F_{p^4} (x^4 - 11)"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30691
+public_input_size_bytes = 4
+
+[bench.stark_verify_fib_1024_babybear_q_kara_tlsf]
+iterations = 17
+cycles_median = 19_358_117
+cycles_min    = 19_335_406
+cycles_max    = 19_372_444
+us_median     = 129_054
+us_min        = 128_903
+us_max        = 129_150
+us_q1         = 129_015
+us_q3         = 129_098
+result = "ok"
+# Variance measures:
+#   min-max / median = 0.191 %
+#   IQR     / median = 0.064 %
+#   std_dev / mean   = 0.053 %     # TIGHTEST variance in the whole project to date
+stack_peak_bytes = 5176
+
+[bench.vs_schoolbook]
+# Same silicon, same allocator, same AIR, same hasher — only ExtensibleField<4>::mul
+# and mul_by_W changed. Karatsuba dropped the Mont-mul count from 19 to 12 per
+# extension multiply (37 % cut on the hot path).
+us_schoolbook = 136_642
+us_karatsuba  = 129_054
+us_delta      = -7_588              # -5.55 % wall clock
+# This is the M33-vs-RV32 asymmetry: Karatsuba helps the in-order Hazard3 but
+# NOT the pipelined Cortex-M33. See
+# .claude/findings/2026-04-24-karatsuba-isa-asymmetric.md.
+
+[bench.vs_goldilocks_quadratic_tlsf]
+us_goldilocks_q_tlsf    = 112_400    # phase 3.2.z RV32 reference
+us_babybear_q_kara_tlsf = 129_054    # this run
+us_delta                = 16_654     # +14.8 % vs Goldilocks
+# Gap closed from +21.6 % (schoolbook) to +14.8 % (Karatsuba), but Goldilocks
+# still wins on Hazard3 at 95-bit conjectured security.
+
+[bench.cross_isa]
+# Full arc on both ISAs after Karatsuba:
+#   Goldilocks-Q-TLSF   : M33 74_652 us / RV32 112_400 us = 1.506x
+#   BabyBear-Q-School   : M33 124_211 us / RV32 136_642 us = 1.100x
+#   BabyBear-Q-Karatsuba: M33 124_223 us / RV32 129_054 us = 1.039x    ← NEW RECORD
+# BabyBear-Karatsuba is the most ISA-leveling configuration in the whole project.
+ratio_rv32_over_m33 = 1.039
+
+[bench.production_story]
+variance_production_grade = true
+# std_dev 0.053 % is the tightest variance ever measured on RP2350 in this
+# project, below BumpAlloc (0.076 %) and TlsfHeap-Goldilocks (0.081 %).
+# BabyBear-Karatsuba on Hazard3 is the cleanest timing profile we have.

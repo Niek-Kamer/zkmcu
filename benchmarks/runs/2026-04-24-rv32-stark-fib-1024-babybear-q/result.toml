@@ -1,0 +1,86 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "phase 3.3: first BabyBear + Quartic measurement on Hazard3 RV32, schoolbook 16-mult extension arithmetic"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"             = "0.13.1 (Niek-Kamer fork, FieldExtension::Quartic)"
+"zkmcu-babybear"         = "0.1.0"
+"zkmcu-verifier-stark"   = "0.1.0"
+"embedded-alloc"         = "0.7.0"          # tlsf feature
+"riscv"                  = "0.11"
+"riscv-rt"               = "0.12"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+text_bytes = 209772
+data_bytes = 0
+bss_bytes  = 524288
+heap_bytes = 262144                # 256 KB statically reserved
+stack_peak_bytes = 5240
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark_babybear (Fibonacci prover, Quartic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (15 * 2^27 + 1 = 2_013_265_921), F_{p^4} (x^4 - 11)"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30691
+public_input_size_bytes = 4
+
+[bench.stark_verify_fib_1024_babybear_q_tlsf]
+iterations = 10
+cycles_median = 20_496_247
+cycles_min    = 20_479_717
+cycles_max    = 20_516_004
+us_median     = 136_642
+us_min        = 136_531
+us_max        = 136_773
+us_q1         = 136_582              # 25th percentile
+us_q3         = 136_710              # 75th percentile
+result = "ok"
+# Variance measures:
+#   min-max / median = 0.177 %
+#   IQR     / median = 0.093 %
+#   std_dev / mean   = 0.058 %       # TIGHTER than any phase-3.2 config on this silicon
+stack_peak_bytes = 5240
+
+[bench.vs_goldilocks_quadratic_tlsf]
+# Same silicon, same allocator (TLSF), same AIR, same hasher. Only field changed.
+us_goldilocks_q_tlsf = 112_400       # phase 3.2.z RV32 reference
+us_babybear_q_tlsf   = 136_642       # this run
+us_delta             = 24_242        # +21.6 % vs Goldilocks
+# Compare to M33 which regressed +66 %: BabyBear on Hazard3 pays a much
+# smaller penalty than on Cortex-M33. Goldilocks' 64-bit arithmetic is
+# harder on Hazard3's u32-native pipeline (needs MULHU+MUL pairs),
+# so BabyBear's u32-native multiply reclaims more of the gap there.
+
+[bench.cross_isa]
+# With BabyBear + Quartic the M33-vs-RV32 gap collapses dramatically:
+#   Goldilocks-Q-TLSF:  RV32 112_400 us / M33 74_652 us = 1.506x
+#   BabyBear-Q-TLSF:    RV32 136_642 us / M33 124_211 us = 1.100x
+# This is a real finding: the allocator matrix report (phase 3.2.z)
+# showed cross-ISA ratios between 1.21x and 1.51x depending on the
+# allocator. BabyBear's field switch closes the gap further than any
+# allocator change did.
+ratio_rv32_over_m33 = 1.100
+
+[bench.production_story]
+fits_128kb_tier_heap = "not directly measured on RV32, heap_peak probe not wired in this firmware variant"
+variance_production_grade = true
+# std_dev 0.058 % is the tightest variance we've seen on any RP2350
+# config to date — even tighter than the bump-allocator run (0.076 %).
+# Plausible explanation: BabyBear base arithmetic is branch-free on
+# u32 native Hazard3, so the extension-arithmetic hot path has fewer
+# mispredict opportunities than Goldilocks emulated u64 did.

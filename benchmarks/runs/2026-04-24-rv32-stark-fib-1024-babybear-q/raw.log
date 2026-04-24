@@ -1,0 +1,33 @@
+zkmcu boot: heap=256K sys=150MHz core=hazard3 alloc=tlsf proof=stark-fib-1024-babybear
+
+[boot] vec=stark-fib-1024-babybear stack=5240 cycles=20504740 us=136698 ms=136 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=20516004 us=136773 ms=136 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=20487884 us=136585 ms=136 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=20486185 us=136574 ms=136 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=20510266 us=136735 ms=136 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=20493536 us=136623 ms=136 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=20506587 us=136710 ms=136 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=20487448 us=136582 ms=136 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=20501150 us=136674 ms=136 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=20498958 us=136659 ms=136 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=20479717 us=136531 ms=136 ok=true

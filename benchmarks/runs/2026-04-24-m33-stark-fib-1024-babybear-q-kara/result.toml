@@ -1,0 +1,77 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "phase 3.3 v2: 9-mult Karatsuba + sparse mul_by_W quartic extension arithmetic on M33"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1 (Niek-Kamer fork, FieldExtension::Quartic)"
+"zkmcu-babybear"       = "0.1.0 (Karatsuba ExtensibleField<4>::mul + sparse mul_by_W)"
+"zkmcu-verifier-stark" = "0.1.0"
+"embedded-alloc"       = "0.7.0"
+"cortex-m"             = "0.7"
+"cortex-m-rt"          = "0.7"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 206160                # +40 B vs schoolbook (marginal)
+data_bytes = 0
+bss_bytes  = 266404
+heap_bytes = 262144
+heap_base_bytes = 61404
+heap_peak_bytes = 91362
+stack_peak_bytes = 5264
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark_babybear (Fibonacci prover, Quartic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (15 * 2^27 + 1 = 2_013_265_921), F_{p^4} (x^4 - 11)"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30691           # byte-identical to schoolbook proof (Karatsuba is correctness-preserving)
+public_input_size_bytes = 4
+
+[bench.stark_verify_fib_1024_babybear_q_kara_tlsf]
+iterations = 18
+cycles_median = 18_633_462
+cycles_min    = 18_600_047
+cycles_max    = 18_649_415
+us_median     = 124_223
+us_min        = 124_000
+us_max        = 124_329
+result = "ok"
+# Variance measures:
+#   min-max / median = 0.265 %
+#   std_dev / mean   = 0.072 %     # slightly tighter than schoolbook (0.082 %)
+stack_peak_bytes = 5264
+
+[bench.vs_schoolbook]
+# Same silicon, same allocator, same AIR, same hasher — only ExtensibleField<4>::mul and
+# mul_by_W changed. Karatsuba dropped the Mont-mul count in the extension from 19 to 12
+# (a 37 % reduction on that hot path).
+us_schoolbook = 124_211
+us_karatsuba  = 124_223
+us_delta      = 12                 # +12 us, effectively zero
+
+# Interpretation: extension-field multiplication is NOT the M33 bottleneck for STARK
+# verify at this AIR size + proof size. LLVM at opt-level=s + lto=fat likely already
+# CSE'd the schoolbook well enough that Karatsuba's rearrangement offered no win on
+# Cortex-M33's pipelined UMULL. See .claude/findings/2026-04-24-karatsuba-isa-asymmetric.md
+# for the cross-ISA comparison wich makes this conclusive.
+
+[bench.vs_goldilocks_quadratic_tlsf]
+us_goldilocks_q_tlsf   = 74_652
+us_babybear_q_kara_tlsf = 124_223
+us_delta               = 49_571     # +66 % vs Goldilocks, unchanged from schoolbook run
+# 31-bit base field advantage is not recoverable on M33 at 95-bit security via
+# extension-mul optimization alone.

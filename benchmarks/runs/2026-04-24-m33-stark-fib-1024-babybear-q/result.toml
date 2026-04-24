@@ -1,0 +1,79 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "phase 3.3: first BabyBear + Quartic measurement on M33, schoolbook 16-mult extension arithmetic"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"             = "0.13.1 (Niek-Kamer fork, FieldExtension::Quartic)"
+"zkmcu-babybear"         = "0.1.0"
+"zkmcu-verifier-stark"   = "0.1.0"
+"embedded-alloc"         = "0.7.0"          # tlsf feature
+"cortex-m"               = "0.7"
+"cortex-m-rt"            = "0.7"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+text_bytes = 206120
+data_bytes = 0
+bss_bytes  = 266404
+heap_bytes = 262144                # 256 KB statically reserved
+heap_base_bytes = 61404            # ~60 KB, slightly lower than Goldilocks (61798 B)
+heap_peak_bytes = 91362            # 91 KB, vs Goldilocks-Quadratic-TLSF 93515 B
+stack_peak_bytes = 5264
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark_babybear (Fibonacci prover, Quartic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (15 * 2^27 + 1 = 2_013_265_921), F_{p^4} (x^4 - 11)"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30691
+public_input_size_bytes = 4
+
+[bench.stark_verify_fib_1024_babybear_q_tlsf]
+iterations = 15
+cycles_median = 18_631_706
+cycles_min    = 18_605_725
+cycles_max    = 18_653_117
+us_median     = 124_211
+us_min        = 124_038
+us_max        = 124_354
+us_q1         = 124_146              # 25th percentile
+us_q3         = 124_314              # 75th percentile
+result = "ok"
+# Variance measures:
+#   min-max / median = 0.254 %
+#   IQR     / median = 0.135 %
+#   std_dev / mean   = 0.082 %       # silicon-baseline, matches Goldilocks TLSF (0.081 %)
+stack_peak_bytes = 5264
+
+[bench.vs_goldilocks_quadratic_tlsf]
+# Same silicon, same allocator (TLSF), same AIR (Fib-1024), same hasher (Blake3-256).
+# Only the field + extension degree changed: Goldilocks-Quadratic -> BabyBear-Quartic.
+us_goldilocks_q_tlsf = 74_652        # phase 3.2.z reference
+us_babybear_q_tlsf   = 124_211       # this run
+us_delta             = 49_559        # +66 % vs Goldilocks
+# First-measurement story: the 4x base-mult count of the schoolbook Quartic
+# multiplication (16 base multiplies per extension multiply) swamps BabyBear's
+# per-op advantage. Goldilocks-Quadratic uses a 3-mult Karatsuba in
+# winter-math::f64::ExtensibleField<2>::mul. A Karatsuba Quartic (9 base mults)
+# plus sparse mul_by_W (W = 11 is 3 shifts + 2 adds, not a full Mont-mul)
+# is the next lever to pull before the comparison is fair.
+
+[bench.production_story]
+fits_128kb_tier = true
+variance_production_grade = true
+# Heap at 91 KB still fits the 128 KB tier. Variance at 0.08 % std_dev matches
+# Goldilocks-Quadratic-TLSF, so BabyBear didn't introduce any new
+# allocator-driven noise. The regression is purely compute-cost.

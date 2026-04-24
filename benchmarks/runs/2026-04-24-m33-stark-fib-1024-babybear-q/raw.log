@@ -1,0 +1,48 @@
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof=stark-fib-1024-babybear
+
+[boot] vec=stark-fib-1024-babybear stack=5264 heap_base=61404 heap_peak=91362 cycles=18662643 us=124417 ms=124 ok=true
+[1] stark_verify start
+
+[1] stark_verify: cycles=18631706 us=124211 ms=124 ok=true
+[2] stark_verify start
+
+[2] stark_verify: cycles=18614957 us=124099 ms=124 ok=true
+[3] stark_verify start
+
+[3] stark_verify: cycles=18647197 us=124314 ms=124 ok=true
+[4] stark_verify start
+
+[4] stark_verify: cycles=18636290 us=124241 ms=124 ok=true
+[5] stark_verify start
+
+[5] stark_verify: cycles=18648299 us=124321 ms=124 ok=true
+[6] stark_verify start
+
+[6] stark_verify: cycles=18640605 us=124270 ms=124 ok=true
+[7] stark_verify start
+
+[7] stark_verify: cycles=18625662 us=124171 ms=124 ok=true
+[8] stark_verify start
+
+[8] stark_verify: cycles=18622024 us=124146 ms=124 ok=true
+[9] stark_verify start
+
+[9] stark_verify: cycles=18652550 us=124350 ms=124 ok=true
+[10] stark_verify start
+
+[10] stark_verify: cycles=18638506 us=124256 ms=124 ok=true
+[11] stark_verify start
+
+[11] stark_verify: cycles=18653117 us=124354 ms=124 ok=true
+[12] stark_verify start
+
+[12] stark_verify: cycles=18625199 us=124167 ms=124 ok=true
+[13] stark_verify start
+
+[13] stark_verify: cycles=18607242 us=124048 ms=124 ok=true
+[14] stark_verify start
+
+[14] stark_verify: cycles=18631481 us=124209 ms=124 ok=true
+[15] stark_verify start
+
+[15] stark_verify: cycles=18605725 us=124038 ms=124 ok=true
