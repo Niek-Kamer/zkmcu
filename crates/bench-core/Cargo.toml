@@ -1,5 +1,5 @@
 [package]
-name = "bench-rp2350-m33-bls12"
+name = "bench-core"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -10,13 +10,11 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-bench-core = { path = "../bench-core" }
-bls12_381 = { workspace = true }
-cortex-m = "0.7.7"
-cortex-m-rt = "0.7"
-group = { workspace = true }
+embedded-alloc = { version = "0.7", features = ["llff", "tlsf"] }
 heapless = "0.9"
-pairing = { workspace = true }
-panic-halt = "1.0"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
-zkmcu-verifier-bls12 = { path = "../zkmcu-verifier-bls12" }
+usb-device = "0.3"
+usbd-serial = "0.2"
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+cortex-m = "0.7.7"

@@ -10,11 +10,8 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+bench-core = { path = "../bench-core" }
 bls12_381 = { workspace = true }
-critical-section = "1.2"
-embedded-alloc = { version = "0.7", features = ["llff"] }
-embedded-hal = "1.0"
-fugit = "0.3"
 group = { workspace = true }
 heapless = "0.9"
 pairing = { workspace = true }
@@ -24,6 +21,4 @@ panic-halt = "1.0"
 riscv = "0.11"
 riscv-rt = "0.12"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
-usb-device = "0.3"
-usbd-serial = "0.2"
 zkmcu-verifier-bls12 = { path = "../zkmcu-verifier-bls12" }

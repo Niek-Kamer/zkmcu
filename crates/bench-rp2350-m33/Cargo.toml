@@ -10,12 +10,9 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+bench-core = { path = "../bench-core" }
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7"
-critical-section = "1.2"
-embedded-alloc = { version = "0.7", features = ["llff"] }
-embedded-hal = "1.0"
-fugit = "0.3"
 heapless = "0.9"
 panic-halt = "1.0"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
@@ -27,7 +24,5 @@ rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-imp
 # Going direct here sidesteps the false positive without changing the
 # resolved build graph. Only this firmware crate needs the feature.
 substrate-bn = { path = "../../vendor/bn", features = ["cortex-m33-asm"], default-features = false }
-usb-device = "0.3"
-usbd-serial = "0.2"
 zkmcu-vectors = { path = "../zkmcu-vectors" }
 zkmcu-verifier = { path = "../zkmcu-verifier" }

@@ -15,10 +15,7 @@ workspace = true
 babybear = []
 
 [dependencies]
-critical-section = "1.2"
-embedded-alloc = { version = "0.7", features = ["tlsf"] }
-embedded-hal = "1.0"
-fugit = "0.3"
+bench-core = { path = "../bench-core" }
 heapless = "0.9"
 panic-halt = "1.0"
 # Pinned to match rp235x-hal 0.4.0's transitive riscv / riscv-rt pins. Update
@@ -26,6 +23,4 @@ panic-halt = "1.0"
 riscv = "0.11"
 riscv-rt = "0.12"
 rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
-usb-device = "0.3"
-usbd-serial = "0.2"
 zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }
