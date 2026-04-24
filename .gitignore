@@ -9,7 +9,6 @@ web/out/
 
 # Editor / local tooling
 .claude/
-.zed/
 .vscode/
 **/.vscode/
 

@@ -1,0 +1,103 @@
+{
+  // Project-local Zed config for zkmcu. Tracked in git so everyone gets
+  // the same rust-analyzer scope and LSP setup out of the box.
+
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        // Without --workspace, clippy defaults to `default-members` from
+        // Cargo.toml wich is exactly the 7 host crates. The 6 firmware
+        // crates (bench-rp2350-*) stay out because they need their own
+        // embedded target from each crate's .cargo/config.toml.
+        //
+        // Same command `just lint-host` runs. Run `just lint-m33`,
+        // `just lint-m33-bls12`, `just lint-m33-stark`, `just lint-rv32`,
+        // `just lint-rv32-bls12`, `just lint-rv32-stark` to check firmware.
+        "check": {
+          "overrideCommand": [
+            "cargo",
+            "clippy",
+            "--message-format=json-diagnostic-rendered-ansi",
+            "--all-targets",
+            "--release",
+            "--",
+            "-D", "warnings"
+          ]
+        },
+
+        "files": {
+          "excludeDirs": [
+            "target",
+            "research/out",
+            "web/.next",
+            "web/node_modules",
+            "web/dist"
+          ]
+        },
+
+        // arkworks leans hard on derive macros. Turn this off and you'll get
+        // phantom "unresolved import" errors from ark-relations / ark-groth16.
+        "procMacro": {
+          "enable": true
+        },
+
+        "inlayHints": {
+          "parameterHints": { "enable": true },
+          "typeHints":      { "enable": true },
+          "chainingHints":  { "enable": false }
+        }
+      }
+    },
+
+    // Spell-check for markdown and typst. Install with `cargo install codebook-lsp`.
+    "codebook": {
+      "binary": {
+        "path": "codebook-lsp",
+        "arguments": ["serve"]
+      }
+    },
+
+    // Typst LSP for research/*.typ. Install with `cargo install --locked tinymist-cli`.
+    "tinymist": {
+      "binary": {
+        "path": "tinymist"
+      }
+    }
+  },
+
+  "languages": {
+    "Rust": {
+      "code_actions_on_format": {
+        "source.organizeImports": true
+      }
+    },
+
+    // Codebook on prose files only. Not layered onto Rust so it doesn't
+    // fight rust-analyzer on hover / diagnostics.
+    "Markdown": {
+      "language_servers": ["codebook"],
+      "format_on_save": "off"
+    },
+    "Typst": {
+      "language_servers": ["tinymist", "codebook"],
+      "format_on_save": "off"
+    },
+
+    "TOML": {
+      "format_on_save": "off"
+    }
+  },
+
+  "file_types": {
+    "Typst": ["*.typ"]
+  },
+
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/target",
+    "**/node_modules",
+    "**/research/out",
+    "**/web/.next",
+    "**/web/dist"
+  ]
+}
