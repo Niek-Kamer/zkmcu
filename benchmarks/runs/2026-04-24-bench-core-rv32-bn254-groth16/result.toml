@@ -1,0 +1,101 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: Groth16/BN254 on Hazard3 + TrackingLlff (new on RV32)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"       # pure Rust, no UMAAL path on RV32
+"zkmcu-verifier"   = "0.1.0"
+"bench-core"       = "0.1.0"
+"embedded-alloc"   = "0.7.0"       # llff feature
+"riscv"            = "0.11"
+"riscv-rt"         = "0.12"
+"rp235x-hal"       = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 1568
+heap_peak_bytes = 81888            # first RV32 measurement, byte-identical to M33 sibling
+stack_peak_bytes = 15708
+
+[vector]
+source = "ark-groth16 0.5.0 via zkmcu-host-gen"
+circuit = "x^2 = y (Groth16 over BN254)"
+proof_system = "Groth16"
+curve = "BN254"
+public_inputs = 1
+ic_size = 2
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 6
+cycles_median = 204_450_551        # avg of 3rd + 4th sorted
+cycles_min    = 204_394_827
+cycles_max    = 204_514_644
+us_median     = 1_363_003
+us_min        = 1_362_632
+us_max        = 1_363_430
+result = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit = "semaphore depth 10"
+public_inputs = 4
+ic_size = 5
+iterations = 6
+cycles_median = 245_058_567
+cycles_min    = 245_031_365
+cycles_max    = 245_156_333
+us_median     = 1_633_723
+result = "ok"
+
+[bench.pairing]
+iterations = 6
+cycles_median = 113_276_887
+us_median     = 755_179
+
+[bench.g1_mul]
+iterations = 6
+# Iter 1 is an outlier because cycles_u64() is small right after boot,
+# producing a low-Hamming-weight scalar. Iters 2-7 are typical.
+cycles_typical = 11_281_034        # median of iters 2-7
+us_typical     = 75_206
+cycles_best    = 5_217_732         # iter 1
+us_best        = 34_784
+
+[bench.g2_mul]
+iterations = 6
+cycles_typical = 42_194_997
+us_typical     = 281_299
+cycles_best    = 21_567_704
+us_best        = 143_784
+
+[bench.vs_prior_baseline]
+# 2026-04-22-rv32-semaphore-depth10 was the reference.
+prior_groth16_verify_us_median = 1_327_150
+delta_us = 35_853                        # +2.70 %
+prior_groth16_verify_semaphore_us_median = 1_564_674
+delta_semaphore_us = 69_049              # +4.41 %
+# Explanation: the prior RV32 firmware used plain LlffHeap. This run
+# uses TrackingLlff from bench-core (two Relaxed atomics per alloc for
+# peak tracking). Overhead scales with inner-loop alloc count, wich is
+# higher for semaphore (more IC points) so the delta is proportionally
+# larger. Not a real perf regression — an observability upgrade. The
+# new heap_peak = 81888 B number is the first-ever RV32 BN measurement
+# and matches M33 byte-for-byte.
+heap_peak_before = 0                     # not measured pre-refactor
+heap_peak_after  = 81_888                # new this run

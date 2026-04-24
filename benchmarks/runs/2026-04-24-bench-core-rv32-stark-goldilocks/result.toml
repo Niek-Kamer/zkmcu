@@ -1,0 +1,64 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: STARK / Goldilocks x Quadratic, TLSF, Hazard3 + TrackingTlsf (new on RV32)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"   # vendored fork (Quartic variant, unused here)
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"embedded-alloc"       = "0.7.0"    # tlsf feature
+"riscv"                = "0.11"
+"riscv-rt"             = "0.12"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 61798
+heap_peak_bytes = 93515             # first RV32 STARK heap measurement, matches M33 byte-for-byte
+stack_peak_bytes = 5768
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+
+[bench.stark_verify_fib_1024_q_tlsf]
+iterations = 22
+cycles_median = 16_193_986          # avg of 11th + 12th sorted
+cycles_min    = 16_168_849
+cycles_max    = 16_221_783
+us_median     = 107_960
+us_min        = 107_792
+us_max        = 108_145
+result = "ok"
+# Variance: (max - min) / median = 0.33 %, tight as the M33 TLSF run.
+
+[bench.vs_prior_baseline]
+# 2026-04-24-rv32-stark-fib-1024-q-tlsf was the reference.
+prior_us_median = 112_398
+delta_us = -4_438                   # -3.95 %
+prior_cycles_median = 16_859_714
+delta_cycles = -665_728             # -665 K cycles
+# Small speedup despite newly-added TrackingTlsf atomics overhead.
+# STARK alloc count per verify is low enough that the atomics cost is
+# dominated by whatever codegen shift gave us the -3.95 % win.
+heap_peak_before = 0                # not measured pre-refactor
+heap_peak_after  = 93_515           # new this run, matches M33 byte-for-byte

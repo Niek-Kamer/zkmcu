@@ -1,0 +1,94 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: Groth16/BLS12-381 on Hazard3 + TrackingLlff (new on RV32)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"bls12_381"             = "0.8.0"
+"group"                 = "0.13.0"
+"pairing"               = "0.23.0"
+"zkmcu-verifier-bls12"  = "0.1.0"
+"bench-core"            = "0.1.0"
+"embedded-alloc"        = "0.7.0"    # llff feature
+"riscv"                 = "0.11"
+"riscv-rt"              = "0.12"
+"rp235x-hal"            = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 1024
+heap_peak_bytes = 79360              # first RV32 BLS12 measurement, matches M33 sibling
+stack_peak_bytes = 20588
+
+[vector]
+source = "ark-groth16 0.5.0 via zkmcu-host-gen"
+circuit = "x^2 = y (Groth16 over BLS12-381)"
+proof_system = "Groth16"
+curve = "BLS12-381"
+security_bits = 128
+public_inputs = 1
+ic_size = 2
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 6
+cycles_median = 779_350_205          # avg of 3rd + 4th sorted
+cycles_min    = 779_182_087
+cycles_max    = 779_468_261
+us_median     = 5_195_667
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "5-squares"
+public_inputs = 5
+ic_size = 6
+iterations = 5
+cycles_median = 1_636_148_130        # median of 5
+cycles_min    = 1_635_932_622
+cycles_max    = 1_636_184_237
+us_median     = 10_907_654
+result = "ok"
+
+[bench.pairing]
+iterations = 6
+cycles_median = 298_002_682
+us_median     = 1_986_684
+# Affine conversion outside the timed window, same methodology as M33.
+
+[bench.g1_mul]
+iterations = 6
+cycles_median = 213_678_323
+us_median     = 1_424_521
+# zkcrypto bls12_381 is roughly constant-time w.r.t. scalar Hamming,
+# so no bimodal distribution here.
+
+[bench.g2_mul]
+iterations = 6
+cycles_median = 156_241_825
+us_median     = 1_041_612
+
+[bench.vs_prior_baseline]
+# 2026-04-22-rv32-bls12-baseline was the reference.
+prior_groth16_verify_us_median = 5_150_645
+delta_us = 45_022                    # +0.87 %, TrackingLlff atomics overhead
+prior_g2_mul_us_median = 1_002_542
+delta_g2_us = 39_070                 # +3.90 % — possibly the inverse of the M33
+                                     # g2mul drop (register pressure shift), or just
+                                     # alloc-atomic overhead in the Fq2 hot path.
+heap_peak_before = 0                 # not measured pre-refactor
+heap_peak_after  = 79_360            # new this run, matches M33 BLS12

@@ -1,0 +1,77 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: STARK / BabyBear x Quartic, TLSF, Cortex-M33 — HEADLINE"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"    # path-patched fork (Quartic variant)
+"zkmcu-babybear"       = "0.1.0"
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"embedded-alloc"       = "0.7.0"     # tlsf feature
+"cortex-m"             = "0.7.7"
+"cortex-m-rt"          = "0.7"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 61404
+heap_peak_bytes = 91362              # byte-identical to pre-refactor + RV32 sibling
+stack_peak_bytes = 5440
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark-babybear"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (2^31 - 2^27 + 1), F_{p^4}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+extension_degree = 4
+extension_mul_algo = "schoolbook 16-mult"     # Karatsuba variant measured separately
+
+[bench.stark_verify_fib_1024_babybear_q_tlsf]
+iterations = 17                      # iters 2-18 from the captured log
+cycles_median = 14_344_017           # 9th of 17 sorted
+cycles_min    = 14_327_249
+cycles_max    = 14_352_793
+us_median     = 95_626
+us_min        = 95_514
+us_max        = 95_685
+result = "ok"
+# Variance: (max - min) / median = 0.18 %
+
+[bench.vs_prior_baseline]
+# 2026-04-24-m33-stark-fib-1024-babybear-q was the reference (same day,
+# same silicon, pre-refactor firmware).
+prior_us_median = 124_211
+delta_us = -28_585                   # -23.01 %, way outside noise range
+prior_cycles_median = 18_631_706
+delta_cycles = -4_287_689            # -4.3 M cycles
+# See .claude/findings/2026-04-24-bench-core-babybear-speedup.md for
+# the register-allocation hypothesis. Short version: the
+# ExtensibleField<4>::mul hot loop was right at the edge of spilling on
+# Thumb-2's 13-ish usable GPRs. The closure-wrapped verify call shifted
+# where captures sit on the stack frame and which registers survive
+# across the call boundary; apparently that flipped at least one spill
+# back to a register-held value in the quartic mul. Goldilocks sibling
+# moved only -1.9 %, consistent with a register-pressure-specific win.
+
+[bench.vs_goldilocks_this_run]
+this_us_median = 95_626
+goldilocks_us_median = 73_203        # from ../2026-04-24-bench-core-m33-stark-goldilocks/
+ratio = 1.306                        # BabyBear +30.6 % over Goldilocks — down from
+                                     # the pre-refactor +66 % figure. Does not beat
+                                     # Goldilocks, but the gap closed substantially.

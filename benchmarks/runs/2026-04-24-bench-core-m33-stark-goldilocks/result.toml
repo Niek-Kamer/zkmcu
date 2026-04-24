@@ -1,0 +1,60 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: STARK / Goldilocks x Quadratic, TLSF, Cortex-M33"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"     # path-patched to vendor/winterfell (Quartic fork)
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"embedded-alloc"       = "0.7.0"      # tlsf feature
+"cortex-m"             = "0.7.7"
+"cortex-m-rt"          = "0.7"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 61798
+heap_peak_bytes = 93515              # byte-identical to pre-refactor M33 + RV32 sibling
+stack_peak_bytes = 5880              # +248 B vs pre-refactor (closure frame)
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark (Fibonacci, Quadratic extension)"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "Goldilocks (2^64 - 2^32 + 1), F_{p^2}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+proof_size_bytes = 30888
+public_input_size_bytes = 8
+
+[bench.stark_verify_fib_1024_q_tlsf]
+iterations = 16                      # iters 5-20 from the captured log; 1-4 dropped from serial
+cycles_median = 10_980_483           # avg of 8th + 9th sorted
+cycles_min    = 10_957_931
+cycles_max    = 10_992_868
+us_median     = 73_203
+us_min        = 73_052
+us_max        = 73_285
+result = "ok"
+# Variance: (max - min) / median = 0.32 %, same as pre-refactor TLSF.
+
+[bench.vs_prior_baseline]
+# 2026-04-24-m33-stark-fib-1024-q-tlsf was the reference.
+prior_us_median = 74_652
+delta_us = -1_449                    # -1.94 %
+heap_peak_delta_bytes = 0            # identical
+stack_peak_delta_bytes = 248         # closure frame from measure_stack_peak

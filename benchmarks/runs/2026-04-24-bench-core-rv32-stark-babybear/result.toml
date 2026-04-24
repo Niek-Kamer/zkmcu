@@ -1,0 +1,76 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: STARK / BabyBear x Quartic, TLSF, Hazard3 + TrackingTlsf (new on RV32)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"    # vendored fork with Quartic extension
+"zkmcu-babybear"       = "0.1.0"
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"embedded-alloc"       = "0.7.0"     # tlsf feature
+"riscv"                = "0.11"
+"riscv-rt"             = "0.12"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144
+heap_base_bytes = 61404
+heap_peak_bytes = 91362              # first RV32 BabyBear heap measurement, matches M33 sibling
+stack_peak_bytes = 5400
+
+[vector]
+source = "winter-prover via zkmcu-host-gen::stark-babybear"
+circuit = "Fibonacci AIR, N = 1024 trace steps"
+proof_system = "STARK / FRI"
+field = "BabyBear (2^31 - 2^27 + 1), F_{p^4}"
+hash = "Blake3-256"
+security_bits_conjectured = 95
+extension_degree = 4
+extension_mul_algo = "schoolbook 16-mult"
+
+[bench.stark_verify_fib_1024_babybear_q_tlsf]
+iterations = 22
+cycles_median = 19_203_467           # avg of 11th + 12th sorted
+cycles_min    = 19_182_642
+cycles_max    = 19_227_311
+us_median     = 128_023
+us_min        = 127_884
+us_max        = 128_182
+result = "ok"
+# Variance: (max - min) / median = 0.23 %
+
+[bench.vs_prior_baseline]
+# 2026-04-24-rv32-stark-fib-1024-babybear-q was the reference.
+prior_us_median = 136_642
+delta_us = -8_619                    # -6.31 %
+prior_cycles_median = 20_496_247
+delta_cycles = -1_292_780
+# Much smaller speedup than the M33 BabyBear sibling (-23.0 %). Fits
+# the hypothesis that the M33 win was register-pressure-driven in the
+# ExtensibleField<4>::mul hot loop — RV32 has 31 GPRs and was never
+# as tight, so less room for the closure-wrap to shift things.
+heap_peak_before = 0                 # not measured pre-refactor
+heap_peak_after  = 91_362            # new this run, matches M33 byte-for-byte
+
+[bench.vs_goldilocks_this_run]
+this_us_median = 128_023
+goldilocks_us_median = 107_960       # from ../2026-04-24-bench-core-rv32-stark-goldilocks/
+ratio = 1.186                        # BabyBear +18.6 % over Goldilocks on RV32, down
+                                     # from the pre-refactor +21.6 % figure.
+                                     # Consistent story: BabyBear x Quartic still
+                                     # loses to Goldilocks x Quadratic at 95-bit,
+                                     # but the margin is slightly less pessimistic.

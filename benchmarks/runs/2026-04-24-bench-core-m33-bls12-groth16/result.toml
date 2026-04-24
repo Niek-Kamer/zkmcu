@@ -1,0 +1,103 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: Groth16/BLS12-381 on Cortex-M33"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"bls12_381"             = "0.8.0"
+"group"                 = "0.13.0"
+"pairing"               = "0.23.0"
+"zkmcu-verifier-bls12"  = "0.1.0"
+"bench-core"            = "0.1.0"
+"embedded-alloc"        = "0.7.0"    # llff feature
+"cortex-m"              = "0.7.7"
+"cortex-m-rt"           = "0.7"
+"rp235x-hal"            = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 262144                # 256 KB, oversized for first bring-up
+heap_base_bytes = 1024
+heap_peak_bytes = 79360            # byte-identical to RV32 sibling and pre-refactor M33
+stack_peak_bytes = 19360
+
+[vector]
+source = "ark-groth16 0.5.0 via zkmcu-host-gen"
+circuit = "x^2 = y (Groth16 over BLS12-381)"
+proof_system = "Groth16"
+curve = "BLS12-381"
+security_bits = 128
+public_inputs = 1
+ic_size = 2
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 7
+cycles_median = 299_675_162        # middle of 7 sorted
+cycles_min    = 299_633_848
+cycles_max    = 299_754_855
+us_median     = 1_997_834
+us_min        = 1_997_558
+us_max        = 1_998_365
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "5-squares"
+public_inputs = 5
+ic_size = 6
+iterations = 6
+cycles_median = 806_693_672        # avg of 3rd + 4th sorted
+cycles_min    = 806_615_538
+cycles_max    = 806_793_297
+us_median     = 5_377_957
+result = "ok"
+
+[bench.pairing]
+iterations = 7
+cycles_median = 91_322_465
+cycles_min    = 91_228_770
+cycles_max    = 91_375_599
+us_median     = 608_816
+# Affine conversion happens outside the timed window per phase-3.2
+# methodology.
+
+[bench.g1_mul]
+iterations = 7
+cycles_median = 126_488_325
+cycles_min    = 126_441_615
+cycles_max    = 126_577_896
+us_median     = 843_255
+# zkcrypto bls12_381 G1 scalar mul is effectively constant-time w.r.t.
+# scalar Hamming weight, unlike substrate-bn's BN254 variant.
+
+[bench.g2_mul]
+iterations = 7
+cycles_median = 75_423_097
+cycles_min    = 75_379_808
+cycles_max    = 75_490_430
+us_median     = 502_820
+
+[bench.vs_prior_baseline]
+# 2026-04-22-m33-bls12-baseline was the reference.
+prior_groth16_verify_us_median = 2_014_716
+delta_us = -16_882                     # -0.84 %
+prior_g2_mul_us_median = 523_436
+delta_g2_us = -20_616                  # -3.94 %, probably small register-
+                                       # allocation shift in the zkcrypto
+                                       # Fq2 mul hot loop (bls12_381 G2
+                                       # arithmetic is Fq2-heavy).
+heap_peak_delta_bytes = 0              # identical

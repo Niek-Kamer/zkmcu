@@ -1,0 +1,116 @@
+[meta]
+date = "2026-04-24"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = "98c7af5"
+experiment = "bench-core refactor rebaseline: Groth16/BN254 on Cortex-M33 with UMAAL asm + SRAM text"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"       # forked, cortex-m33-asm feature on
+"zkmcu-verifier"   = "0.1.0"
+"bench-core"       = "0.1.0"       # new this run: shared firmware helpers
+"embedded-alloc"   = "0.7.0"       # llff feature
+"cortex-m"         = "0.7.7"
+"cortex-m-rt"      = "0.7"
+"rp235x-hal"       = "0.4.0"
+
+[footprint]
+text_bytes = 0
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 98304                 # 96 KB, tuned to ~18 % over peak
+heap_base_bytes = 1568
+heap_peak_bytes = 81888            # byte-identical to RV32 sibling under bench-core
+stack_peak_bytes = 15724
+
+[vector]
+source = "ark-groth16 0.5.0 via zkmcu-host-gen"
+circuit = "x^2 = y (Groth16 over BN254)"
+proof_system = "Groth16"
+curve = "BN254"
+security_bits = 100
+public_inputs = 1
+ic_size = 2
+
+[umaal_kat]
+iterations = 256
+cycles_total = 1_802_257
+us_total = 12_015
+result = "ok"
+# 256 random limb patterns, every Fq::mul dispatched through the hand-written
+# ARMv8-M UMAAL asm in mul_reduce_armv8m. Byte-identical vs the pure-Rust
+# mul_reduce_rust reference. Self-test runs before any verify measurement.
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 4
+cycles_median = 96_437_047         # median of 4 samples (avg of 2nd + 3rd sorted)
+cycles_min    = 96_420_492
+cycles_max    = 96_443_389
+us_median     = 642_913
+us_min        = 642_803
+us_max        = 642_955
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "x^2 * y^2 * z^2 * w^2 * v^2 = out (5 public inputs)"
+public_inputs = 5
+ic_size = 6
+iterations = 3
+cycles_median = 97_349_976         # middle of 3
+cycles_min    = 97_347_162
+cycles_max    = 97_356_295
+us_median     = 648_999
+result = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit = "semaphore depth 10"
+public_inputs = 4
+ic_size = 5
+iterations = 3
+cycles_median = 114_289_376
+cycles_min    = 114_281_825
+cycles_max    = 114_294_301
+us_median     = 761_929
+result = "ok"
+
+[bench.pairing]
+iterations = 4
+cycles_median = 52_573_542         # avg of 2nd + 3rd sorted
+us_median     = 350_490
+# Scalar-independent, stable.
+
+[bench.g1_mul]
+iterations = 4
+cycles_typical = 4_937_810         # avg of 2nd + 3rd sorted; Hamming-weight-low scalar by construction
+us_typical     = 32_918
+cycles_best    = 4_902_461
+us_best        = 32_683
+# Seed = u64(iter) + cycles_u64() with byte[31] = 0, so the scalar fits
+# in 64 bits. Consistent across iterations, no bimodal distribution here
+# because the BN scalar is always effectively 64-bit.
+
+[bench.g2_mul]
+iterations = 4
+cycles_typical = 22_614_364        # avg of 2nd + 3rd sorted
+us_typical     = 150_762
+cycles_best    = 22_397_342
+us_best        = 149_315
+
+[bench.vs_prior_baseline]
+# Compared to 2026-04-23-m33-umaal-ram-tuned (the previous M33 BN baseline
+# before this refactor). Same compiler, same dep versions, same asm.
+prior_groth16_verify_us_median = 641_000      # approximate from memory notes
+delta_us = 1_913                              # +0.30 % wich is run-to-run noise
+# Closure wrapping via bench-core::measure_cycles did not cost any
+# measurable cycles after LTO.
