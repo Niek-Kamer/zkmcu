@@ -191,6 +191,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-r1cs-std"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "941551ef1df4c7a401de7068758db6503598e6f01850bdb2cfdb614a1f9dbea1"
+dependencies = [
+ "ark-ec",
+ "ark-ff",
+ "ark-relations",
+ "ark-std",
+ "educe",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "tracing",
+]
+
+[[package]]
 name = "ark-relations"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,6 +353,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bench-rp2350-m33-bn-asm-test"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "substrate-bn",
+]
+
+[[package]]
 name = "bench-rp2350-m33-stark"
 version = "0.1.0"
 dependencies = [
@@ -344,6 +374,33 @@ dependencies = [
  "heapless 0.9.2",
  "panic-halt",
  "rp235x-hal",
+ "zkmcu-verifier-stark",
+]
+
+[[package]]
+name = "bench-rp2350-m33-stark-prover"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "winterfell",
+ "zkmcu-verifier-stark",
+]
+
+[[package]]
+name = "bench-rp2350-m33-stark-prover-bb"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "winterfell",
+ "zkmcu-babybear",
  "zkmcu-verifier-stark",
 ]
 
@@ -388,6 +445,35 @@ dependencies = [
  "riscv",
  "riscv-rt",
  "rp235x-hal",
+ "zkmcu-verifier-stark",
+]
+
+[[package]]
+name = "bench-rp2350-rv32-stark-prover"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "heapless 0.9.2",
+ "panic-halt",
+ "riscv",
+ "riscv-rt",
+ "rp235x-hal",
+ "winterfell",
+ "zkmcu-verifier-stark",
+]
+
+[[package]]
+name = "bench-rp2350-rv32-stark-prover-bb"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "heapless 0.9.2",
+ "panic-halt",
+ "riscv",
+ "riscv-rt",
+ "rp235x-hal",
+ "winterfell",
+ "zkmcu-babybear",
  "zkmcu-verifier-stark",
 ]
 
@@ -2428,7 +2514,18 @@ dependencies = [
  "substrate-bn",
  "winterfell",
  "zkmcu-babybear",
+ "zkmcu-poseidon-circuit",
  "zkmcu-verifier-stark",
+]
+
+[[package]]
+name = "zkmcu-poseidon-circuit"
+version = "0.1.0"
+dependencies = [
+ "ark-bn254",
+ "ark-ff",
+ "ark-r1cs-std",
+ "ark-relations",
 ]
 
 [[package]]

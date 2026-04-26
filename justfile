@@ -33,6 +33,26 @@ build-m33-stark:
 build-m33-stark-bb:
     cd crates/bench-rp2350-m33-stark && cargo build --release --features babybear
 
+# Build the STARK Fibonacci prover firmware for the Pico 2 W (Cortex-M33).
+build-m33-stark-prover:
+    cd crates/bench-rp2350-m33-stark-prover && cargo build --release
+
+# Build the BabyBear+Quartic STARK prover firmware for the Pico 2 W (Cortex-M33).
+build-m33-stark-prover-bb:
+    cd crates/bench-rp2350-m33-stark-prover-bb && cargo build --release
+
+# Build the BN254 ASM selftest firmware for the Pico 2 W (Cortex-M33).
+build-m33-bn-asm-test:
+    cd crates/bench-rp2350-m33-bn-asm-test && cargo build --release
+
+# Build the STARK Fibonacci prover firmware for the Pico 2 W (Hazard3 RV32).
+build-rv32-stark-prover:
+    cd crates/bench-rp2350-rv32-stark-prover && cargo build --release
+
+# Build the BabyBear+Quartic STARK prover firmware for the Pico 2 W (Hazard3 RV32).
+build-rv32-stark-prover-bb:
+    cd crates/bench-rp2350-rv32-stark-prover-bb && cargo build --release
+
 # Build the firmware for the Pico 2 W (Hazard3 RV32, STARK Fibonacci, Goldilocks baseline).
 build-rv32-stark:
     cd crates/bench-rp2350-rv32-stark && cargo build --release
@@ -45,6 +65,14 @@ build-rv32-stark-bb:
 test:
     cargo test --release
 
+# Run vendor/bn unit tests (field arithmetic, Fq2/Fq6/Fq12, pairings).
+test-bn:
+    cd vendor/bn && cargo test --release
+
+# Fq2 micro-benchmark. Run before and after patching to compare ns/op.
+bench-fq2:
+    cd vendor/bn && cargo test --release -- bench_fq2_ops --nocapture
+
 # Check formatting (does not modify files).
 fmt-check:
     cargo fmt --all --check
@@ -55,7 +83,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb
+lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-bn-asm-test lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -75,6 +103,15 @@ lint-rv32-bls12:
 lint-m33-stark:
     cd crates/bench-rp2350-m33-stark && cargo clippy --release -- -D warnings
 
+lint-m33-stark-prover:
+    cd crates/bench-rp2350-m33-stark-prover && cargo clippy --release -- -D warnings
+
+lint-m33-stark-prover-bb:
+    cd crates/bench-rp2350-m33-stark-prover-bb && cargo clippy --release -- -D warnings
+
+lint-m33-bn-asm-test:
+    cd crates/bench-rp2350-m33-bn-asm-test && cargo clippy --release -- -D warnings
+
 lint-m33-stark-bb:
     cd crates/bench-rp2350-m33-stark && cargo clippy --release --features babybear -- -D warnings
 
@@ -83,6 +120,12 @@ lint-rv32-stark:
 
 lint-rv32-stark-bb:
     cd crates/bench-rp2350-rv32-stark && cargo clippy --release --features babybear -- -D warnings
+
+lint-rv32-stark-prover:
+    cd crates/bench-rp2350-rv32-stark-prover && cargo clippy --release -- -D warnings
+
+lint-rv32-stark-prover-bb:
+    cd crates/bench-rp2350-rv32-stark-prover-bb && cargo clippy --release -- -D warnings
 
 # Everything that must pass before a commit.
 check: fmt-check lint test
@@ -93,6 +136,10 @@ check-full: check build-m33 build-m33-bls12 build-m33-stark build-m33-stark-bb b
 # Regenerate the committed test vectors.
 regen-vectors:
     cargo run -p zkmcu-host-gen --release
+
+# Phase-1 measurement: constraint counts + proving key sizes for Poseidon Merkle.
+measure-poseidon:
+    cargo run -p zkmcu-host-gen --release -- measure-poseidon
 
 # Report outdated dependencies. Requires `cargo install cargo-outdated` once.
 outdated:
@@ -171,6 +218,10 @@ docs:
                                                          {{out}}/2026-04-24-babybear-quartic-cross-isa.pdf
     typst compile --root . research/reports/2026-04-24-phase-3-3-revisited.typ \
                                                          {{out}}/2026-04-24-phase-3-3-revisited.pdf
+    typst compile --root . research/reports/2026-04-26-stark-prover-results.typ \
+                                                         {{out}}/2026-04-26-stark-prover-results.pdf
+    typst compile --root . research/reports/2026-04-26-stark-prover-bb-results.typ \
+                                                         {{out}}/2026-04-26-stark-prover-bb-results.pdf
 
 # Rebuild a single doc on change. `just docs-watch research/reports/…`.
 docs-watch path:
