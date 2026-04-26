@@ -1,0 +1,97 @@
+[meta]
+date       = "2026-04-26"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+experiment = "phase-5: BabyBear + Quartic STARK prover on Hazard3 RV32 (N=256, ~95-bit security)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Hazard3 RV32IMAC (in-order, 3-stage, no UMAAL)"
+clock_hz    = 150_000_000
+sram_bytes  = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"
+"zkmcu-babybear"       = "0.1.0"
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+heap_bytes       = 393216
+stack_peak_bytes = 4632
+
+[vector]
+source       = "bench-rp2350-rv32-stark-prover-bb, on-device prove + self-verify"
+circuit      = "Fibonacci AIR, 2 columns"
+proof_system = "STARK / FRI"
+field        = "BabyBear (15*2^27+1, 31-bit), Quartic extension"
+hash         = "Blake3-256"
+num_queries           = 8
+blowup_factor         = 4
+fri_folding_factor    = 4
+fri_max_remainder_deg = 7
+security_bits_conjectured = 95
+
+# ---- N = 256, boot + 4 stable loop iterations ----
+[bench.stark_prove_fib_n256]
+circuit          = "Fibonacci AIR, N = 256 trace steps"
+iterations       = 4                # loop iterations; boot excluded from stats
+proof_size_bytes = 6872
+heap_peak_bytes  = 253804           # byte-identical to M33 — same allocator pattern
+stack_peak_bytes = 4632
+cycles_median    = 31_633_469       # avg(2nd, 3rd) of sorted [31628123,31629265,31637672,31641728]
+cycles_min       = 31_628_123
+cycles_max       = 31_641_728
+us_median        = 210_889
+us_min           = 210_854
+us_max           = 210_944
+result           = "ok"
+# variance: (max-min)/median = 13605/31633469 = 0.043% — very clean
+
+[bench.stark_verify_fib_n256]
+circuit       = "Fibonacci AIR, N = 256 trace steps"
+iterations    = 4
+cycles_median = 6_058_913           # avg(2nd, 3rd) of sorted [6046917,6052502,6065324,6066038]
+cycles_min    = 6_046_917
+cycles_max    = 6_066_038
+us_median     = 40_393
+us_min        = 40_312
+us_max        = 40_440
+result        = "ok"
+
+# ---- Cross-ISA: M33 vs RV32 at N=256, BabyBear+Quartic ----
+[bench.cross_isa_babybear_n256]
+prove_us_m33  = 148_000
+prove_us_rv32 = 210_889
+prove_ratio   = 1.425              # RV32 / M33
+
+verify_us_m33  = 29_000
+verify_us_rv32 = 40_393
+verify_ratio   = 1.393             # RV32 / M33
+
+heap_peak_bytes_m33  = 253804
+heap_peak_bytes_rv32 = 253804
+proof_bytes          = 6872        # identical on both
+
+# ---- Phase 4 vs Phase 5 cross-ISA gap comparison ----
+[bench.isa_gap_evolution]
+# Phase 4 (Goldilocks+None, ~32-bit security):
+phase4_prove_ratio  = 1.55         # from 2026-04-26-m33-stark-prover-fib
+phase4_verify_ratio = 1.29
+
+# Phase 5 (BabyBear+Quartic, ~95-bit security):
+phase5_prove_ratio  = 1.425
+phase5_verify_ratio = 1.393
+
+# Gap narrowed by 0.125x on prove. Hypothesis was 1.07x — that did NOT hold.
+# Residual gap is Blake3 dominated (verify ratio 1.39x matches prove ratio 1.43x),
+# which means field arithmetic is NOT the bottleneck anymore.
+# Blake3 runs ~1.4x faster on M33 than Hazard3 regardless of field choice.
+gap_reduction = 0.125
+hypothesis_was = 1.07
+hypothesis_held = false
+bottleneck = "Blake3 hashing (ISA-invariant at this scale)"

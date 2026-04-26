@@ -1,0 +1,22 @@
+[package]
+name = "bench-rp2350-rv32-stark-prover-bb"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bench-core = { path = "../bench-core" }
+heapless = "0.9"
+panic-halt = "1.0"
+# Pinned to match rp235x-hal 0.4.0's transitive riscv / riscv-rt pins.
+riscv = "0.11"
+riscv-rt = "0.12"
+rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
+winterfell = { workspace = true }
+zkmcu-babybear = { path = "../zkmcu-babybear" }
+zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }
