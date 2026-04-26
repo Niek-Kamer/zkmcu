@@ -1,0 +1,21 @@
+[package]
+name = "bench-rp2350-m33-bn-asm-test"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bench-core = { path = "../bench-core" }
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7"
+heapless = "0.9"
+panic-halt = "1.0"
+rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
+# Both features required: cortex-m33-asm activates the asm path,
+# test-harness exposes arith::selftest_fq / arith::selftest_fr.
+substrate-bn = { path = "../../vendor/bn", features = ["cortex-m33-asm", "test-harness"], default-features = false }
