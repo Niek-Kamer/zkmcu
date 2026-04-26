@@ -19,6 +19,7 @@ use std::path::PathBuf;
 mod bls12_381;
 pub(crate) mod bn254;
 mod circuits;
+mod measure_poseidon;
 mod semaphore;
 mod stark;
 mod stark_babybear;
@@ -84,7 +85,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || has_arg("stark-babybear")
         || has_arg("stark_babybear")
         || has_arg("umaal-kat")
-        || has_arg("umaal_kat");
+        || has_arg("umaal_kat")
+        || has_arg("measure-poseidon")
+        || has_arg("measure_poseidon");
 
     if !any_explicit || has_arg("bn254") {
         bn254::run(&out_root)?;
@@ -105,6 +108,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if has_arg("stark-babybear") || has_arg("stark_babybear") {
         stark_babybear::run(&out_root)?;
+    }
+    if has_arg("measure-poseidon") || has_arg("measure_poseidon") {
+        measure_poseidon::run()?;
     }
 
     Ok(())

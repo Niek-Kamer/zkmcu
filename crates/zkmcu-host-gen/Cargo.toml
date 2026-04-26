@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 ark-bn254 = { workspace = true }
+zkmcu-poseidon-circuit = { path = "../zkmcu-poseidon-circuit" }
 ark-bls12-381 = { workspace = true }
 ark-ec = { workspace = true }
 ark-ff = { workspace = true }
