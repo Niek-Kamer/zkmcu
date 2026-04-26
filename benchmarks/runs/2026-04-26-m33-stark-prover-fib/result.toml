@@ -1,0 +1,179 @@
+[meta]
+date = "2026-04-26"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "phase-4: first on-device STARK proving (Fibonacci AIR, Goldilocks, no_std winterfell)"
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"winterfell"           = "0.13.1"   # vendored fork; all sub-crates already no_std
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+heap_bytes       = 262144         # 256 KB static heap (TrackingTlsf)
+stack_peak_bytes = 4448           # measured via measure_stack_peak (N=128)
+
+[vector]
+source   = "winterfell prover (bench-rp2350-m33-stark-prover), on-device prove + self-verify"
+circuit  = "Fibonacci AIR, 2 columns, base field only"
+proof_system = "STARK / FRI"
+field    = "Goldilocks (2^64 - 2^32 + 1), no extension"
+hash     = "Blake3-256"
+# Low security — intentional.  This run is about proving feasibility, not production security.
+num_queries           = 8
+blowup_factor         = 4
+fri_folding_factor    = 4
+fri_max_remainder_deg = 7
+
+# ---- N = 64 (first confirmed working size) ----
+[bench.stark_prove_fib_n64]
+circuit     = "Fibonacci AIR, N = 64 trace steps"
+iterations  = 8                   # stable iterations observed on device
+proof_size_bytes  = 3072          # approximate
+heap_peak_bytes   = 75000         # approximate from boot measurement
+cycles_median = 5_325_000         # ≈ 35.5 ms × 150 MHz (approximate from session log)
+us_median     = 35_500
+result = "ok"
+notes = "N=64 established feasibility; subsequent runs from session log without per-iteration cycle output"
+
+[bench.stark_verify_fib_n64]
+circuit    = "Fibonacci AIR, N = 64 trace steps"
+iterations = 8
+cycles_median = 1_800_000         # ≈ 12 ms × 150 MHz (approximate)
+us_median     = 12_000
+result = "ok"
+
+# ---- N = 128 (scaling run, 6 stable iterations) ----
+[bench.stark_prove_fib_n128]
+circuit          = "Fibonacci AIR, N = 128 trace steps"
+iterations       = 6
+proof_size_bytes = 5116
+heap_peak_bytes  = 153540
+stack_peak_bytes = 4448
+cycles_median = 10_239_305        # avg(3rd, 4th) of sorted [10228398,10231663,10238915,10239696,10240656,10241733]
+cycles_min    = 10_228_398
+cycles_max    = 10_241_733
+us_median     = 68_262
+us_min        = 68_189
+us_max        = 68_406
+result = "ok"
+# prove variance: (max-min)/median = 217/68262 = 0.32 % — deterministic embedded environment
+
+[bench.stark_verify_fib_n128]
+circuit    = "Fibonacci AIR, N = 128 trace steps"
+iterations = 6
+cycles_median = 2_331_074         # avg(3rd, 4th) of sorted [2316293,2319565,2329737,2332411,2334575,2335069]
+cycles_min    = 2_316_293
+cycles_max    = 2_335_069
+us_median     = 15_540
+us_min        = 15_441
+us_max        = 15_567
+result = "ok"
+
+# ---- N = 256 (5 stable iterations, 384 KB heap config) ----
+[bench.stark_prove_fib_n256]
+circuit          = "Fibonacci AIR, N = 256 trace steps"
+iterations       = 5
+proof_size_bytes = 6668
+heap_peak_bytes  = 306288
+stack_peak_bytes = 4448
+cycles_median = 20_097_520        # iteration 5, middle of range
+cycles_min    = 20_080_432
+cycles_max    = 20_118_567        # boot run (cold, slightly higher)
+us_median     = 133_983
+us_min        = 133_869
+us_max        = 134_077           # excluding boot outlier
+result = "ok"
+# prove variance (iterations 1-5): (134077-133869)/133983 = 0.16 %
+
+[bench.stark_verify_fib_n256]
+circuit    = "Fibonacci AIR, N = 256 trace steps"
+iterations = 5
+cycles_median = 2_901_604         # iteration 3
+cycles_min    = 2_898_751
+cycles_max    = 2_914_619         # iteration 1 (cold)
+us_median     = 19_344
+us_min        = 19_325
+us_max        = 19_430
+result = "ok"
+
+# ---- Cross-ISA: RV32 (Hazard3) N=256 (6 stable iterations) ----
+[bench.stark_prove_fib_n256_rv32]
+circuit          = "Fibonacci AIR, N = 256 trace steps"
+target           = "rp2350-hazard3-rv32"
+iterations       = 6
+proof_size_bytes = 6668
+heap_peak_bytes  = 306288        # byte-identical to M33 — same allocator pattern
+stack_peak_bytes = 4344
+cycles_median = 31_243_087       # iter 4 (middle of sorted loop range)
+cycles_min    = 31_210_868
+cycles_max    = 31_254_689       # loop max (boot=31_257_234 excluded as cold)
+us_median     = 208_287
+us_min        = 208_072
+us_max        = 208_364
+result = "ok"
+# variance (loop only): 43821/31243087 = 0.14 %
+
+[bench.stark_verify_fib_n256_rv32]
+circuit    = "Fibonacci AIR, N = 256 trace steps"
+target     = "rp2350-hazard3-rv32"
+iterations = 6
+cycles_median = 3_746_810        # avg(3rd, 4th) of sorted loop iters
+cycles_min    = 3_736_899
+cycles_max    = 3_763_836        # iter 1 (slightly cold)
+us_median     = 24_978
+us_min        = 24_912
+us_max        = 25_092
+result = "ok"
+
+# ---- Cross-ISA comparison: M33 vs RV32 at N=256, same chip, 150 MHz ----
+[bench.cross_isa_n256]
+# Heap, proof size, stack: all hardware-independent (same Rust → same allocations).
+heap_peak_bytes_m33  = 306288
+heap_peak_bytes_rv32 = 306288
+proof_bytes_m33      = 6668
+proof_bytes_rv32     = 6668
+
+# Prove: field-op-heavy (Goldilocks NTT).  M33 has UMAAL (32×32+32+32→64 in
+# one instruction).  RV32 simulates 64-bit multiply via paired mul/mulhu,
+# roughly doubling per-multiply cost.
+prove_us_m33    = 134_000
+prove_us_rv32   = 208_287
+prove_ratio     = 1.55          # RV32 / M33 — ISA gap on field arithmetic
+
+# Verify: hash-heavy (Blake3 FRI paths).  32-bit ops, both ISAs equally capable.
+# The residual 1.29× gap is general M33 code efficiency + pipeline.
+verify_us_m33   = 19_400
+verify_us_rv32  = 24_978
+verify_ratio    = 1.29          # RV32 / M33 — hash-dominated, smaller gap
+
+# Gap breakdown:
+# prove_ratio - verify_ratio = 0.26 — attributable to 64-bit field multiply cost on RV32
+# This matches the verifier phase-3 cross-ISA gap of ~1.07× (that run was hash-dominated).
+
+[bench.scaling_n64_to_n256]
+# Full scaling table (prove / verify / heap / proof):
+#   N=64:   ~36 ms / ~12 ms / ~75 KB / ~3.1 KB
+#   N=128:   68 ms /  15.5 ms / 154 KB /  5.1 KB
+#   N=256:  134 ms /  19.4 ms / 299 KB /  6.7 KB
+
+# N=128 → N=256 (2× trace):
+prove_time_ratio_128_256  = 1.96  # 134 / 68.3 — O(N), log N flat at these sizes
+verify_time_ratio_128_256 = 1.25  # 19.4 / 15.5 — sub-linear (one extra FRI fold per 4×N)
+heap_ratio_128_256        = 1.95  # 299 / 153.5 — linear in N
+proof_size_ratio_128_256  = 1.30  # 6668 / 5116 — logarithmic (one extra FRI layer)
+stack_ratio_128_256       = 1.00  # constant — recursion depth doesn't scale
+
+# N=256 is the practical ceiling on this chip at these parameters:
+# N=512 would need ~600 KB heap, exceeding the 512 KB SRAM.
+n256_is_sram_ceiling = true
