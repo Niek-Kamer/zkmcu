@@ -258,7 +258,7 @@ Typst sources under `research/`, build with `just docs`, output lands in `resear
 - `2026-04-24-stark-bump-alloc.pdf`: phase 3.2.y, silicon-baseline variance via watermark-reset bump allocator
 - `2026-04-24-stark-allocator-matrix.pdf`: phase 3.2.z synthesis, production-deterministic config picked
 
-Phase 3 paper trail (predictions frozen before measurement, results compared against the frozen file) lives under `research/notebook/`, `research/reports/`, and `benchmarks/runs/`. Main takeaway for grant readers: `2026-04-24-stark-allocator-matrix.pdf`.
+Phase 3 paper trail (predictions frozen before measurement, results compared against the frozen file) lives under `research/notebook/`, `research/reports/`, and `benchmarks/runs/`.
 
 ## License
 

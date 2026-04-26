@@ -5,4 +5,5 @@ target = "riscv32imac-unknown-none-elf"
 rustflags = [
     "-C", "link-arg=--nmagic",
     "-C", "link-arg=-Trp235x_riscv.x",
+    "-C", "target-feature=+zbb",
 ]
