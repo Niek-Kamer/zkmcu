@@ -1,0 +1,20 @@
+[package]
+name = "bench-rp2350-m33-timing-oracle"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bench-core = { path = "../bench-core" }
+cortex-m-rt = "0.7"
+heapless = "0.9"
+panic-halt = "1.0"
+rp235x-hal = { version = "0.4", features = ["binary-info", "critical-section-impl", "rt"] }
+substrate-bn = { path = "../../vendor/bn", features = ["cortex-m33-asm"], default-features = false }
+zkmcu-vectors = { path = "../zkmcu-vectors" }
+zkmcu-verifier = { path = "../zkmcu-verifier" }
