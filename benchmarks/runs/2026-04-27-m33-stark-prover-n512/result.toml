@@ -1,0 +1,72 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Cortex-M33 @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell" = "0.11 (vendored)"
+
+[circuit]
+field          = "Goldilocks (64-bit)"
+extension      = "None (base field only)"
+trace_len      = 512
+blowup_factor  = 2
+num_queries    = 8
+lde_domain     = 1024
+grinding       = 0
+proof_bytes    = 6_154
+security_bits_conjectured = 7
+
+# Note: same LDE domain (1024) as N=256/blowup=4 baseline — heap footprint unchanged.
+# security_bits=7 is correct: log2(blowup=2) × 8 queries = 8 bits (rounding gives 7).
+
+# ---- prove + verify (2 loop iterations) -------------------------------------
+# Boot: stack=4448, heap_peak=311008, heap_after=10 (fully freed after proof drops).
+
+[bench.stark_prove]
+circuit     = "Fibonacci trace, N=512, Goldilocks, blowup=2, 8 queries"
+iterations  = 2
+cycles_median = 23_824_258
+cycles_min    = 23_823_804
+cycles_max    = 23_824_711
+us_median     = 158_828
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "Fibonacci, N=512, Goldilocks, blowup=2, 8 queries"
+iterations  = 2
+cycles_median = 2_873_482
+cycles_min    = 2_870_227
+cycles_max    = 2_876_736
+us_median     = 19_156
+result        = "ok"
+
+[bench.prove_verify_total]
+iterations  = 2
+us_median   = 177_985
+us_min      = 177_966
+us_max      = 178_003
+ms_median   = 178
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_448
+heap_peak     = 311_008
+cycles        = 23_838_516
+us            = 158_923
+proof_bytes   = 6_154
+security_bits = 7
+result        = "ok"
+
+[bench.boot_verify]
+us     = 19_150
+result = "ok"

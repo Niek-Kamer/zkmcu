@@ -1,0 +1,30 @@
+zkmcu boot: heap=384K sys=150MHz core=hazard3-rv32 alloc=tlsf stark-prover N=512
+
+[boot] prove start
+
+[boot] N=512 stack=4344 heap_base=0 heap_peak=311008 cycles=32093610 us=213957 ms=213 proof_bytes=6154 security_bits=7 ok=true
+
+[boot] self-verify=ok verify_us=23374
+
+[boot] prove_verify_total: total_us=237332 total_ms=237 heap_after=10
+
+[1] stark_prove start
+
+[1] stark_prove: cycles=32084182 us=213894 ms=213 proof_bytes=6154 security_bits=7 ok=true
+[1] stark_verify: cycles=3505186 us=23367 ms=23 ok=true
+[1] prove_verify_total: prove_us=213894 verify_us=23367 total_us=237262 total_ms=237 heap_after=10 ok=true
+[2] stark_prove start
+
+[2] stark_prove: cycles=32079462 us=213863 ms=213 proof_bytes=6154 security_bits=7 ok=true
+[2] stark_verify: cycles=3498167 us=23321 ms=23 ok=true
+[2] prove_verify_total: prove_us=213863 verify_us=23321 total_us=237184 total_ms=237 heap_after=10 ok=true
+[3] stark_prove start
+
+[3] stark_prove: cycles=32067894 us=213785 ms=213 proof_bytes=6154 security_bits=7 ok=true
+[3] stark_verify: cycles=3509328 us=23395 ms=23 ok=true
+[3] prove_verify_total: prove_us=213785 verify_us=23395 total_us=237181 total_ms=237 heap_after=10 ok=true
+[4] stark_prove start
+
+[4] stark_prove: cycles=32055521 us=213703 ms=213 proof_bytes=6154 security_bits=7 ok=true
+[4] stark_verify: cycles=3517026 us=23446 ms=23 ok=true
+[4] prove_verify_total: prove_us=213703 verify_us=23446 total_us=237150 total_ms=237 heap_after=10 ok=true

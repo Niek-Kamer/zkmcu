@@ -1,0 +1,71 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Cortex-M33 @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell" = "0.11 (vendored)"
+
+[circuit]
+field          = "BabyBear (31-bit)"
+extension      = "Quartic"
+trace_len      = 256
+blowup_factor  = 4
+num_queries    = 11
+lde_domain     = 1024
+grinding       = 0
+proof_bytes    = 8_970
+security_bits_conjectured = 21
+
+# Conjectured security formula: floor(log2(blowup_factor)) × num_queries
+# = log2(4) × 11 = 2 × 11 = 22 bits (rounds to 21).
+# To reach 128-bit conjectured security at blowup=4 would need 64 queries.
+# Proving 128-bit security on embedded requires much higher blowup or grinding.
+
+# ---- prove + verify (5 complete loop iterations: iters 3-7) -----------------
+# Boot line truncated in serial capture; loop data complete from iter 3.
+# Stack=4672, heap_peak=253804, heap_after=10 (fully freed).
+
+[bench.stark_prove]
+circuit     = "Fibonacci trace, N=256, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 5
+cycles_median = 22_238_251
+cycles_min    = 22_231_793
+cycles_max    = 22_245_854
+us_median     = 148_255
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "Fibonacci, N=256, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 5
+cycles_median = 4_922_982
+cycles_min    = 4_909_157
+cycles_max    = 4_929_993
+us_median     = 32_819
+result        = "ok"
+
+[bench.prove_verify_total]
+iterations  = 5
+us_median   = 181_078
+us_min      = 181_033
+us_max      = 181_119
+ms_median   = 181
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_672
+heap_peak     = 253_804
+cycles        = 22_254_682
+us            = 148_364
+proof_bytes   = 8_970
+security_bits = 21
+result        = "ok"

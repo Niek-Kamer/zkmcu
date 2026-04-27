@@ -1,0 +1,47 @@
+zkmcu boot: heap=384K sys=150MHz core=hazard3-rv32 alloc=tlsf stark-prover-bb N=256
+
+[boot] prove start
+
+[boot] N=256 stack=4628 heap_base=0 heap_peak=253804 cycles=32258484 us=215056 ms=215 p
+[boot line truncated in serial capture; iter 1 missed; data resumes at iter 2]
+
+[2] stark_prove start
+
+[2] stark_prove: cycles=32242452 us=214949 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[2] stark_verify: cycles=6319148 us=42127 ms=42 ok=true
+[2] prove_verify_total: prove_us=214949 verify_us=42127 total_us=257077 total_ms=257 heap_after=10 ok=true
+[3] stark_prove start
+
+[3] stark_prove: cycles=32234000 us=214893 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[3] stark_verify: cycles=6297710 us=41984 ms=41 ok=true
+[3] prove_verify_total: prove_us=214893 verify_us=41984 total_us=256878 total_ms=256 heap_after=10 ok=true
+[4] stark_prove start
+
+[4] stark_prove: cycles=32249058 us=214993 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[4] stark_verify: cycles=6315500 us=42103 ms=42 ok=true
+[4] prove_verify_total: prove_us=214993 verify_us=42103 total_us=257097 total_ms=257 heap_after=10 ok=true
+[5] stark_prove start
+
+[5] stark_prove: cycles=32221759 us=214811 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[5] stark_verify: cycles=6338629 us=42257 ms=42 ok=true
+[5] prove_verify_total: prove_us=214811 verify_us=42257 total_us=257069 total_ms=257 heap_after=10 ok=true
+[6] stark_prove start
+
+[6] stark_prove: cycles=32257963 us=215053 ms=215 proof_bytes=8970 security_bits=21 ok=true
+[6] stark_verify: cycles=6327077 us=42180 ms=42 ok=true
+[6] prove_verify_total: prove_us=215053 verify_us=42180 total_us=257233 total_ms=257 heap_after=10 ok=true
+[7] stark_prove start
+
+[7] stark_prove: cycles=32225630 us=214837 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[7] stark_verify: cycles=6327160 us=42181 ms=42 ok=true
+[7] prove_verify_total: prove_us=214837 verify_us=42181 total_us=257018 total_ms=257 heap_after=10 ok=true
+[8] stark_prove start
+
+[8] stark_prove: cycles=32233679 us=214891 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[8] stark_verify: cycles=6337384 us=42249 ms=42 ok=true
+[8] prove_verify_total: prove_us=214891 verify_us=42249 total_us=257140 total_ms=257 heap_after=10 ok=true
+[9] stark_prove start
+
+[9] stark_prove: cycles=32243210 us=214954 ms=214 proof_bytes=8970 security_bits=21 ok=true
+[9] stark_verify: cycles=6311105 us=42074 ms=42 ok=true
+[9] prove_verify_total: prove_us=214954 verify_us=42074 total_us=257028 total_ms=257 heap_after=10 ok=true

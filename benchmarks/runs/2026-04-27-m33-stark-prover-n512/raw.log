@@ -1,0 +1,20 @@
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf stark-prover N=512
+
+[boot] prove start
+
+[boot] N=512 stack=4448 heap_base=0 heap_peak=311008 cycles=23838516 us=158923 ms=158 proof_bytes=6154 security_bits=7 ok=true
+
+[boot] self-verify=ok verify_us=19150
+
+[boot] prove_verify_total: total_us=178074 total_ms=178 heap_after=10
+
+[1] stark_prove start
+
+[1] stark_prove: cycles=23823804 us=158825 ms=158 proof_bytes=6154 security_bits=7 ok=true
+[1] stark_verify: cycles=2876736 us=19178 ms=19 ok=true
+[1] prove_verify_total: prove_us=158825 verify_us=19178 total_us=178003 total_ms=178 heap_after=10 ok=true
+[2] stark_prove start
+
+[2] stark_prove: cycles=23824711 us=158831 ms=158 proof_bytes=6154 security_bits=7 ok=true
+[2] stark_verify: cycles=2870227 us=19134 ms=19 ok=true
+[2] prove_verify_total: prove_us=158831 verify_us=19134 total_us=177966 total_ms=177 heap_after=10 ok=true

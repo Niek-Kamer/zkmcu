@@ -1,0 +1,66 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Hazard3 RISC-V RV32IMAC @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell" = "0.11 (vendored)"
+
+[circuit]
+field          = "BabyBear (31-bit)"
+extension      = "Quartic"
+trace_len      = 256
+blowup_factor  = 4
+num_queries    = 11
+lde_domain     = 1024
+grinding       = 0
+proof_bytes    = 8_970
+security_bits_conjectured = 21
+
+# ---- prove + verify (8 complete loop iterations: iters 2-9) -----------------
+# Boot line truncated in serial capture (iter 1 missed); loop data from iter 2.
+# Stack=4628, heap_peak=253804, heap_after=10 (fully freed).
+
+[bench.stark_prove]
+circuit     = "Fibonacci trace, N=256, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 8
+cycles_median = 32_238_226
+cycles_min    = 32_221_759
+cycles_max    = 32_257_963
+us_median     = 214_921
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "Fibonacci, N=256, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 8
+cycles_median = 6_323_113
+cycles_min    = 6_297_710
+cycles_max    = 6_338_629
+us_median     = 42_154
+result        = "ok"
+
+[bench.prove_verify_total]
+iterations  = 8
+us_median   = 257_073
+us_min      = 256_878
+us_max      = 257_233
+ms_median   = 257
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_628
+heap_peak     = 253_804
+cycles        = 32_258_484
+us            = 215_056
+proof_bytes   = 8_970
+security_bits = 21
+result        = "ok"

@@ -1,0 +1,69 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Hazard3 RISC-V RV32IMAC @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell" = "0.11 (vendored)"
+
+[circuit]
+field          = "Goldilocks (64-bit)"
+extension      = "None (base field only)"
+trace_len      = 512
+blowup_factor  = 2
+num_queries    = 8
+lde_domain     = 1024
+grinding       = 0
+proof_bytes    = 6_154
+security_bits_conjectured = 7
+
+# ---- prove + verify (4 loop iterations) -------------------------------------
+# Boot: stack=4344, heap_peak=311008, heap_after=10 (fully freed).
+
+[bench.stark_prove]
+circuit     = "Fibonacci trace, N=512, Goldilocks, blowup=2, 8 queries"
+iterations  = 4
+cycles_median = 32_073_678
+cycles_min    = 32_055_521
+cycles_max    = 32_084_182
+us_median     = 213_824
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "Fibonacci, N=512, Goldilocks, blowup=2, 8 queries"
+iterations  = 4
+cycles_median = 3_507_257
+cycles_min    = 3_498_167
+cycles_max    = 3_517_026
+us_median     = 23_381
+result        = "ok"
+
+[bench.prove_verify_total]
+iterations  = 4
+us_median   = 237_183
+us_min      = 237_150
+us_max      = 237_262
+ms_median   = 237
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_344
+heap_peak     = 311_008
+cycles        = 32_093_610
+us            = 213_957
+proof_bytes   = 6_154
+security_bits = 7
+result        = "ok"
+
+[bench.boot_verify]
+us     = 23_374
+result = "ok"

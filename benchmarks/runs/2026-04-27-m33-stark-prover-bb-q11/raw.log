@@ -1,0 +1,37 @@
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf stark-prover-bb N=256
+
+[boot] prove start
+
+[boot] N=256 stack=4672 heap_base=0 heap_peak=253804 cycles=22254682 us=148364 ms=148 pro
+[boot line truncated in serial capture; iters 1-2 missed; data resumes at iter 3]
+
+[3] stark_prove start
+
+[3] stark_prove: cycles=22238177 us=148254 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[3] stark_verify: cycles=4922207 us=32814 ms=32 ok=true
+[3] prove_verify_total: prove_us=148254 verify_us=32814 total_us=181069 total_ms=181 heap_after=10 ok=true
+[4] stark_prove start
+
+[4] stark_prove: cycles=22240506 us=148270 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[4] stark_verify: cycles=4922982 us=32819 ms=32 ok=true
+[4] prove_verify_total: prove_us=148270 verify_us=32819 total_us=181089 total_ms=181 heap_after=10 ok=true
+[5] stark_prove start
+
+[5] stark_prove: cycles=22245854 us=148305 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[5] stark_verify: cycles=4909157 us=32727 ms=32 ok=true
+[5] prove_verify_total: prove_us=148305 verify_us=32727 total_us=181033 total_ms=181 heap_after=10 ok=true
+[6] stark_prove start
+
+[6] stark_prove: cycles=22238251 us=148255 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[6] stark_verify: cycles=4929722 us=32864 ms=32 ok=true
+[6] prove_verify_total: prove_us=148255 verify_us=32864 total_us=181119 total_ms=181 heap_after=10 ok=true
+[7] stark_prove start
+
+[7] stark_prove: cycles=22231793 us=148211 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[7] stark_verify: cycles=4929993 us=32866 ms=32 ok=true
+[7] prove_verify_total: prove_us=148211 verify_us=32866 total_us=181078 total_ms=181 heap_after=10 ok=true
+[8] stark_prove start
+
+[8] stark_prove: cycles=22236929 us=148246 ms=148 proof_bytes=8970 security_bits=21 ok=true
+[8] stark_verify: cycles=4926302 us=32842 ms=32 ok=true
+[capture ended before iter 8 total line]
