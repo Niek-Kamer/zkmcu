@@ -53,7 +53,7 @@ fn read_exact<B: UsbBus>(bench: &mut Bench<'_, B>, buf: &mut [u8]) {
     let mut filled = 0usize;
     while filled < buf.len() {
         bench.dev.poll(&mut [&mut bench.serial]);
-        match bench.serial.read(&mut buf[filled..]) {
+        match bench.serial.read(buf.get_mut(filled..).expect("filled <= buf.len() by loop invariant")) {
             Ok(n) if n > 0 => filled += n,
             _ => {}
         }
@@ -72,7 +72,7 @@ fn wait_for_knock<B: UsbBus>(bench: &mut Bench<'_, B>) {
     loop {
         bench.dev.poll(&mut [&mut bench.serial]);
         let mut byte = [0u8; 1];
-        if let Ok(1) = bench.serial.read(&mut byte) {
+        if bench.serial.read(&mut byte) == Ok(1) {
             if prev == 0x55 && byte[0] == 0xAA {
                 return;
             }
@@ -122,7 +122,7 @@ fn main() -> ! {
         let mut hex: String<48> = String::new();
         let _ = write!(&mut hex, "PROOF[0..8]:");
         for b in raw.get(..8).unwrap_or_default() {
-            let _ = write!(&mut hex, " {:02x}", b);
+            let _ = write!(&mut hex, " {b:02x}");
         }
         let _ = write!(&mut hex, "\r\n");
         bench.write_line(hex.as_bytes());
@@ -145,10 +145,7 @@ fn main() -> ! {
         iter = iter.wrapping_add(1);
 
         let (result, cycles) = measure_cycles(|| {
-            let proof = match zkmcu_verifier::parse_proof(&proof_bytes) {
-                Ok(p) => p,
-                Err(_) => return b'E',
-            };
+            let Ok(proof) = zkmcu_verifier::parse_proof(&proof_bytes) else { return b'E' };
             match zkmcu_verifier::verify(&tv.vk, &proof, &tv.public) {
                 Ok(true) => b'T',
                 Ok(false) => b'F',

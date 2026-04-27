@@ -97,7 +97,7 @@ pub fn semaphore_depth_10() -> Result<TestVector, Error> {
 
 /// Poseidon Merkle membership circuit at depth 3 (8 leaves, 739 constraints).
 ///
-/// Public input: the Merkle root (one Fr scalar). IC_size=2 — same as the
+/// Public input: the Merkle root (one Fr scalar). `IC_size=2` — same as the
 /// square circuit — so verify time is depth-independent.
 pub fn poseidon_depth_3() -> Result<TestVector, Error> {
     Ok(TestVector {
@@ -110,7 +110,7 @@ pub fn poseidon_depth_3() -> Result<TestVector, Error> {
 
 /// Poseidon Merkle membership circuit at depth 10 (1024 leaves, 2461 constraints).
 ///
-/// Same IC_size=2 as depth-3: the public interface is just the root regardless
+/// Same `IC_size=2` as depth-3: the public interface is just the root regardless
 /// of tree depth, so the verifier cost is identical to `poseidon_depth_3`.
 /// Demonstrates Groth16 succinctness — verifier is agnostic to circuit size
 /// when the public input count is fixed.

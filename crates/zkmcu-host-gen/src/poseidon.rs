@@ -4,7 +4,7 @@
 //! Same placeholder parameters as `zkmcu-poseidon-circuit` (t=3, α=5,
 //! 8 full rounds, 57 partial, zeroed ARK, circulant [[2,1,1]…] MDS).
 //!
-//! IC_size = 2 (one public input: the Merkle root) regardless of depth, so
+//! `IC_size` = 2 (one public input: the Merkle root) regardless of depth, so
 //! verify time on the firmware is depth-independent.  Depth 3 (8 leaves) vs
 //! depth 10 (1024 leaves) will return the same cycle count on the Pico.
 
@@ -67,7 +67,10 @@ fn build_tree(leaves: &[Fr]) -> Vec<Vec<Fr>> {
         let prev = levels.last().expect("at least one level");
         let next = prev
             .chunks(2)
-            .map(|pair| hash(pair[0], pair.get(1).copied().unwrap_or(Fr::zero())))
+            .map(|pair| {
+                let left = pair.first().copied().expect("chunks(2) gives non-empty slices");
+                hash(left, pair.get(1).copied().unwrap_or_else(Fr::zero))
+            })
             .collect();
         levels.push(next);
     }
@@ -78,15 +81,23 @@ fn build_tree(leaves: &[Fr]) -> Vec<Vec<Fr>> {
 /// Returns (root, leaf, siblings bottom-to-top, directions: true = leaf is left child).
 fn merkle_path(levels: &[Vec<Fr>], leaf_idx: usize) -> (Fr, Fr, Vec<Fr>, Vec<bool>) {
     let depth = levels.len() - 1;
-    let root = levels[depth][0];
-    let leaf = levels[0][leaf_idx];
+    let root = levels
+        .get(depth)
+        .and_then(|l| l.first())
+        .copied()
+        .expect("build_tree root level always exists");
+    let leaf = levels
+        .first()
+        .and_then(|l| l.get(leaf_idx))
+        .copied()
+        .expect("leaf_idx is within tree leaves");
     let mut siblings = Vec::with_capacity(depth);
     let mut directions = Vec::with_capacity(depth);
     let mut idx = leaf_idx;
     for level_nodes in levels.iter().take(depth) {
         let is_left = idx % 2 == 0;
         let sib_idx = if is_left { idx + 1 } else { idx - 1 };
-        siblings.push(level_nodes.get(sib_idx).copied().unwrap_or(Fr::zero()));
+        siblings.push(level_nodes.get(sib_idx).copied().unwrap_or_else(Fr::zero));
         directions.push(is_left);
         idx /= 2;
     }
