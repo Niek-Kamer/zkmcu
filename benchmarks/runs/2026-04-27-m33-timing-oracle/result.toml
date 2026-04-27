@@ -1,0 +1,114 @@
+[meta]
+date = "2026-04-27"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; cortex-m33-asm + .ram_text placement)"
+"zkmcu-verifier"   = "0.1.0"
+
+[footprint]
+text_bytes = 65_436
+data_bytes = 0
+bss_bytes  = 98_348
+heap_bytes = 98_304
+
+# ---- Timing oracle: on-device µs for each proof category (n=1000) ----
+# Protocol: host sends \x55\xAA knock + 256-byte proof, firmware responds
+# with "<verdict> <cycles> <us> <b0> <b1> <b2> <b3>\r\n".
+# All measurements are firmware cycle counter (DWT) converted to µs at 150 MHz.
+# us_mean ≈ us_median for categories with cv < 0.01% (tight distributions).
+
+[bench.oracle_valid]
+circuit       = "x^2 = y"
+category      = "valid"
+verdict       = "T"
+iterations    = 1000
+us_mean       = 632_500
+us_min        = 632_397
+us_max        = 632_609
+us_stdev      = 32.84
+cv_pct        = 0.005
+cycles_mean   = 94_875_120
+cycles_min    = 94_859_550
+cycles_max    = 94_891_350
+
+[bench.oracle_bit_flip_byte_0]
+category      = "bit_flip_byte_0"
+description   = "A.x first byte flipped; A G1 curve check fails"
+verdict       = "E"
+iterations    = 1000
+us_mean       = 46
+us_min        = 43
+us_max        = 123
+us_stdev      = 2.85
+cv_pct        = 6.098
+cycles_mean   = 7_020
+cycles_min    = 6_450
+cycles_max    = 18_450
+
+[bench.oracle_bit_flip_byte_127]
+category      = "bit_flip_byte_127"
+description   = "B.x.c1 last byte flipped; Fp2 field element > modulus, B parse fails"
+verdict       = "E"
+iterations    = 1000
+us_mean       = 205
+us_min        = 197
+us_max        = 293
+us_stdev      = 4.42
+cv_pct        = 2.150
+cycles_mean   = 30_750
+cycles_min    = 29_550
+cycles_max    = 43_950
+
+[bench.oracle_bit_flip_byte_255]
+category      = "bit_flip_byte_255"
+description   = "C.y last byte flipped; stays below modulus, passes Fq deserialize, G1 subgroup/on-curve check fires after A+B verify"
+verdict       = "E"
+iterations    = 1000
+us_mean       = 90_485
+us_min        = 90_466
+us_max        = 90_646
+us_stdev      = 7.96
+cv_pct        = 0.009
+cycles_mean   = 13_572_750
+cycles_min    = 13_569_900
+cycles_max    = 13_596_900
+
+[bench.oracle_all_zeros]
+category      = "all_zeros"
+description   = "256 zero bytes; infinity point passes curve check, full pairing runs, equation fails"
+verdict       = "F"
+iterations    = 1000
+us_mean       = 382_403
+us_min        = 382_310
+us_max        = 382_495
+us_stdev      = 30.61
+cv_pct        = 0.008
+cycles_mean   = 57_360_450
+cycles_min    = 57_346_500
+cycles_max    = 57_374_250
+
+[bench.oracle_random_bytes]
+category      = "random_bytes"
+description   = "Seeded-RNG bytes; first Fq element almost certainly > modulus, deserializer bails"
+verdict       = "E"
+iterations    = 1000
+us_mean       = 15
+us_min        = 13
+us_max        = 59
+us_stdev      = 1.67
+cv_pct        = 10.593
+cycles_mean   = 2_250
+cycles_min    = 1_950
+cycles_max    = 8_850

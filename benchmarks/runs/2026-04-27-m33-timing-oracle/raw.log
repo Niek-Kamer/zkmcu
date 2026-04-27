@@ -1,0 +1,30 @@
+Opening /dev/ttyACM0 ...
+Syncing with device (sending probe) ...
+  syncing ...
+  sync probe: T 94876383 632509 29 76 be 76
+Device responding. Running 1000 samples per category.
+
+  collecting valid ... 100 200 300 400 500 600 700 800 900 1000
+  collecting bit_flip_byte_0 ... 100 200 300 400 500 600 700 800 900 1000
+  collecting bit_flip_byte_127 ... 100 200 300 400 500 600 700 800 900 1000
+  collecting bit_flip_byte_255 ... 100 200 300 400 500 600 700 800 900 1000
+  collecting all_zeros ... 100 200 300 400 500 600 700 800 900 1000
+  collecting random_bytes ... 100 200 300 400 500 600 700 800 900 1000
+Results (µs round-trip, measured on-device):
+
+  category                              n          mean           std         cv  [min..max]
+  ------------------------------------------------------------------------------------------
+  valid                           n= 1000  mean=632500.8 µs  std=  32.84 µs  cv=0.005%  [632397..632609]  (T=1000)
+  bit_flip_byte_0                 n= 1000  mean=    46.8 µs  std=   2.85 µs  cv=6.098%  [43..123]  (E=1000)
+  bit_flip_byte_127               n= 1000  mean=   205.7 µs  std=   4.42 µs  cv=2.150%  [197..293]  (E=1000)
+  bit_flip_byte_255               n= 1000  mean= 90485.2 µs  std=   7.96 µs  cv=0.009%  [90466..90646]  (E=1000)
+  all_zeros                       n= 1000  mean=382403.2 µs  std=  30.61 µs  cv=0.008%  [382310..382495]  (F=1000)
+  random_bytes                    n= 1000  mean=    15.7 µs  std=   1.67 µs  cv=10.593%  [13..59]  (E=1000)
+
+Timing oracle analysis:
+  baseline (valid mean):  632500.8 µs
+  bit_flip_byte_0                 delta=-632454.0 µs  (-99.99%)
+  bit_flip_byte_127               delta=-632295.2 µs  (-99.97%)
+  bit_flip_byte_255               delta=-542015.7 µs  (-85.69%)
+  all_zeros                       delta=-250097.7 µs  (-39.54%)
+  random_bytes                    delta=-632485.1 µs  (-100.00%)
