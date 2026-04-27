@@ -35,6 +35,14 @@ static SEMAPHORE_DEPTH_10_VK: &[u8] = include_bytes!("../data/semaphore-depth-10
 static SEMAPHORE_DEPTH_10_PROOF: &[u8] = include_bytes!("../data/semaphore-depth-10/proof.bin");
 static SEMAPHORE_DEPTH_10_PUBLIC: &[u8] = include_bytes!("../data/semaphore-depth-10/public.bin");
 
+static POSEIDON_DEPTH_3_VK: &[u8] = include_bytes!("../data/poseidon-depth-3/vk.bin");
+static POSEIDON_DEPTH_3_PROOF: &[u8] = include_bytes!("../data/poseidon-depth-3/proof.bin");
+static POSEIDON_DEPTH_3_PUBLIC: &[u8] = include_bytes!("../data/poseidon-depth-3/public.bin");
+
+static POSEIDON_DEPTH_10_VK: &[u8] = include_bytes!("../data/poseidon-depth-10/vk.bin");
+static POSEIDON_DEPTH_10_PROOF: &[u8] = include_bytes!("../data/poseidon-depth-10/proof.bin");
+static POSEIDON_DEPTH_10_PUBLIC: &[u8] = include_bytes!("../data/poseidon-depth-10/public.bin");
+
 /// The "square" vector: proves knowledge of `x` such that `x^2 = y`, with `y` public.
 ///
 /// Smallest meaningful Groth16 circuit, one constraint, one public input. Useful as a
@@ -84,6 +92,34 @@ pub fn semaphore_depth_10() -> Result<TestVector, Error> {
         vk: parse_vk(SEMAPHORE_DEPTH_10_VK)?,
         proof: parse_proof(SEMAPHORE_DEPTH_10_PROOF)?,
         public: parse_public(SEMAPHORE_DEPTH_10_PUBLIC)?,
+    })
+}
+
+/// Poseidon Merkle membership circuit at depth 3 (8 leaves, 739 constraints).
+///
+/// Public input: the Merkle root (one Fr scalar). IC_size=2 — same as the
+/// square circuit — so verify time is depth-independent.
+pub fn poseidon_depth_3() -> Result<TestVector, Error> {
+    Ok(TestVector {
+        name: "poseidon-depth-3",
+        vk: parse_vk(POSEIDON_DEPTH_3_VK)?,
+        proof: parse_proof(POSEIDON_DEPTH_3_PROOF)?,
+        public: parse_public(POSEIDON_DEPTH_3_PUBLIC)?,
+    })
+}
+
+/// Poseidon Merkle membership circuit at depth 10 (1024 leaves, 2461 constraints).
+///
+/// Same IC_size=2 as depth-3: the public interface is just the root regardless
+/// of tree depth, so the verifier cost is identical to `poseidon_depth_3`.
+/// Demonstrates Groth16 succinctness — verifier is agnostic to circuit size
+/// when the public input count is fixed.
+pub fn poseidon_depth_10() -> Result<TestVector, Error> {
+    Ok(TestVector {
+        name: "poseidon-depth-10",
+        vk: parse_vk(POSEIDON_DEPTH_10_VK)?,
+        proof: parse_proof(POSEIDON_DEPTH_10_PROOF)?,
+        public: parse_public(POSEIDON_DEPTH_10_PUBLIC)?,
     })
 }
 

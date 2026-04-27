@@ -143,6 +143,7 @@ check-full: check build-m33 build-m33-bls12 build-m33-stark build-m33-stark-bb b
 # Regenerate the committed test vectors.
 regen-vectors:
     cargo run -p zkmcu-host-gen --release
+    cargo run -p zkmcu-host-gen --release -- poseidon
 
 # Phase-1 measurement: constraint counts + proving key sizes for Poseidon Merkle.
 measure-poseidon:
