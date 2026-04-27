@@ -405,6 +405,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bench-rp2350-m33-stark-prover-threshold"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "winterfell",
+ "zkmcu-babybear",
+ "zkmcu-verifier-stark",
+]
+
+[[package]]
 name = "bench-rp2350-m33-timing-oracle"
 version = "0.1.0"
 dependencies = [

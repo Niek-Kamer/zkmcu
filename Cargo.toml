@@ -15,6 +15,7 @@ members = [
     "crates/bench-rp2350-m33-stark",
     "crates/bench-rp2350-m33-stark-prover",
     "crates/bench-rp2350-m33-stark-prover-bb",
+    "crates/bench-rp2350-m33-stark-prover-threshold",
     "crates/bench-rp2350-m33-bn-asm-test",
     "crates/bench-rp2350-m33-timing-oracle",
     "crates/bench-rp2350-rv32-stark-prover",

@@ -1,6 +1,8 @@
 # zkmcu
 
-`no_std` Rust family of SNARK and STARK verifiers for microcontrollers. Three proof systems, one repo shape: Groth16 on BN254 (EIP-197 wire format, on `substrate-bn`), Groth16 on BLS12-381 (EIP-2537 wire format, on zkcrypto `bls12_381`), and winterfell STARK on Goldilocks + Blake3 (winterfell 0.13). Same parser shape, same firmware template, different proof system underneath.
+`no_std` Rust family of SNARK and STARK verifiers — and now a STARK prover — for microcontrollers. Three proof systems, one repo shape: Groth16 on BN254 (EIP-197 wire format, on `substrate-bn`), Groth16 on BLS12-381 (EIP-2537 wire format, on zkcrypto `bls12_381`), and winterfell STARK on BabyBear+Quartic (winterfell 0.13). Same parser shape, same firmware template, different proof system underneath.
+
+The prover is the new part. 48 ms prove + 29 ms verify on a Cortex-M33 @ 150 MHz, 64 KB heap peak, no OS. As far as I can find nobody has published a STARK prover running on bare-metal embedded hardware before — closest prior art (FibRace) needs 3 GB of RAM, we're doing it in 64 KB on a $7 chip.
 
 First target is the Raspberry Pi Pico 2 W. RP2350 is a fun chip because it has **both** an ARM Cortex-M33 and a RISC-V Hazard3 core on the same die at the same clock, wich makes the cross-ISA comparison drama-free. One Rust source tree, two ISAs, same binary build pipeline, six firmware crates.
 
@@ -10,9 +12,14 @@ Docs site: [zkmcu.dev](https://zkmcu.dev).
 
 Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32. Every iteration `ok=true`. No hand-tuning, stock upstream crypto crates.
 
-| verify | Cortex-M33 | Hazard3 RV32 | RV32 / M33 | proof size |
+| prove + verify | Cortex-M33 | Hazard3 RV32 | heap peak | proof size |
 |---|---:|---:|---:|---:|
-| **STARK Fibonacci-1024** (95-bit conjectured) | **75 ms** | 112 ms | 1.51× | 30.9 KB |
+| **STARK threshold-check N=64** (BabyBear+Quartic, 21-bit) | **48 ms + 29 ms** | not yet | **64 KB** | 5.8 KB |
+| **STARK Fibonacci N=256** (BabyBear+Quartic, 21-bit) | **148 ms + 33 ms** | 215 ms + 42 ms | 248 KB | 8.9 KB |
+
+| verify only | Cortex-M33 | Hazard3 RV32 | RV32 / M33 | proof size |
+|---|---:|---:|---:|---:|
+| STARK Fibonacci-1024 (Goldilocks, 95-bit) | **75 ms** | 112 ms | 1.51× | 30.9 KB |
 | **Groth16 / BN254, real Semaphore v4** (4 pub inputs) | **1,176 ms** | 1,564 ms | 1.33× | 256 B |
 | Groth16 / BN254, 1 public input | 962 ms | 1,341 ms | 1.39× | 256 B |
 | Groth16 / BLS12-381, 1 public input | 2,015 ms | 5,151 ms | 2.56× | 512 B |
@@ -20,6 +27,27 @@ Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcyc
 STARK verify is **15-27x faster than Groth16** on the same silicon. Classic throughput-for-bandwidth swap: Groth16 is 256 B but takes ~1-2 seconds, STARK is 30 KB but takes 75 ms. Pick based on whether the transport is bandwidth-bound (LoRa, NFC, pick Groth16) or verify-latency-bound (hot loop, pick STARK).
 
 All three verifier families fit the **128 KB SRAM tier** during verify (~97-100 KB total RAM on M33), wich is the tier of most hardware-wallet-grade silicon: `nRF52832`, `STM32F405`, Ledger ST33, Infineon SLE78. As far as I can tell this is the first public `no_std` Rust family that covers all three proof systems under 128 KB at production-grade security. Full gap analysis in `research/prior-art/main.typ`.
+
+## STARK prover on bare metal
+
+Yeah so this is the part I'm most excited about right now.
+
+48 ms prove, 29 ms verify, 64 KB heap peak on a Cortex-M33 @ 150 MHz. No OS, 512 KB total SRAM, `heap_after = 10 bytes` every iteration. Consistent over 2000+ iterations on device.
+
+And its not Fibonacci — the threshold-check circuit proves `value < threshold` for a sensor reading. Bit-decomposes `diff = threshold - value - 1` over 32 rows, boundary assertion at row 32 certifies no underflow, therefore `value < threshold`. An embedded device can attest its sensor reading without the verifier trusting the firmware. Unforgeable.
+
+FibRace needs 3 GB of RAM to run the prover. We're doing it in 64 KB. Thats a 50,000x memory reduction on a $7 chip.
+
+| | Cortex-M33 |
+|-|---:|
+| prove (threshold-check N=64) | **48 ms** |
+| verify | **29 ms** |
+| heap peak | **64 KB** |
+| proof size | 5.8 KB |
+| security (conjectured) | 21 bit |
+| heap after verify | 10 bytes |
+
+BabyBear+Quartic, 11 FRI queries. Full page: [zkmcu.dev/stark-prover](https://zkmcu.dev/stark-prover/).
 
 ## STARK verify in 75 ms
 

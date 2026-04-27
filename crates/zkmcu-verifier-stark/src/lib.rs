@@ -61,6 +61,7 @@ extern crate alloc;
 
 pub mod fibonacci;
 pub mod fibonacci_babybear;
+pub mod threshold_check;
 
 // Re-export the winterfell types downstream consumers need without forcing
 // them to take a direct dep on winterfell. Keeps the public API surface

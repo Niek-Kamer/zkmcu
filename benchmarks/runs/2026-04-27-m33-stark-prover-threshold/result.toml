@@ -1,0 +1,95 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Cortex-M33 @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell"           = "0.13.1"
+"zkmcu-babybear"       = "0.1.0"
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+heap_bytes       = 393_216
+stack_peak_bytes = 4_672
+
+[circuit]
+name           = "threshold-check"
+description    = "Prove value < threshold via 32-bit bit-decomposition of diff = threshold - value - 1"
+value          = 37
+threshold      = 100
+field          = "BabyBear (31-bit)"
+extension      = "Quartic"
+trace_cols     = 2
+trace_len      = 64
+blowup_factor  = 4
+num_queries    = 11
+lde_domain     = 256
+grinding       = 0
+proof_bytes    = 5_787
+security_bits_conjectured = 21
+
+# 7 loop iterations (iter 1 missed due to serial capture truncation of boot line).
+# Boot line partially captured: stack=4672, heap_peak=65880. Prove cycles inferred ~7.19M.
+
+[bench.stark_prove]
+circuit     = "threshold-check, N=64, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 7
+cycles_median = 7_192_762
+cycles_min    = 7_188_622
+cycles_max    = 7_207_817
+us_median     = 47_951
+us_min        = 47_924
+us_max        = 48_052
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "threshold-check, N=64, BabyBear+Quartic, blowup=4, 11 queries"
+iterations  = 7
+cycles_median = 4_344_939
+cycles_min    = 4_330_695
+cycles_max    = 4_357_121
+us_median     = 28_966
+us_min        = 28_871
+us_max        = 29_047
+result        = "ok"
+
+[bench.prove_verify_total]
+iterations  = 7
+us_median   = 76_923
+us_min      = 76_882
+us_max      = 76_971
+ms_median   = 76
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_672
+heap_peak     = 65_880
+proof_bytes   = 5_787
+security_bits = 21
+result        = "ok"
+
+[compare.vs_fibonacci_bb_n256]
+fibonacci_bb_prove_us  = 148_255
+threshold_prove_us     = 47_951
+prove_speedup          = "3.09×"
+fibonacci_bb_verify_us = 32_819
+threshold_verify_us    = 28_966
+verify_speedup         = "1.13×"
+fibonacci_bb_heap      = 253_804
+threshold_heap         = 65_880
+heap_reduction         = "3.85×"
+fibonacci_bb_proof_bytes = 8_970
+threshold_proof_bytes    = 5_787
+proof_size_reduction     = "35%"
+note = "Verify speedup is small because FRI query processing dominates verifier cost regardless of trace size — 11 queries is 11 queries."
