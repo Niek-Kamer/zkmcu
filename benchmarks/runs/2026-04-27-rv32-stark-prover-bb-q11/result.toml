@@ -26,33 +26,39 @@ grinding       = 0
 proof_bytes    = 8_970
 security_bits_conjectured = 21
 
-# ---- prove + verify (8 complete loop iterations: iters 2-9) -----------------
-# Boot line truncated in serial capture (iter 1 missed); loop data from iter 2.
-# Stack=4628, heap_peak=253804, heap_after=10 (fully freed).
+# Layout-probe confirmation: a second build with 16 bytes of padding shifted into .rodata
+# produced identical results (215,000 µs median, 0.17% variance over 45 iters vs 45 iters).
+# The 1.45× cross-ISA ratio vs M33 (148 ms) is real — not an XIP cache alignment artifact.
+# See notes.md for the cross-ISA anomaly analysis vs Phase 3.3 (q=8) 1.04× ratio.
+
+# ---- prove + verify (45 loop iterations, confirmed with layout-probe build) ----
+# Boot: stack=4628, heap_peak=253804, heap_after=10 (fully freed).
 
 [bench.stark_prove]
 circuit     = "Fibonacci trace, N=256, BabyBear+Quartic, blowup=4, 11 queries"
-iterations  = 8
-cycles_median = 32_238_226
-cycles_min    = 32_221_759
-cycles_max    = 32_257_963
-us_median     = 214_921
+iterations  = 45
+cycles_median = 32_250_061
+cycles_min    = 32_223_703
+cycles_max    = 32_279_989
+us_median     = 215_000
+us_min        = 214_824
+us_max        = 215_199
 result        = "ok"
 
 [bench.stark_verify]
 circuit     = "Fibonacci, N=256, BabyBear+Quartic, blowup=4, 11 queries"
-iterations  = 8
+iterations  = 45
 cycles_median = 6_323_113
 cycles_min    = 6_297_710
-cycles_max    = 6_338_629
-us_median     = 42_154
+cycles_max    = 6_367_724
+us_median     = 42_221
 result        = "ok"
 
 [bench.prove_verify_total]
-iterations  = 8
-us_median   = 257_073
+iterations  = 45
+us_median   = 257_221
 us_min      = 256_878
-us_max      = 257_233
+us_max      = 257_490
 ms_median   = 257
 heap_after  = 10
 
