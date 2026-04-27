@@ -12,7 +12,7 @@ use bench_core::{
     cycles_u64, init_cycle_counter, init_rp2350, measure_cycles, measure_stack_peak, Bench,
     BenchConfig, TrackingLlff, UsbBus, SYS_HZ,
 };
-use bn::{pairing, Fr, Group, G1, G2};
+use bn::{miller_loop_batch, pairing, Fr, Group, Gt, G1, G2};
 use heapless::String;
 use panic_halt as _;
 use rp235x_hal as hal;
@@ -63,6 +63,8 @@ fn main() -> ! {
     let test_vector = zkmcu_vectors::square().expect("square test vector parse");
     let squares_5 = zkmcu_vectors::squares_5().expect("squares-5 test vector parse");
     let semaphore = zkmcu_vectors::semaphore_depth_10().expect("semaphore depth-10 parse");
+    let poseidon_3 = zkmcu_vectors::poseidon_depth_3().expect("poseidon depth-3 parse");
+    let poseidon_10 = zkmcu_vectors::poseidon_depth_10().expect("poseidon depth-10 parse");
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
@@ -97,6 +99,26 @@ fn main() -> ! {
         &semaphore.vk,
         &semaphore.proof,
         &semaphore.public,
+    );
+    boot_measure(
+        &mut bench,
+        sys_hz,
+        poseidon_3.name,
+        poseidon_3.vk.ic.len(),
+        poseidon_3.public.len(),
+        &poseidon_3.vk,
+        &poseidon_3.proof,
+        &poseidon_3.public,
+    );
+    boot_measure(
+        &mut bench,
+        sys_hz,
+        poseidon_10.name,
+        poseidon_10.vk.ic.len(),
+        poseidon_10.public.len(),
+        &poseidon_10.vk,
+        &poseidon_10.proof,
+        &poseidon_10.public,
     );
 
     let mut iter: u32 = 0;
@@ -143,6 +165,53 @@ fn main() -> ! {
             &semaphore.public,
             sys_hz,
         );
+        loop_verify(
+            &mut bench,
+            iter,
+            "groth16_verify_poseidon_d3",
+            &poseidon_3.vk,
+            &poseidon_3.proof,
+            &poseidon_3.public,
+            sys_hz,
+        );
+        loop_verify(
+            &mut bench,
+            iter,
+            "groth16_verify_poseidon_d10",
+            &poseidon_10.vk,
+            &poseidon_10.proof,
+            &poseidon_10.public,
+            sys_hz,
+        );
+
+        // ---- Verify cost breakdown: vk_x / multi-Miller loop / final exp --------
+        let ic0 = test_vector.vk.ic.first().expect("ic[0]");
+        let ic1 = test_vector.vk.ic.get(1).expect("ic[1]");
+        let pub0 = test_vector.public.first().expect("public[0]");
+        let (vk_x_sq, c_vk_x_tiny) = measure_cycles(|| *ic0 + (*ic1 * *pub0));
+        core::hint::black_box(&vk_x_sq);
+        bench.print_result(iter, "vk_x_tiny_scalar", c_vk_x_tiny, sys_hz);
+
+        let pq_ic0 = poseidon_3.vk.ic.first().expect("pq ic[0]");
+        let pq_ic1 = poseidon_3.vk.ic.get(1).expect("pq ic[1]");
+        let pq_pub0 = poseidon_3.public.first().expect("pq public[0]");
+        let (_, c_vk_x_full) = measure_cycles(|| *pq_ic0 + (*pq_ic1 * *pq_pub0));
+        bench.print_result(iter, "vk_x_full_scalar", c_vk_x_full, sys_hz);
+
+        let ml_pairs = [
+            (test_vector.proof.b, -test_vector.proof.a),
+            (test_vector.vk.beta,  test_vector.vk.alpha),
+            (test_vector.vk.gamma, vk_x_sq),
+            (test_vector.vk.delta, test_vector.proof.c),
+        ];
+        let (ml, c_miller) = measure_cycles(|| {
+            miller_loop_batch(&ml_pairs).unwrap_or_else(|_| Gt::one())
+        });
+        core::hint::black_box(&ml);
+        bench.print_result(iter, "miller_loop_4pair", c_miller, sys_hz);
+
+        let (_, c_final_exp) = measure_cycles(|| ml.final_exponentiation());
+        bench.print_result(iter, "final_exp", c_final_exp, sys_hz);
 
         bench.pace(1_000_000);
     }
