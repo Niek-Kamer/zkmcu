@@ -45,6 +45,10 @@ build-m33-stark-prover-bb:
 build-m33-bn-asm-test:
     cd crates/bench-rp2350-m33-bn-asm-test && cargo build --release
 
+# Build the timing oracle firmware for the Pico 2 W (Cortex-M33).
+build-m33-timing-oracle:
+    cd crates/bench-rp2350-m33-timing-oracle && cargo build --release
+
 # Build the STARK Fibonacci prover firmware for the Pico 2 W (Hazard3 RV32).
 build-rv32-stark-prover:
     cd crates/bench-rp2350-rv32-stark-prover && cargo build --release
@@ -83,7 +87,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-bn-asm-test lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb
+lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-bn-asm-test lint-m33-timing-oracle lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -111,6 +115,9 @@ lint-m33-stark-prover-bb:
 
 lint-m33-bn-asm-test:
     cd crates/bench-rp2350-m33-bn-asm-test && cargo clippy --release -- -D warnings
+
+lint-m33-timing-oracle:
+    cd crates/bench-rp2350-m33-timing-oracle && cargo clippy --release -- -D warnings
 
 lint-m33-stark-bb:
     cd crates/bench-rp2350-m33-stark && cargo clippy --release --features babybear -- -D warnings
