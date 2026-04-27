@@ -1,9 +1,10 @@
 //! Phase-4 probe: STARK Fibonacci prover on Hazard3 RV32.
 //!
-//! Parameters: N=256 trace steps, blowup=4, base field only (Goldilocks),
-//! 8 FRI queries.  Security is intentionally low — this run is about
-//! proving that embedded STARK proving is feasible, not about production
-//! security levels.
+//! Parameters: N=512 trace steps, blowup=2, base field only (Goldilocks),
+//! 8 FRI queries.  Security is intentionally low — blowup=2 at Goldilocks
+//! field size gives ~16-bit conjectured security.  The goal is breaking the
+//! N=256 SRAM ceiling (blowup=4 at N=512 needs ~600 KB heap; blowup=2 keeps
+//! LDE domain at 1024 points, same as the N=256/blowup=4 baseline).
 //!
 //! On boot: build trace → prove → self-verify → print timing + heap/stack.
 //! Loop: repeat prove + verify once per iteration, pace USB keepalive.
@@ -45,7 +46,7 @@ use winterfell::{
 use zkmcu_verifier_stark::fibonacci::{FibAir, PublicInputs};
 
 // Trace length.  Mirror the M33 prover for a direct cross-ISA comparison.
-const TRACE_LEN: usize = 256;
+const TRACE_LEN: usize = 512;
 
 #[global_allocator]
 static HEAP: TrackingTlsf = TrackingTlsf::empty();
@@ -68,14 +69,12 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 4] = [
 
 // ProofOptions must agree between prover and self-verifier on this device.
 // Stopping rule: fold until (domain/folding_factor) ≤ (max_remainder+1).
-// N=64:  LDE=256 → 64 → 16 (stop; 16/4=4 ≤ 8). Remainder domain=16 > 7. ✓
-// N=128: LDE=512 → 128 → 32 (stop; 32/4=8 ≤ 8). Remainder domain=32 > 7. ✓
-// N=256: LDE=1024 → 256 → 64 → 16 (stop). Remainder domain=16 > 7. ✓
-// Using 31 here with N=64 panics (31 ≥ 16 = remainder domain).
+// N=512, blowup=2: LDE=1024 → 256 → 64 → 16 (stop; 16/4=4 ≤ 8). ✓
+// Same final domain size (16) as N=256/blowup=4 — fri_max_remainder_poly_degree=7 unchanged.
 const fn proof_options() -> ProofOptions {
     ProofOptions::new(
         8,                     // num_queries — low, just enough to pass FRI checks
-        4,                     // blowup_factor
+        2,                     // blowup_factor — halved vs N=256 run; LDE domain stays 1024
         0,                     // grinding_factor
         FieldExtension::None,  // base field only — keeps LDE in SRAM
         4,                     // fri_folding_factor
@@ -223,11 +222,14 @@ fn main() -> ! {
         let (prove_ok, proof) = prove_result.map_or(("ok=false", None), |p| ("ok=true", Some(p)));
 
         let proof_bytes = proof.as_ref().map_or(0, |p| p.to_bytes().len());
+        let security_bits = proof.as_ref().map_or(0u32, |p| {
+            p.conjectured_security::<Blake3_256<BaseElement>>().bits()
+        });
 
-        let mut out: String<192> = String::new();
+        let mut out: String<224> = String::new();
         let _ = writeln!(
             &mut out,
-            "[{iter}] stark_prove: cycles={prove_cycles} us={prove_us} ms={} proof_bytes={proof_bytes} {prove_ok}",
+            "[{iter}] stark_prove: cycles={prove_cycles} us={prove_us} ms={} proof_bytes={proof_bytes} security_bits={security_bits} {prove_ok}",
             prove_us / 1000,
         );
         bench.write_line(out.as_bytes());
@@ -268,6 +270,17 @@ fn main() -> ! {
                 verify_us / 1000,
             );
             bench.write_line(vout.as_bytes());
+
+            let total_cycles = prove_cycles.saturating_add(verify_cycles);
+            let total_us = total_cycles.saturating_mul(1_000_000) / sys_hz;
+            let heap_after = HEAP.current();
+            let mut tout: String<192> = String::new();
+            let _ = writeln!(
+                &mut tout,
+                "[{iter}] prove_verify_total: prove_us={prove_us} verify_us={verify_us} total_us={total_us} total_ms={} heap_after={heap_after} {verdict}",
+                total_us / 1000,
+            );
+            bench.write_line(tout.as_bytes());
         }
 
         // Pace USB keepalive — 30 s is generous; proving is the slow part.
@@ -295,11 +308,14 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
     let (prove_ok, proof) = prove_result.map_or(("ok=false", None), |p| ("ok=true", Some(p)));
 
     let proof_bytes = proof.as_ref().map_or(0, |p| p.to_bytes().len());
+    let security_bits = proof.as_ref().map_or(0u32, |p| {
+        p.conjectured_security::<Blake3_256<BaseElement>>().bits()
+    });
 
-    let mut out: String<256> = String::new();
+    let mut out: String<320> = String::new();
     let _ = writeln!(
         &mut out,
-        "[boot] N={TRACE_LEN} stack={stack_bytes} heap_base={heap_before} heap_peak={heap_peak} cycles={prove_cycles} us={prove_us} ms={} proof_bytes={proof_bytes} {prove_ok}\r",
+        "[boot] N={TRACE_LEN} stack={stack_bytes} heap_base={heap_before} heap_peak={heap_peak} cycles={prove_cycles} us={prove_us} ms={} proof_bytes={proof_bytes} security_bits={security_bits} {prove_ok}\r",
         prove_us / 1000,
     );
     bench.write_line(out.as_bytes());
@@ -319,17 +335,31 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
         };
 
         let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
-        let verify_result = winterfell::verify::<FibAir, Blake3_256<BaseElement>,
-            DefaultRandomCoin<Blake3_256<BaseElement>>,
-            MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts);
+        let (verify_result, verify_cycles) = measure_cycles(|| {
+            winterfell::verify::<FibAir, Blake3_256<BaseElement>,
+                DefaultRandomCoin<Blake3_256<BaseElement>>,
+                MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+        });
+        let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
 
         let verdict = match verify_result {
             Ok(()) => "verify=ok",
             Err(_) => "verify=FAIL",
         };
 
-        let mut vout: String<64> = String::new();
-        let _ = writeln!(&mut vout, "[boot] self-{verdict}\r");
+        let mut vout: String<96> = String::new();
+        let _ = writeln!(&mut vout, "[boot] self-{verdict} verify_us={verify_us}\r");
         bench.write_line(vout.as_bytes());
+
+        let total_cycles = prove_cycles.saturating_add(verify_cycles);
+        let total_us = total_cycles.saturating_mul(1_000_000) / sys_hz;
+        let heap_after = HEAP.current();
+        let mut tout: String<128> = String::new();
+        let _ = writeln!(
+            &mut tout,
+            "[boot] prove_verify_total: total_us={total_us} total_ms={} heap_after={heap_after}\r",
+            total_us / 1000,
+        );
+        bench.write_line(tout.as_bytes());
     }
 }
