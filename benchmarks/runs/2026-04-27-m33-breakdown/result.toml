@@ -1,0 +1,135 @@
+[meta]
+date = "2026-04-27"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Cortex-M33 (RP2350)"
+clock_hz = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; cortex-m33-asm, SRAM placement)"
+"ark-groth16"      = "0.5.0"
+
+# Note: boot output was partially interleaved on iter 1 due to USB CDC timing;
+# the circuit verify numbers and breakdown measurements are all clean.
+
+# ---- Groth16 verify (5 iterations each) ----------------------------------
+
+[bench.groth16_verify]
+circuit       = "x^2 = y (1 constraint, 1 public input, ic_size=2)"
+iterations    = 5
+cycles_median = 82_597_019
+cycles_min    = 82_583_226
+cycles_max    = 82_602_889
+us_median     = 550_646
+result        = "ok"
+
+[bench.groth16_verify_sq5]
+circuit       = "x^2+x^2+x^2+x^2+x^2 = y (5 constraints, 5 public inputs, ic_size=6)"
+iterations    = 5
+cycles_median = 83_471_349
+cycles_min    = 83_466_958
+cycles_max    = 83_480_427
+us_median     = 556_475
+result        = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit       = "semaphore-depth-10 (4 public inputs, ic_size=5)"
+iterations    = 5
+cycles_median = 100_410_572
+cycles_min    = 100_403_609
+cycles_max    = 100_414_232
+us_median     = 669_403
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d3]
+circuit       = "Poseidon Merkle membership, depth=3 (739 constraints, 1 public input, ic_size=2)"
+iterations    = 5
+cycles_median = 86_911_465
+cycles_min    = 86_892_480
+cycles_max    = 86_916_953
+us_median     = 579_409
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d10]
+circuit       = "Poseidon Merkle membership, depth=10 (2461 constraints, 1 public input, ic_size=2)"
+iterations    = 5
+cycles_median = 86_987_258
+cycles_min    = 86_974_018
+cycles_max    = 86_993_011
+us_median     = 579_915
+result        = "ok"
+
+# ---- Verify cost breakdown -----------------------------------------------
+# These three measurements are isolated: each calls exactly the sub-operation
+# named, with real circuit data. They sum to 99.9% of total verify time.
+# vk_x_tiny + miller_loop_4pair + final_exp = 844 + 369513 + 179653 = 550010 µs
+# Actual groth16_verify median: 550646 µs  (delta 636 µs = other G1 adds + GT check)
+
+[bench.vk_x_tiny_scalar]
+description   = "vk_x G1 scalar mul, tiny scalar: y=9 (4-bit, 2 set bits — square circuit)"
+iterations    = 5
+cycles_median = 126_615
+cycles_min    = 126_184
+cycles_max    = 126_853
+us_median     = 844
+
+[bench.vk_x_full_scalar]
+description   = "vk_x G1 scalar mul, full 254-bit scalar (Poseidon Merkle root, ~127 set bits)"
+iterations    = 5
+cycles_median = 4_632_536
+cycles_min    = 4_632_002
+cycles_max    = 4_634_092
+us_median     = 30_883
+
+[bench.miller_loop_4pair]
+description   = "multi-Miller loop over 4 pairs (the shared accumulation step in Groth16 verify)"
+iterations    = 5
+cycles_median = 55_426_957
+cycles_min    = 55_425_803
+cycles_max    = 55_434_785
+us_median     = 369_513
+
+[bench.final_exp]
+description   = "GT final exponentiation (applied once to the multi-Miller loop product)"
+iterations    = 5
+cycles_median = 26_948_036
+cycles_min    = 26_946_339
+cycles_max    = 26_954_884
+us_median     = 179_653
+
+# ---- Pairing benchmark (single pair) ------------------------------------
+# For reference: pairing(G1, G2) = 1 miller loop + 1 final exp = 307 ms.
+# vs 4-pair batch: miller_loop_4pair=369.5ms + final_exp=179.7ms = 549.2ms.
+# Batching 4 pairs saves ~(4×127 - 369.5) = 139ms in miller loop work.
+
+[bench.pairing]
+description   = "BN254 pairing — single pair (1 miller loop + 1 final exp)"
+iterations    = 5
+cycles_median = 46_034_268
+cycles_min    = 46_021_299
+cycles_max    = 46_045_675
+us_median     = 306_895
+
+[bench.g1_mul]
+description   = "G1 scalar mul — scalar Hamming weight varies per iter"
+iterations    = 5
+cycles_typical = 4_934_349
+us_typical     = 32_895
+cycles_min     = 2_692_092
+cycles_max     = 5_030_433
+
+[bench.g2_mul]
+description   = "G2 scalar mul — scalar Hamming weight varies per iter"
+iterations    = 5
+cycles_typical = 17_062_003
+us_typical     = 113_746
+cycles_min     = 8_232_670
+cycles_max     = 17_520_787

@@ -1,0 +1,122 @@
+[meta]
+date = "2026-04-27"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RISC-V RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; no asm, pure Rust)"
+"ark-groth16"      = "0.5.0"
+
+# Note: 18 complete iterations collected; iter 19 was interrupted mid-pairing.
+# All medians computed over iters 1-18.
+
+# ---- Groth16 verify (18 iterations each) ---------------------------------
+
+[bench.groth16_verify]
+circuit       = "x^2 = y (1 constraint, 1 public input, ic_size=2)"
+iterations    = 18
+cycles_median = 165_920_644
+cycles_min    = 165_866_689
+cycles_max    = 165_999_956
+us_median     = 1_106_137
+result        = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit       = "semaphore-depth-10 (4 public inputs, ic_size=5)"
+iterations    = 18
+cycles_median = 206_460_010
+cycles_min    = 206_372_918
+cycles_max    = 206_544_126
+us_median     = 1_376_400
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d3]
+circuit       = "Poseidon Merkle membership, depth=3 (739 constraints, 1 public input, ic_size=2)"
+iterations    = 18
+cycles_median = 175_967_093
+cycles_min    = 175_906_352
+cycles_max    = 176_016_165
+us_median     = 1_173_113
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d10]
+circuit       = "Poseidon Merkle membership, depth=10 (2461 constraints, 1 public input, ic_size=2)"
+iterations    = 18
+cycles_median = 176_108_322
+cycles_min    = 176_024_704
+cycles_max    = 176_150_887
+us_median     = 1_174_055
+result        = "ok"
+
+# ---- Verify cost breakdown -----------------------------------------------
+# Sum: 248470 + 109254261 + 56347758 = 165850489 cycles
+# Actual groth16_verify median: 165920644 cycles
+# Residual: 70155 cycles = 467 µs (0.04% — G1 adds + GT equality check)
+
+[bench.vk_x_tiny_scalar]
+description   = "vk_x G1 scalar mul, tiny scalar: y=9 (4-bit, 2 set bits — square circuit)"
+iterations    = 18
+cycles_median = 248_470
+cycles_min    = 244_557
+cycles_max    = 253_644
+us_median     = 1_656
+
+[bench.vk_x_full_scalar]
+description   = "vk_x G1 scalar mul, full 254-bit scalar (Poseidon Merkle root, ~127 set bits)"
+iterations    = 18
+cycles_median = 10_547_747
+cycles_min    = 10_532_428
+cycles_max    = 10_562_522
+us_median     = 70_318
+
+[bench.miller_loop_4pair]
+description   = "multi-Miller loop over 4 pairs (the shared accumulation step in Groth16 verify)"
+iterations    = 18
+cycles_median = 109_254_261
+cycles_min    = 109_213_991
+cycles_max    = 109_317_409
+us_median     = 728_361
+
+[bench.final_exp]
+description   = "GT final exponentiation (applied once to the multi-Miller loop product)"
+iterations    = 18
+cycles_median = 56_347_758
+cycles_min    = 56_305_682
+cycles_max    = 56_368_689
+us_median     = 375_651
+
+# ---- Pairing benchmark (single pair) ------------------------------------
+
+[bench.pairing]
+description   = "BN254 pairing — single pair (1 miller loop + 1 final exp)"
+iterations    = 18
+cycles_median = 93_633_439
+cycles_min    = 93_578_637
+cycles_max    = 93_724_822
+us_median     = 624_222
+
+[bench.g1_mul]
+description   = "G1 scalar mul — scalar Hamming weight varies per iter"
+iterations    = 18
+cycles_typical = 11_108_908
+us_typical     = 74_059
+cycles_min     = 5_175_348
+cycles_max     = 11_452_732
+
+[bench.g2_mul]
+description   = "G2 scalar mul — scalar Hamming weight varies per iter"
+iterations    = 18
+cycles_typical = 30_518_417
+us_typical     = 203_456
+cycles_min     = 14_971_649
+cycles_max     = 31_551_583

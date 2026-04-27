@@ -1,0 +1,108 @@
+[meta]
+date = "2026-04-27"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; cortex-m33-asm + .ram_text placement)"
+"ark-groth16"      = "0.5.0"
+
+[footprint]
+text_bytes = 101_264
+data_bytes = 0
+bss_bytes  = 98_348
+heap_bytes = 98_304
+stack_peak_bytes = 15_724
+
+# ---- Poseidon Merkle membership (headline results of this run) ----------
+
+[bench.groth16_verify_poseidon_d3]
+circuit       = "Poseidon Merkle membership, depth=3 (8 leaves, 739 constraints)"
+public_inputs = 1
+ic_size       = 2
+iterations    = 9
+cycles_median = 85_544_044
+cycles_min    = 85_540_709
+cycles_max    = 85_549_877
+us_median     = 570_293
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d10]
+circuit       = "Poseidon Merkle membership, depth=10 (1024 leaves, 2461 constraints)"
+public_inputs = 1
+ic_size       = 2
+iterations    = 9
+cycles_median = 85_624_602
+cycles_min    = 85_619_298
+cycles_max    = 85_638_393
+us_median     = 570_830
+result        = "ok"
+
+# Succinctness delta: depth-10 vs depth-3 = +537 µs (+0.09%).
+# Circuit is 3.3× more complex; verifier does not notice.
+
+# ---- Reference circuits (re-confirmed same firmware build) --------------
+
+[bench.groth16_verify]
+circuit       = "x^2 = y"
+public_inputs = 1
+ic_size       = 2
+iterations    = 10
+cycles_median = 81_229_170
+cycles_min    = 81_225_735
+cycles_max    = 81_238_588
+us_median     = 541_528
+result        = "ok"
+
+[bench.groth16_verify_sq5]
+circuit       = "sum of 5 squares"
+public_inputs = 5
+ic_size       = 6
+iterations    = 10
+cycles_median = 82_109_573
+cycles_min    = 82_106_419
+cycles_max    = 82_118_787
+us_median     = 547_397
+result        = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit       = "semaphore-depth-10"
+public_inputs = 4
+ic_size       = 5
+iterations    = 9
+cycles_median = 99_047_506
+cycles_min    = 99_038_646
+cycles_max    = 99_050_075
+us_median     = 660_316
+result        = "ok"
+
+[bench.pairing]
+iterations    = 10
+cycles_median = 45_191_493
+cycles_min    = 45_138_057
+cycles_max    = 45_253_103
+us_median     = 301_276
+
+[bench.g1_mul]
+iterations      = 7
+cycles_typical  = 4_962_135
+us_typical      = 33_080
+cycles_min      = 4_762_159
+cycles_max      = 5_001_717
+
+[bench.g2_mul]
+iterations      = 7
+cycles_typical  = 16_672_086
+us_typical      = 111_147
+cycles_min      = 15_958_495
+cycles_max      = 16_861_094

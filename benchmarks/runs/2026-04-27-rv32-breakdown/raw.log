@@ -1,0 +1,466 @@
+zkmcu boot: heap=256K sys=150MHz core=hazard3
+
+[boot] vec=square ic=2 public=1 stack=15548 heap_base=2016 heap_peak=82336 cycles=165918956 us=1106126 ms=1106 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15548 heap_base=2016 heap_peak=82336 cycles=168013084 us=1120087 ms=1120 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15548 heap_base=2016 heap_peak=82336 cycles=206557954 us=1377053 ms=1377 ok=true
+[boot] vec=poseidon-depth-3 ic=2 public=1 stack=15548 heap_base=2016 heap_peak=82336 cycles=175912955 us=1172753 ms=1172 ok=true
+[boot] vec=poseidon-depth-10 ic=2 public=1 stack=15548 heap_base=2016 heap_peak=82336 cycles=176093715 us=1173958 ms=1173 ok=true
+[1] g1mul start
+
+[1] g1mul: cycles=5175348 us=34502 ms=34
+[1] g2mul start
+
+[1] g2mul: cycles=14971649 us=99810 ms=99
+[1] pairing start
+
+[1] pairing: cycles=93724822 us=624832 ms=624
+[1] groth16_verify start
+
+[1] groth16_verify: cycles=165898337 us=1105988 ms=1105 ok=true
+[1] groth16_verify_semaphore start
+
+[1] groth16_verify_semaphore: cycles=206491490 us=1376609 ms=1376 ok=true
+[1] groth16_verify_poseidon_d3 start
+
+[1] groth16_verify_poseidon_d3: cycles=175962994 us=1173086 ms=1173 ok=true
+[1] groth16_verify_poseidon_d10 start
+
+[1] groth16_verify_poseidon_d10: cycles=176097414 us=1173982 ms=1173 ok=true
+[1] vk_x_tiny_scalar: cycles=246832 us=1645 ms=1
+[1] vk_x_full_scalar: cycles=10553992 us=70359 ms=70
+[1] miller_loop_4pair: cycles=109275342 us=728502 ms=728
+[1] final_exp: cycles=56336676 us=375577 ms=375
+[2] g1mul start
+
+[2] g1mul: cycles=11341804 us=75612 ms=75
+[2] g2mul start
+
+[2] g2mul: cycles=31243784 us=208291 ms=208
+[2] pairing start
+
+[2] pairing: cycles=93578637 us=623857 ms=623
+[2] groth16_verify start
+
+[2] groth16_verify: cycles=165913225 us=1106088 ms=1106 ok=true
+[2] groth16_verify_semaphore start
+
+[2] groth16_verify_semaphore: cycles=206523198 us=1376821 ms=1376 ok=true
+[2] groth16_verify_poseidon_d3 start
+
+[2] groth16_verify_poseidon_d3: cycles=175973670 us=1173157 ms=1173 ok=true
+[2] groth16_verify_poseidon_d10 start
+
+[2] groth16_verify_poseidon_d10: cycles=176097974 us=1173986 ms=1173 ok=true
+[2] vk_x_tiny_scalar: cycles=249726 us=1664 ms=1
+[2] vk_x_full_scalar: cycles=10544244 us=70294 ms=70
+[2] miller_loop_4pair: cycles=109242323 us=728282 ms=728
+[2] final_exp: cycles=56368689 us=375791 ms=375
+[3] g1mul start
+
+[3] g1mul: cycles=11452732 us=76351 ms=76
+[3] g2mul start
+
+[3] g2mul: cycles=31551583 us=210343 ms=210
+[3] pairing start
+
+[3] pairing: cycles=93641506 us=624276 ms=624
+[3] groth16_verify start
+
+[3] groth16_verify: cycles=165957272 us=1106381 ms=1106 ok=true
+[3] groth16_verify_semaphore start
+
+[3] groth16_verify_semaphore: cycles=206544126 us=1376960 ms=1376 ok=true
+[3] groth16_verify_poseidon_d3 start
+
+[3] groth16_verify_poseidon_d3: cycles=175995906 us=1173306 ms=1173 ok=true
+[3] groth16_verify_poseidon_d10 start
+
+[3] groth16_verify_poseidon_d10: cycles=176124818 us=1174165 ms=1174 ok=true
+[3] vk_x_tiny_scalar: cycles=247112 us=1647 ms=1
+[3] vk_x_full_scalar: cycles=10546761 us=70311 ms=70
+[3] miller_loop_4pair: cycles=109252840 us=728352 ms=728
+[3] final_exp: cycles=56363524 us=375756 ms=375
+[4] g1mul start
+
+[4] g1mul: cycles=11267262 us=75115 ms=75
+[4] g2mul start
+
+[4] g2mul: cycles=31012238 us=206748 ms=206
+[4] pairing start
+
+[4] pairing: cycles=93645524 us=624303 ms=624
+[4] groth16_verify start
+
+[4] groth16_verify: cycles=165990821 us=1106605 ms=1106 ok=true
+[4] groth16_verify_semaphore start
+
+[4] groth16_verify_semaphore: cycles=206493721 us=1376624 ms=1376 ok=true
+[4] groth16_verify_poseidon_d3 start
+
+[4] groth16_verify_poseidon_d3: cycles=175911661 us=1172744 ms=1172 ok=true
+[4] groth16_verify_poseidon_d10 start
+
+[4] groth16_verify_poseidon_d10: cycles=176115721 us=1174104 ms=1174 ok=true
+[4] vk_x_tiny_scalar: cycles=249729 us=1664 ms=1
+[4] vk_x_full_scalar: cycles=10553051 us=70353 ms=70
+[4] miller_loop_4pair: cycles=109213991 us=728093 ms=728
+[4] final_exp: cycles=56358976 us=375726 ms=375
+[5] g1mul start
+
+[5] g1mul: cycles=11238126 us=74920 ms=74
+[5] g2mul start
+
+[5] g2mul: cycles=30941996 us=206279 ms=206
+[5] pairing start
+
+[5] pairing: cycles=93634596 us=624230 ms=624
+[5] groth16_verify start
+
+[5] groth16_verify: cycles=165932165 us=1106214 ms=1106 ok=true
+[5] groth16_verify_semaphore start
+
+[5] groth16_verify_semaphore: cycles=206406948 us=1376046 ms=1376 ok=true
+[5] groth16_verify_poseidon_d3 start
+
+[5] groth16_verify_poseidon_d3: cycles=175998326 us=1173322 ms=1173 ok=true
+[5] groth16_verify_poseidon_d10 start
+
+[5] groth16_verify_poseidon_d10: cycles=176137104 us=1174247 ms=1174 ok=true
+[5] vk_x_tiny_scalar: cycles=250208 us=1668 ms=1
+[5] vk_x_full_scalar: cycles=10548849 us=70325 ms=70
+[5] miller_loop_4pair: cycles=109214093 us=728093 ms=728
+[5] final_exp: cycles=56360346 us=375735 ms=375
+[6] g1mul start
+
+[6] g1mul: cycles=11294578 us=75297 ms=75
+[6] g2mul start
+
+[6] g2mul: cycles=31126985 us=207513 ms=207
+[6] pairing start
+
+[6] pairing: cycles=93632283 us=624215 ms=624
+[6] groth16_verify start
+
+[6] groth16_verify: cycles=165999956 us=1106666 ms=1106 ok=true
+[6] groth16_verify_semaphore start
+
+[6] groth16_verify_semaphore: cycles=206372918 us=1375819 ms=1375 ok=true
+[6] groth16_verify_poseidon_d3 start
+
+[6] groth16_verify_poseidon_d3: cycles=175967152 us=1173114 ms=1173 ok=true
+[6] groth16_verify_poseidon_d10 start
+
+[6] groth16_verify_poseidon_d10: cycles=176140052 us=1174267 ms=1174 ok=true
+[6] vk_x_tiny_scalar: cycles=249715 us=1664 ms=1
+[6] vk_x_full_scalar: cycles=10535934 us=70239 ms=70
+[6] miller_loop_4pair: cycles=109266234 us=728441 ms=728
+[6] final_exp: cycles=56347143 us=375647 ms=375
+[7] g1mul start
+
+[7] g1mul: cycles=11108908 us=74059 ms=74
+[7] g2mul start
+
+[7] g2mul: cycles=30518417 us=203456 ms=203
+[7] pairing start
+
+[7] pairing: cycles=93714917 us=624766 ms=624
+[7] groth16_verify start
+
+[7] groth16_verify: cycles=165903175 us=1106021 ms=1106 ok=true
+[7] groth16_verify_semaphore start
+
+[7] groth16_verify_semaphore: cycles=206381830 us=1375878 ms=1375 ok=true
+[7] groth16_verify_poseidon_d3 start
+
+[7] groth16_verify_poseidon_d3: cycles=175982773 us=1173218 ms=1173 ok=true
+[7] groth16_verify_poseidon_d10 start
+
+[7] groth16_verify_poseidon_d10: cycles=176125485 us=1174169 ms=1174 ok=true
+[7] vk_x_tiny_scalar: cycles=248533 us=1656 ms=1
+[7] vk_x_full_scalar: cycles=10559027 us=70393 ms=70
+[7] miller_loop_4pair: cycles=109272888 us=728485 ms=728
+[7] final_exp: cycles=56351050 us=375673 ms=375
+[8] g1mul start
+
+[8] g1mul: cycles=5284822 us=35232 ms=35
+[8] g2mul start
+
+[8] g2mul: cycles=15198355 us=101322 ms=101
+[8] pairing start
+
+[8] pairing: cycles=93654280 us=624361 ms=624
+[8] groth16_verify start
+
+[8] groth16_verify: cycles=165935071 us=1106233 ms=1106 ok=true
+[8] groth16_verify_semaphore start
+
+[8] groth16_verify_semaphore: cycles=206464554 us=1376430 ms=1376 ok=true
+[8] groth16_verify_poseidon_d3 start
+
+[8] groth16_verify_poseidon_d3: cycles=175942040 us=1172946 ms=1172 ok=true
+[8] groth16_verify_poseidon_d10 start
+
+[8] groth16_verify_poseidon_d10: cycles=176150887 us=1174339 ms=1174 ok=true
+[8] vk_x_tiny_scalar: cycles=247306 us=1648 ms=1
+[8] vk_x_full_scalar: cycles=10548734 us=70324 ms=70
+[8] miller_loop_4pair: cycles=109262421 us=728416 ms=728
+[8] final_exp: cycles=56330156 us=375534 ms=375
+[9] g1mul start
+
+[9] g1mul: cycles=10942997 us=72953 ms=72
+[9] g2mul start
+
+[9] g2mul: cycles=30107662 us=200717 ms=200
+[9] pairing start
+
+[9] pairing: cycles=93606822 us=624045 ms=624
+[9] groth16_verify start
+
+[9] groth16_verify: cycles=165900198 us=1106001 ms=1106 ok=true
+[9] groth16_verify_semaphore start
+
+[9] groth16_verify_semaphore: cycles=206483076 us=1376553 ms=1376 ok=true
+[9] groth16_verify_poseidon_d3 start
+
+[9] groth16_verify_poseidon_d3: cycles=176016165 us=1173441 ms=1173 ok=true
+[9] groth16_verify_poseidon_d10 start
+
+[9] groth16_verify_poseidon_d10: cycles=176049945 us=1173666 ms=1173 ok=true
+[9] vk_x_tiny_scalar: cycles=250224 us=1668 ms=1
+[9] vk_x_full_scalar: cycles=10550422 us=70336 ms=70
+[9] miller_loop_4pair: cycles=109255682 us=728371 ms=728
+[9] final_exp: cycles=56347982 us=375653 ms=375
+[10] g1mul start
+
+[10] g1mul: cycles=11024090 us=73493 ms=73
+[10] g2mul start
+
+[10] g2mul: cycles=30442627 us=202950 ms=202
+[10] pairing start
+
+[10] pairing: cycles=93700768 us=624671 ms=624
+[10] groth16_verify start
+
+[10] groth16_verify: cycles=165952889 us=1106352 ms=1106 ok=true
+[10] groth16_verify_semaphore start
+
+[10] groth16_verify_semaphore: cycles=206445664 us=1376304 ms=1376 ok=true
+[10] groth16_verify_poseidon_d3 start
+
+[10] groth16_verify_poseidon_d3: cycles=175983049 us=1173220 ms=1173 ok=true
+[10] groth16_verify_poseidon_d10 start
+
+[10] groth16_verify_poseidon_d10: cycles=176132186 us=1174214 ms=1174 ok=true
+[10] vk_x_tiny_scalar: cycles=245252 us=1635 ms=1
+[10] vk_x_full_scalar: cycles=10532428 us=70216 ms=70
+[10] miller_loop_4pair: cycles=109275887 us=728505 ms=728
+[10] final_exp: cycles=56341559 us=375610 ms=375
+[11] g1mul start
+
+[11] g1mul: cycles=10995317 us=73302 ms=73
+[11] g2mul start
+
+[11] g2mul: cycles=30291269 us=201941 ms=201
+[11] pairing start
+
+[11] pairing: cycles=93579766 us=623865 ms=623
+[11] groth16_verify start
+
+[11] groth16_verify: cycles=165995355 us=1106635 ms=1106 ok=true
+[11] groth16_verify_semaphore start
+
+[11] groth16_verify_semaphore: cycles=206424592 us=1376163 ms=1376 ok=true
+[11] groth16_verify_poseidon_d3 start
+
+[11] groth16_verify_poseidon_d3: cycles=175933253 us=1172888 ms=1172 ok=true
+[11] groth16_verify_poseidon_d10 start
+
+[11] groth16_verify_poseidon_d10: cycles=176083317 us=1173888 ms=1173 ok=true
+[11] vk_x_tiny_scalar: cycles=244557 us=1630 ms=1
+[11] vk_x_full_scalar: cycles=10562522 us=70416 ms=70
+[11] miller_loop_4pair: cycles=109317409 us=728782 ms=728
+[11] final_exp: cycles=56362619 us=375750 ms=375
+[12] g1mul start
+
+[12] g1mul: cycles=11332971 us=75553 ms=75
+[12] g2mul start
+
+[12] g2mul: cycles=31185355 us=207902 ms=207
+[12] pairing start
+
+[12] pairing: cycles=93627213 us=624181 ms=624
+[12] groth16_verify start
+
+[12] groth16_verify: cycles=165866689 us=1105777 ms=1105 ok=true
+[12] groth16_verify_semaphore start
+
+[12] groth16_verify_semaphore: cycles=206427717 us=1376184 ms=1376 ok=true
+[12] groth16_verify_poseidon_d3 start
+
+[12] groth16_verify_poseidon_d3: cycles=175945447 us=1172969 ms=1172 ok=true
+[12] groth16_verify_poseidon_d10 start
+
+[12] groth16_verify_poseidon_d10: cycles=176024704 us=1173498 ms=1173 ok=true
+[12] vk_x_tiny_scalar: cycles=245323 us=1635 ms=1
+[12] vk_x_full_scalar: cycles=10545102 us=70300 ms=70
+[12] miller_loop_4pair: cycles=109277063 us=728513 ms=728
+[12] final_exp: cycles=56335303 us=375568 ms=375
+[13] g1mul start
+
+[13] g1mul: cycles=11079982 us=73866 ms=73
+[13] g2mul start
+
+[13] g2mul: cycles=30518260 us=203455 ms=203
+[13] pairing start
+
+[13] pairing: cycles=93711585 us=624743 ms=624
+[13] groth16_verify start
+
+[13] groth16_verify: cycles=165885842 us=1105905 ms=1105 ok=true
+[13] groth16_verify_semaphore start
+
+[13] groth16_verify_semaphore: cycles=206453099 us=1376353 ms=1376 ok=true
+[13] groth16_verify_poseidon_d3 start
+
+[13] groth16_verify_poseidon_d3: cycles=175966076 us=1173107 ms=1173 ok=true
+[13] groth16_verify_poseidon_d10 start
+
+[13] groth16_verify_poseidon_d10: cycles=176076013 us=1173840 ms=1173 ok=true
+[13] vk_x_tiny_scalar: cycles=253644 us=1690 ms=1
+[13] vk_x_full_scalar: cycles=10539994 us=70266 ms=70
+[13] miller_loop_4pair: cycles=109251112 us=728340 ms=728
+[13] final_exp: cycles=56335509 us=375570 ms=375
+[14] g1mul start
+
+[14] g1mul: cycles=11203413 us=74689 ms=74
+[14] g2mul start
+
+[14] g2mul: cycles=30800006 us=205333 ms=205
+[14] pairing start
+
+[14] pairing: cycles=93631884 us=624212 ms=624
+[14] groth16_verify start
+
+[14] groth16_verify: cycles=165903453 us=1106023 ms=1106 ok=true
+[14] groth16_verify_semaphore start
+
+[14] groth16_verify_semaphore: cycles=206468002 us=1376453 ms=1376 ok=true
+[14] groth16_verify_poseidon_d3 start
+
+[14] groth16_verify_poseidon_d3: cycles=175967034 us=1173113 ms=1173 ok=true
+[14] groth16_verify_poseidon_d10 start
+
+[14] groth16_verify_poseidon_d10: cycles=176071597 us=1173810 ms=1173 ok=true
+[14] vk_x_tiny_scalar: cycles=252032 us=1680 ms=1
+[14] vk_x_full_scalar: cycles=10533197 us=70221 ms=70
+[14] miller_loop_4pair: cycles=109234221 us=728228 ms=728
+[14] final_exp: cycles=56351212 us=375674 ms=375
+[15] g1mul start
+
+[15] g1mul: cycles=11123196 us=74154 ms=74
+[15] g2mul start
+
+[15] g2mul: cycles=30551718 us=203678 ms=203
+[15] pairing start
+
+[15] pairing: cycles=93639857 us=624265 ms=624
+[15] groth16_verify start
+
+[15] groth16_verify: cycles=165908551 us=1106057 ms=1106 ok=true
+[15] groth16_verify_semaphore start
+
+[15] groth16_verify_semaphore: cycles=206401104 us=1376007 ms=1376 ok=true
+[15] groth16_verify_poseidon_d3 start
+
+[15] groth16_verify_poseidon_d3: cycles=175995524 us=1173303 ms=1173 ok=true
+[15] groth16_verify_poseidon_d10 start
+
+[15] groth16_verify_poseidon_d10: cycles=176107807 us=1174052 ms=1174 ok=true
+[15] vk_x_tiny_scalar: cycles=247343 us=1648 ms=1
+[15] vk_x_full_scalar: cycles=10550932 us=70339 ms=70
+[15] miller_loop_4pair: cycles=109243312 us=728288 ms=728
+[15] final_exp: cycles=56305682 us=375371 ms=375
+[16] g1mul start
+
+[16] g1mul: cycles=5307693 us=35384 ms=35
+[16] g2mul start
+
+[16] g2mul: cycles=15282243 us=101881 ms=101
+[16] pairing start
+
+[16] pairing: cycles=93614844 us=624098 ms=624
+[16] groth16_verify start
+
+[16] groth16_verify: cycles=165938305 us=1106255 ms=1106 ok=true
+[16] groth16_verify_semaphore start
+
+[16] groth16_verify_semaphore: cycles=206463385 us=1376422 ms=1376 ok=true
+[16] groth16_verify_poseidon_d3 start
+
+[16] groth16_verify_poseidon_d3: cycles=175985382 us=1173235 ms=1173 ok=true
+[16] groth16_verify_poseidon_d10 start
+
+[16] groth16_verify_poseidon_d10: cycles=176060586 us=1173737 ms=1173 ok=true
+[16] vk_x_tiny_scalar: cycles=248408 us=1656 ms=1
+[16] vk_x_full_scalar: cycles=10545164 us=70301 ms=70
+[16] miller_loop_4pair: cycles=109215373 us=728102 ms=728
+[16] final_exp: cycles=56325145 us=375500 ms=375
+[17] g1mul start
+
+[17] g1mul: cycles=11038253 us=73588 ms=73
+[17] g2mul start
+
+[17] g2mul: cycles=30395038 us=202633 ms=202
+[17] pairing start
+
+[17] pairing: cycles=93616424 us=624109 ms=624
+[17] groth16_verify start
+
+[17] groth16_verify: cycles=165903614 us=1106024 ms=1106 ok=true
+[17] groth16_verify_semaphore start
+
+[17] groth16_verify_semaphore: cycles=206456635 us=1376377 ms=1376 ok=true
+[17] groth16_verify_poseidon_d3 start
+
+[17] groth16_verify_poseidon_d3: cycles=175906352 us=1172709 ms=1172 ok=true
+[17] groth16_verify_poseidon_d10 start
+
+[17] groth16_verify_poseidon_d10: cycles=176136987 us=1174246 ms=1174 ok=true
+[17] vk_x_tiny_scalar: cycles=249516 us=1663 ms=1
+[17] vk_x_full_scalar: cycles=10544833 us=70298 ms=70
+[17] miller_loop_4pair: cycles=109289752 us=728598 ms=728
+[17] final_exp: cycles=56358710 us=375724 ms=375
+[18] g1mul start
+
+[18] g1mul: cycles=11218628 us=74790 ms=74
+[18] g2mul start
+
+[18] g2mul: cycles=30864411 us=205762 ms=205
+[18] pairing start
+
+[18] pairing: cycles=93623820 us=624158 ms=624
+[18] groth16_verify start
+
+[18] groth16_verify: cycles=165928063 us=1106187 ms=1106 ok=true
+[18] groth16_verify_semaphore start
+
+[18] groth16_verify_semaphore: cycles=206466513 us=1376443 ms=1376 ok=true
+[18] groth16_verify_poseidon_d3 start
+
+[18] groth16_verify_poseidon_d3: cycles=175938884 us=1172925 ms=1172 ok=true
+[18] groth16_verify_poseidon_d10 start
+
+[18] groth16_verify_poseidon_d10: cycles=176108838 us=1174058 ms=1174 ok=true
+[18] vk_x_tiny_scalar: cycles=244799 us=1631 ms=1
+[18] vk_x_full_scalar: cycles=10559275 us=70395 ms=70
+[18] miller_loop_4pair: cycles=109237681 us=728251 ms=728
+[18] final_exp: cycles=56347535 us=375650 ms=375
+[19] g1mul start
+
+[19] g1mul: cycles=11077972 us=73853 ms=73
+[19] g2mul start
+
+[19] g2mul: cycles=30504114 us=203360 ms=203
+[19] pairing start
+
+(truncated at iter 19 before breakdown data)

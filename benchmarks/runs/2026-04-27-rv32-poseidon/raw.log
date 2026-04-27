@@ -1,0 +1,42 @@
+zkmcu boot: heap=256K sys=150MHz core=hazard3
+
+[boot] vec=square ic=2 public=1 stack=15692 heap_base=2016 heap_peak=82336 cycles=176131857 us=1174212 ms=1174 ok=true
+[boot] vec=squares-5 ic=6 public=5 stack=15692 heap_base=2016 heap_peak=82336 cycles=178288615 us=1188590 ms=1188 ok=true
+[boot] vec=semaphore-depth-10 ic=5 public=4 stack=15692 heap_base=2016 heap_peak=82336 cycles=216608204 us=1444054 ms=1444 ok=true
+[boot] vec=poseidon-depth-3 ic=2 public=1 stack=15692 heap_base=2016 heap_peak=82336 cycles=186104180 us=1240694 ms=1240 ok=true
+[boot] vec=poseidon-depth-10 ic=2 public=1 stack=15692 heap_base=2016 heap_peak=82336 cycles=186385622 us=1242570 ms=1242 ok=true
+[1] g1mul: cycles=10762996 us=71753 ms=71
+[1] g2mul: cycles=29616018 us=197440 ms=197
+[1] pairing: cycles=95480747 us=636538 ms=636
+[1] groth16_verify: cycles=176148887 us=1174325 ms=1174 ok=true
+[1] groth16_verify_semaphore: cycles=216593619 us=1443957 ms=1443 ok=true
+[1] groth16_verify_poseidon_d3: cycles=186193983 us=1241293 ms=1241 ok=true
+[1] groth16_verify_poseidon_d10: cycles=186320679 us=1242137 ms=1242 ok=true
+[2] g1mul: cycles=5344642 us=35630 ms=35
+[2] g2mul: cycles=15407225 us=102714 ms=102
+[2] pairing: cycles=95407233 us=636048 ms=636
+[2] groth16_verify: cycles=176066659 us=1173777 ms=1173 ok=true
+[2] groth16_verify_semaphore: cycles=216639040 us=1444260 ms=1444 ok=true
+[2] groth16_verify_poseidon_d3: cycles=186196516 us=1241310 ms=1241 ok=true
+[2] groth16_verify_poseidon_d10: cycles=186350084 us=1242333 ms=1242 ok=true
+[3] g1mul: cycles=11142038 us=74280 ms=74
+[3] g2mul: cycles=30615714 us=204104 ms=204
+[3] pairing: cycles=95545115 us=636967 ms=636
+[3] groth16_verify: cycles=176125312 us=1174168 ms=1174 ok=true
+[3] groth16_verify_semaphore: cycles=216673171 us=1444487 ms=1444 ok=true
+[3] groth16_verify_poseidon_d3: cycles=186223928 us=1241492 ms=1241 ok=true
+[3] groth16_verify_poseidon_d10: cycles=186330434 us=1242202 ms=1242 ok=true
+[4] g1mul: cycles=11161691 us=74411 ms=74
+[4] g2mul: cycles=30671932 us=204479 ms=204
+[4] pairing: cycles=95550426 us=637002 ms=637
+[4] groth16_verify: cycles=176164920 us=1174432 ms=1174 ok=true
+[4] groth16_verify_semaphore: cycles=216684608 us=1444564 ms=1444 ok=true
+[4] groth16_verify_poseidon_d3: cycles=186177473 us=1241183 ms=1241 ok=true
+[4] groth16_verify_poseidon_d10: cycles=186305885 us=1242039 ms=1242 ok=true
+[5] g1mul: cycles=11107745 us=74051 ms=74
+[5] g2mul: cycles=30523392 us=203489 ms=203
+[5] pairing: cycles=95454934 us=636366 ms=636
+[5] groth16_verify: cycles=176124294 us=1174161 ms=1174 ok=true
+[5] groth16_verify_semaphore: cycles=216595670 us=1443971 ms=1443 ok=true
+[5] groth16_verify_poseidon_d3: cycles=186125960 us=1240839 ms=1240 ok=true
+[5] groth16_verify_poseidon_d10: (cut — session ended during capture)

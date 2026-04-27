@@ -1,0 +1,97 @@
+[meta]
+date = "2026-04-27"
+target = "rp2350-hazard3-rv32"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "Hazard3 RISC-V RV32IMAC"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"
+"substrate-bn-src" = "local path: vendor/bn (Niek-Kamer/bn master; no asm, pure Rust)"
+"ark-groth16"      = "0.5.0"
+
+[footprint]
+text_bytes = 78_620
+data_bytes = 0
+bss_bytes  = 524_288
+heap_bytes = 262_144
+stack_peak_bytes = 15_692
+
+# ---- Poseidon Merkle membership (headline results of this run) ----------
+
+[bench.groth16_verify_poseidon_d3]
+circuit       = "Poseidon Merkle membership, depth=3 (8 leaves, 739 constraints)"
+public_inputs = 1
+ic_size       = 2
+iterations    = 5
+cycles_median = 186_193_983
+cycles_min    = 186_125_960
+cycles_max    = 186_223_928
+us_median     = 1_241_293
+result        = "ok"
+
+[bench.groth16_verify_poseidon_d10]
+circuit       = "Poseidon Merkle membership, depth=10 (1024 leaves, 2461 constraints)"
+public_inputs = 1
+ic_size       = 2
+iterations    = 4
+cycles_median = 186_325_556
+cycles_min    = 186_305_885
+cycles_max    = 186_350_084
+us_median     = 1_242_170
+result        = "ok"
+
+# Succinctness delta: depth-10 vs depth-3 = +877 µs (+0.07%).
+# Cross-ISA succinctness ratio: M33 delta=537 µs, RV32 delta=877 µs — both noise-level.
+
+# ---- Reference circuits -------------------------------------------------
+
+[bench.groth16_verify]
+circuit       = "x^2 = y"
+public_inputs = 1
+ic_size       = 2
+iterations    = 5
+cycles_median = 176_125_312
+cycles_min    = 176_066_659
+cycles_max    = 176_164_920
+us_median     = 1_174_168
+result        = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit       = "semaphore-depth-10"
+public_inputs = 4
+ic_size       = 5
+iterations    = 5
+cycles_median = 216_639_040
+cycles_min    = 216_593_619
+cycles_max    = 216_684_608
+us_median     = 1_444_260
+result        = "ok"
+
+[bench.pairing]
+iterations    = 5
+cycles_median = 95_480_747
+cycles_min    = 95_407_233
+cycles_max    = 95_550_426
+us_median     = 636_538
+
+[bench.g1_mul]
+iterations     = 4
+cycles_typical = 11_107_745
+us_typical     = 74_051
+cycles_min     = 10_762_996
+cycles_max     = 11_161_691
+
+[bench.g2_mul]
+iterations     = 4
+cycles_typical = 30_523_392
+us_typical     = 203_489
+cycles_min     = 29_616_018
+cycles_max     = 30_671_932
