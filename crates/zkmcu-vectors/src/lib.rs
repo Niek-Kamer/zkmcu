@@ -87,6 +87,9 @@ pub fn semaphore_depth_10() -> Result<TestVector, Error> {
     })
 }
 
+/// Raw bytes of the square circuit proof, for cross-checking embedded constants.
+pub const SQUARE_PROOF_RAW: &[u8] = SQUARE_PROOF;
+
 /// UMAAL Known-Answer Test vectors for BN254 Fq multiplication.
 ///
 /// Layout: N records of 96 bytes each, `(a, b, a*b)` with every value a
