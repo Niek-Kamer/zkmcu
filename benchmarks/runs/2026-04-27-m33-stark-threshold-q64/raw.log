@@ -1,0 +1,65 @@
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf stark-prover-threshold N=64 value=37 threshold=100
+
+[boot] prove start
+
+[boot] N=64 stack=4672 heap_base=0 heap_peak=78144 cycles=73[2] stark_prove start
+[boot line truncated in serial capture; iter 1 missed]
+
+[2] stark_prove: cycles=7278784 us=48525 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[2] stark_verify: cycles=7461233 us=49741 ms=49 ok=true
+[2] prove_verify_total: prove_us=48525 verify_us=49741 total_us=98266 total_ms=98 heap_after=10 ok=true
+[3] stark_prove start
+
+[3] stark_prove: cycles=7280888 us=48539 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[3] stark_verify: cycles=7476988 us=49846 ms=49 ok=true
+[3] prove_verify_total: prove_us=48539 verify_us=49846 total_us=98385 total_ms=98 heap_after=10 ok=true
+[4] stark_prove start
+
+[4] stark_prove: cycles=7271183 us=48474 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[4] stark_verify: cycles=7459672 us=49731 ms=49 ok=true
+[4] prove_verify_total: prove_us=48474 verify_us=49731 total_us=98205 total_ms=98 heap_after=10 ok=true
+[5] stark_prove start
+
+[5] stark_prove: cycles=7260706 us=48404 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[5] stark_verify: cycles=7478240 us=49854 ms=49 ok=true
+[5] prove_verify_total: prove_us=48404 verify_us=49854 total_us=98259 total_ms=98 heap_after=10 ok=true
+[6] stark_prove start
+
+[6] stark_prove: cycles=7281497 us=48543 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[6] stark_verify: cycles=7449938 us=49666 ms=49 ok=true
+[6] prove_verify_total: prove_us=48543 verify_us=49666 total_us=98209 total_ms=98 heap_after=10 ok=true
+[7] stark_prove start
+
+[7] stark_prove: cycles=7277487 us=48516 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[7] stark_verify: cycles=7473247 us=49821 ms=49 ok=true
+[7] prove_verify_total: prove_us=48516 verify_us=49821 total_us=98338 total_ms=98 heap_after=10 ok=true
+[8] stark_prove start
+
+[8] stark_prove: cycles=7279447 us=48529 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[8] stark_verify: cycles=7476856 us=49845 ms=49 ok=true
+[8] prove_verify_total: prove_us=48529 verify_us=49845 total_us=98375 total_ms=98 heap_after=10 ok=true
+[9] stark_prove start
+
+[9] stark_prove: cycles=7271983 us=48479 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[9] stark_verify: cycles=7471285 us=49808 ms=49 ok=true
+[9] prove_verify_total: prove_us=48479 verify_us=49808 total_us=98288 total_ms=98 heap_after=10 ok=true
+[10] stark_prove start
+
+[10] stark_prove: cycles=7278639 us=48524 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[10] stark_verify: cycles=7458079 us=49720 ms=49 ok=true
+[10] prove_verify_total: prove_us=48524 verify_us=49720 total_us=98244 total_ms=98 heap_after=10 ok=true
+[11] stark_prove start
+
+[11] stark_prove: cycles=7274555 us=48497 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[11] stark_verify: cycles=7449751 us=49665 ms=49 ok=true
+[11] prove_verify_total: prove_us=48497 verify_us=49665 total_us=98162 total_ms=98 heap_after=10 ok=true
+[12] stark_prove start
+
+[12] stark_prove: cycles=7276385 us=48509 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[12] stark_verify: cycles=7486213 us=49908 ms=49 ok=true
+[12] prove_verify_total: prove_us=48509 verify_us=49908 total_us=98417 total_ms=98 heap_after=10 ok=true
+[13] stark_prove start
+
+[13] stark_prove: cycles=7277114 us=48514 ms=48 proof_bytes=11882 security_bits=123 ok=true
+[13] stark_verify: cycles=7459841 us=49732 ms=49 ok=true
+[13] prove_verify_total: prove_us=48514 verify_us=49732 total_us=98246 total_ms=98 heap_after=10 ok=true

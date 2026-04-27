@@ -1,0 +1,92 @@
+[meta]
+date       = "2026-04-27"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Cortex-M33 @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"winterfell"           = "0.13.1"
+"zkmcu-babybear"       = "0.1.0"
+"zkmcu-verifier-stark" = "0.1.0"
+"bench-core"           = "0.1.0"
+"rp235x-hal"           = "0.4.0"
+
+[footprint]
+heap_bytes       = 393_216
+stack_peak_bytes = 4_672
+
+[circuit]
+name           = "threshold-check"
+description    = "Prove value < threshold via 32-bit bit-decomposition"
+value          = 37
+threshold      = 100
+field          = "BabyBear (31-bit)"
+extension      = "Quartic"
+trace_cols     = 2
+trace_len      = 64
+blowup_factor  = 4
+num_queries    = 64
+lde_domain     = 256
+grinding       = 0
+proof_bytes    = 11_882
+security_bits_conjectured = 123
+
+# 12 loop iterations (iter 1 missed, boot line truncated).
+# Boot: stack=4672, heap_peak=78144.
+
+[bench.stark_prove]
+circuit     = "threshold-check, N=64, BabyBear+Quartic, blowup=4, 64 queries"
+iterations  = 12
+cycles_median = 7_277_300
+cycles_min    = 7_260_706
+cycles_max    = 7_281_497
+us_median     = 48_515
+us_min        = 48_404
+us_max        = 48_543
+result        = "ok"
+
+[bench.stark_verify]
+circuit     = "threshold-check, N=64, BabyBear+Quartic, blowup=4, 64 queries"
+iterations  = 12
+us_median   = 49_774
+us_min      = 49_665
+us_max      = 49_908
+result      = "ok"
+
+[bench.prove_verify_total]
+iterations  = 12
+us_median   = 98_288
+us_min      = 98_162
+us_max      = 98_417
+ms_median   = 98
+heap_after  = 10
+
+[bench.boot_prove]
+stack_bytes   = 4_672
+heap_peak     = 78_144
+proof_bytes   = 11_882
+security_bits = 123
+result        = "ok"
+
+[compare.vs_q11]
+q11_prove_us  = 47_951
+q64_prove_us  = 48_515
+prove_delta   = "+1.2%"
+q11_verify_us = 28_966
+q64_verify_us = 49_774
+verify_delta  = "+71.8%"
+q11_heap      = 65_880
+q64_heap      = 78_144
+heap_delta    = "+18.6%"
+q11_security  = 21
+q64_security  = 123
+security_gain = "+102 bits"
+note = "Prove time is completely insensitive to query count. Prover work is in the polynomial commitment phase (LDE + FRI folding), not the query opening phase. Queries only matter for verify."

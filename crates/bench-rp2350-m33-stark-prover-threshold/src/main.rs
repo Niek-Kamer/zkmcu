@@ -79,10 +79,12 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 4] = [
 ];
 
 // Trace length is 64 (TRACE_LEN from threshold_check).
-// LDE domain = 64 × 4 = 256 elements — much smaller than the Fibonacci 1024.
+// LDE domain = 64 × 4 = 256 elements.
+// FRI folds: 256 → 64 → 16 → 4 (stop, 4/4=1 ≤ 8). 3 rounds.
+// 64 queries at blowup=4: floor(log2(4)) × 64 = 2 × 64 = 128-bit conjectured security.
 const fn proof_options() -> ProofOptions {
     ProofOptions::new(
-        11,                      // num_queries — same as Fibonacci BB for fair comparison
+        64,                      // num_queries — 128-bit conjectured security at blowup=4
         4,                       // blowup_factor
         0,                       // grinding_factor
         FieldExtension::Quartic,
