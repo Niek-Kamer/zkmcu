@@ -89,9 +89,30 @@ bench-fq2:
 fmt-check:
     #!/usr/bin/env bash
     out=$(cargo fmt --all --check 2>&1)
-    status=$?
-    echo "$out" | grep -vE 'imports_granularity|group_imports|unstable_features' || true
-    exit $status
+    # Strip the unstable-feature warnings (vendored rustfmt configs use
+    # nightly-only options).
+    out=$(echo "$out" | grep -vE 'imports_granularity|group_imports|unstable_features' || true)
+    # Strip vendor/ diff blocks. cargo fmt --all walks into vendored
+    # crates via path deps even though they're in workspace.exclude;
+    # those crates have their own rustfmt configs (with unstable opts)
+    # and aren't ours to enforce. Each diff block is "Diff in path:line:"
+    # followed by the diff body, terminated at the next "Diff in" header
+    # or end of output.
+    out=$(echo "$out" | awk '
+        /^Diff in / {
+            in_vendor = ($0 ~ /\/vendor\//)
+            if (in_vendor) next
+            print
+            next
+        }
+        { if (!in_vendor) print }
+    ')
+    # If any "Diff in" header survived, real workspace format issue, fail.
+    if echo "$out" | grep -q '^Diff in'; then
+        echo "$out"
+        exit 1
+    fi
+    exit 0
 
 # Format every crate in the workspace.
 fmt:
