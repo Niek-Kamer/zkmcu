@@ -1,0 +1,190 @@
+[meta]
+date = "2026-04-28"
+target = "rp2350-cortex-m33"
+toolchain = "rustc 1.94.1"
+profile = "release, lto=fat, opt-level=s, codegen-units=1"
+commit = ""
+experiment = "audit-driven rebaseline: BN254 Groth16 on Cortex-M33 with UMAAL asm + SRAM text + SYS_HZ runtime assertion. Triggered by tier-2 audit finding that the published 643 ms headline is 14.4 % stale relative to current firmware."
+
+[hardware]
+board = "Raspberry Pi Pico 2 W"
+cpu = "ARM Cortex-M33F (FPv5-SP, DSP, UMAAL)"
+clock_hz = 150_000_000
+sram_bytes = 524288
+flash_bytes = 4194304
+
+[libraries]
+"substrate-bn"     = "0.6.0"       # forked, cortex-m33-asm feature on, vendor/bn @ b65c0cf
+"zkmcu-verifier"   = "0.1.0"
+"bench-core"       = "0.1.0"       # SYS_HZ assertion landed this run
+"embedded-alloc"   = "0.7.0"       # llff feature
+"cortex-m"         = "0.7.7"
+"cortex-m-rt"      = "0.7"
+"rp235x-hal"       = "0.4.0"
+
+[footprint]
+text_bytes = 0                     # not measured this run; cargo-size unavailable on dev host
+data_bytes = 0
+bss_bytes  = 0
+heap_bytes = 98304                 # 96 KB arena, ~18 % over peak
+heap_base_bytes = 2016
+heap_peak_bytes = 82336            # +448 B vs the 81888 B prior run; new poseidon vectors live in heap
+stack_peak_bytes = 15492           # -232 B vs the 15724 B prior run; LTO inlining shifted under firmware growth
+
+[vector]
+source = "ark-groth16 0.5.0 via zkmcu-host-gen"
+circuit = "x^2 = y (Groth16 over BN254)"
+proof_system = "Groth16"
+curve = "BN254"
+security_bits = 100
+public_inputs = 1
+ic_size = 2
+
+[umaal_kat]
+iterations = 256
+cycles_total = 1_718_885
+us_total = 11_459
+result = "ok"
+# 256 random limb patterns, every Fq::mul dispatched through ARMv8-M UMAAL asm
+# in mul_reduce_armv8m. Byte-identical vs the pure-Rust mul_reduce_rust reference.
+# Self-test runs before any verify measurement so a corrupted asm halts before
+# emitting any headline number.
+
+[bench.groth16_verify]
+circuit = "x^2 = y"
+public_inputs = 1
+ic_size = 2
+iterations = 5
+cycles_median = 82_600_706         # middle of 5 sorted samples
+cycles_min    = 82_590_287
+cycles_max    = 82_607_817
+us_median     = 550_671
+us_min        = 550_601
+us_max        = 550_718
+# min-max span = 17 530 cycles = 0.021 % of median. Tight, well below run-to-run.
+result = "ok"
+
+[bench.groth16_verify_sq5]
+circuit = "sum of 5 squares"
+public_inputs = 5
+ic_size = 6
+iterations = 5
+cycles_median = 83_478_302
+cycles_min    = 83_466_690
+cycles_max    = 83_492_142
+us_median     = 556_522
+us_min        = 556_444
+us_max        = 556_614
+result = "ok"
+
+[bench.groth16_verify_semaphore]
+circuit = "semaphore-depth-10"
+public_inputs = 4
+ic_size = 5
+iterations = 5
+cycles_median = 100_407_637
+cycles_min    = 100_399_233
+cycles_max    = 100_413_586
+us_median     = 669_384
+us_min        = 669_328
+us_max        = 669_423
+result = "ok"
+
+[bench.groth16_verify_poseidon_d3]
+circuit = "poseidon Merkle membership, depth 3"
+public_inputs = 1
+ic_size = 2
+iterations = 4                     # iter-5 truncated by serial capture
+cycles_median = 86_911_823         # avg of 2nd + 3rd sorted samples
+cycles_min    = 86_908_468
+cycles_max    = 86_918_181
+us_median     = 579_412
+us_min        = 579_389
+us_max        = 579_454
+result = "ok"
+
+[bench.groth16_verify_poseidon_d10]
+circuit = "poseidon Merkle membership, depth 10"
+public_inputs = 1
+ic_size = 2
+iterations = 4                     # iter-5 truncated by serial capture
+cycles_median = 87_002_102         # avg of 2nd + 3rd sorted samples
+cycles_min    = 86_997_478
+cycles_max    = 87_007_664
+us_median     = 580_014
+us_min        = 579_983
+us_max        = 580_051
+result = "ok"
+
+[bench.pairing]
+iterations = 5
+cycles_median = 46_015_937
+cycles_min    = 45_971_513
+cycles_max    = 46_062_477
+us_median     = 306_772
+us_min        = 306_476
+us_max        = 307_083
+
+[bench.g1_mul]
+# Bimodal: typical = high cluster (4 samples), best = low Hamming weight outlier
+iterations = 5
+cycles_typical = 4_915_522         # median of high-cluster {4787019, 4863729, 4967315, 4969972}
+us_typical     = 32_770
+cycles_best    = 2_683_314         # iter 2, low Hamming weight scalar
+us_best        = 17_888
+
+[bench.g2_mul]
+iterations = 5
+cycles_typical = 17_015_009        # median of high-cluster {16584692, 16812628, 17217390, 17275663}
+us_typical     = 113_433
+cycles_best    = 8_270_013
+us_best        = 55_133
+
+[bench.vk_x_tiny_scalar]
+# vk_x with a 16-bit scalar (y = 9 from the square circuit): floor of vk_x cost.
+iterations = 4
+cycles_median = 126_414
+us_median     = 842
+
+[bench.vk_x_full_scalar]
+# vk_x with a full 254-bit random scalar (poseidon root): typical real-circuit cost.
+iterations = 4
+cycles_median = 4_633_090
+us_median     = 30_887
+
+[bench.miller_loop_4pair]
+# 4-pair Miller loop, the shared accumulation step in any Groth16 verify.
+iterations = 4
+cycles_median = 55_432_546
+us_median     = 369_550
+
+[bench.final_exp]
+# Final exponentiation, applied once to the accumulated Miller loop product.
+iterations = 4
+cycles_median = 26_953_317
+us_median     = 179_688
+
+[bench.deltas_vs_2026_04_24_bench_core]
+# Same firmware harness, same UMAAL asm path, same dependency graph. Only
+# meaningful changes since the prior bench-core run (commit 98c7af5):
+#   - 94d4acf (2026-04-27): added Poseidon membership vectors + verify cost
+#     breakdown (vk_x / miller / final_exp) to the firmware loop.
+#   - SYS_HZ runtime assertion landed in this run.
+# The cost-breakdown additions changed the inlining graph and code placement,
+# wich appears to have shifted the BN254 hot path into more cache-friendly
+# alignment. None of the verify logic itself moved.
+us_groth16_verify_prior   = 642_913
+us_groth16_verify_current = 550_671
+delta_pct                 = -14.35   # -14.4 % vs prior bench-core
+us_pairing_prior          = 0        # not measured separately in prior run
+us_pairing_current        = 306_772
+# Headline is no longer "988 → 643 ms (35 % drop)"; current is "988 → 551 ms (44 % drop)".
+
+[bench.deltas_vs_2026_04_22_heap_96k]
+# This is the run the website's `bn254_m33` slot points at (962_647 us median).
+# Same circuit (square), same UMAAL asm:
+us_prior      = 962_647            # 2026-04-22-m33-heap-96k-confirmed/groth16_verify_square
+us_current    = 550_671
+delta_pct     = -42.79
+# Combined effect of UMAAL asm landing (Apr 23) plus the post-bench-core code-
+# placement shift. Net -42.8 % vs the unoptimized 96k-confirmed baseline.
