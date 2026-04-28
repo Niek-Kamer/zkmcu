@@ -39,7 +39,10 @@
 //! attestation: the device cannot report a valid proof while lying about
 //! its reading.
 //!
-//! Values must satisfy `value < threshold < BabyBear modulus` (~2^31).
+//! Values must satisfy `value < threshold - 1 < BabyBear modulus` (~2^31).
+//! When `diff = 0` (i.e. `value = threshold - 1`) the trace is all-zeros and
+//! winterfell's constraint-degree check panics — the tightest provable claim
+//! is `value = threshold - 2`.
 //!
 //! Privacy variant (value private, commitment public) requires a hash
 //! function inside the circuit and is left for a future Poseidon AIR.
@@ -104,9 +107,15 @@ impl Air for ThresholdAir {
             TransitionConstraintDegree::new(2), // bit constraint   (degree 2)
         ];
         let context = AirContext::new(trace_info, degrees, 2, options);
-        // Precondition: pub_inputs.value < pub_inputs.threshold (caller ensures).
-        // Underflow here signals a false claim; the proof will be invalid.
-        let diff = pub_inputs.threshold - pub_inputs.value - 1;
+        // checked_sub runs on the verifier side too — rejects false claims
+        // before any FRI work happens. Plain u32 subtraction would wrap in
+        // release mode and produce a field element that satisfies remaining[32]=0
+        // trivially (all BabyBear elements are < 2^32), so the wrap must be
+        // caught here rather than relying on the constraint system.
+        let diff = pub_inputs.threshold
+            .checked_sub(pub_inputs.value)
+            .and_then(|v| v.checked_sub(1))
+            .expect("ThresholdAir: value must be strictly less than threshold");
         Self { context, diff: BaseElement::new(diff) }
     }
 
@@ -147,7 +156,12 @@ impl Air for ThresholdAir {
 /// Panics if `value >= threshold` (the claimed statement would be false).
 #[allow(clippy::panic, clippy::indexing_slicing)]
 pub fn build_trace(value: u32, threshold: u32) -> winterfell::TraceTable<BaseElement> {
-    assert!(value < threshold, "value must be strictly less than threshold");
+    // diff=0 (value = threshold-1) makes the trace all-zeros, causing winterfell's
+    // constraint degree check to panic. Require value < threshold - 1.
+    assert!(
+        value < threshold.saturating_sub(1),
+        "value must be strictly less than threshold"
+    );
     let diff = threshold - value - 1;
     let mut trace = winterfell::TraceTable::new(2, TRACE_LEN);
     trace.fill(
