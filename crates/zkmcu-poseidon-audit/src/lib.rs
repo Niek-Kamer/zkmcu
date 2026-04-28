@@ -35,19 +35,25 @@
 //!
 //! # What this crate produces
 //!
+//! Each module is the audit step it is named after.
+//!
 //! - [`params`]: target parameter set with derivation references.
-//! - `mds`: MDS-ness proof for the chosen matrix.
-//! - `perm`: reference Poseidon permutation over [`zkmcu_babybear::BaseElement`].
-//! - `tests/differential.rs`: byte-for-byte agreement with Plonky3's
-//!   `p3-poseidon2` over millions of inputs.
-//! - `tests/grobner.rs`: round-count vs algebraic-attack bound check.
-//! - Eventually a Typst writeup landed under `research/reports/` and
-//!   surfaced on the public site.
-//!
-//! # Status
-//!
-//! Scaffold. Parameters are placeholders pending derivation in the next
-//! milestone slice.
+//! - [`mds`]: brute-force MDS-ness check, all 69 minors of `M_4` over
+//!   `BabyBear`.
+//! - [`internal_layer`]: `V` vector reconstructed from first principles,
+//!   `M_I = J + diag(V)`.
+//! - [`subspace_trail`]: Faddeev-LeVerrier characteristic polynomial plus
+//!   Rabin irreducibility test for `M_I^k`, `k = 1..R_P`.
+//! - [`round_numbers`]: independent port of `poseidon2_rust_params.sage`;
+//!   recovers Plonky3's published `(R_F, R_P)` from the cryptanalytic
+//!   bounds.
+//! - [`perm`]: reference Poseidon2 permutation in raw `u64` arithmetic
+//!   (deliberately not using `zkmcu_babybear::BaseElement`, so the audit
+//!   stays independent of the field crate's Montgomery impl).
+//! - [`poly`]: `F_p[x]` arithmetic backing [`subspace_trail`].
+//! - `tests/perm_diff.rs`: byte-identical diff vs Plonky3's
+//!   `Poseidon2BabyBear` on the published constants; 9 adversarial inputs
+//!   plus a 200-input deterministic LCG stress run.
 
 pub mod internal_layer;
 pub mod mds;

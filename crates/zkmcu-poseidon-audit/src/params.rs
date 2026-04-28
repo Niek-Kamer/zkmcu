@@ -40,8 +40,6 @@
 //!   `find_FD_round_numbers` (sage script lines 58-82) and confirms it
 //!   matches.
 
-use zkmcu_babybear::BaseElement;
-
 /// State width of the sponge / compression function. `t = 16` is the
 /// canonical compression-mode width for `BabyBear` Poseidon2.
 pub const STATE_WIDTH: usize = 16;
@@ -66,38 +64,16 @@ pub const HALF_EXTERNAL_ROUNDS: usize = 4;
 /// Total external rounds. Equivalent to `R_F` in Poseidon1 nomenclature.
 pub const EXTERNAL_ROUNDS: usize = 2 * HALF_EXTERNAL_ROUNDS;
 
-/// Number of internal rounds. Each internal round applies the S-box to a
-/// single state slot and the cheap diagonal matrix `M_I`. Equivalent to
-/// `R_P` in Poseidon1 nomenclature.
+/// Number of internal rounds. Equivalent to `R_P` in Poseidon1 nomenclature.
 ///
-/// **Audit status**: target value is Plonky3's published `13`, pending
-/// independent re-derivation via `poseidon2_rust_params.sage`.
+/// Each internal round applies the S-box to a single state slot and the
+/// cheap diagonal matrix `M_I`. Independently re-derived in
+/// `round_numbers::find_round_numbers` and verified to match Plonky3's
+/// `BABYBEAR_POSEIDON2_PARTIAL_ROUNDS_16`.
 pub const INTERNAL_ROUNDS: usize = 13;
 
 /// Total round count, external + internal.
 pub const TOTAL_ROUNDS: usize = EXTERNAL_ROUNDS + INTERNAL_ROUNDS;
-
-/// One row of the external MDS matrix. The full matrix is `STATE_WIDTH`
-/// of these. Concrete matrix lands in `mds.rs` once we pick (and prove)
-/// one over `BabyBear` at width 16.
-pub type ExternalMdsRow = [BaseElement; STATE_WIDTH];
-
-/// Internal layer matrix descriptor: the `μ` vector defining
-/// `M_I = J + diag(μ - 1)`, where `J` is the all-ones matrix.
-///
-/// The matrix has 1's everywhere off-diagonal and `μ_i` on the diagonal
-/// (Section 5.2 of the Poseidon2 paper, "Neptune-style"). Computed
-/// efficiently as `output[i] = (μ_i - 1) · x_i + Σ x` with one shared
-/// sum and one multiplication per output, so cost is `O(STATE_WIDTH)`
-/// per internal round instead of `O(STATE_WIDTH²)`.
-///
-/// Storage convention (whether elements are `μ` or `μ - 1`) is settled
-/// when the reference perm lands; at that point this type alias may
-/// become a struct with a named field.
-pub type InternalDiagonal = [BaseElement; STATE_WIDTH];
-
-/// Round constants for one external round (one constant per state slot).
-pub type ExternalRoundConstants = [BaseElement; STATE_WIDTH];
 
 #[cfg(test)]
 mod tests {

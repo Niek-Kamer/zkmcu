@@ -15,9 +15,9 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-# Our BabyBear field. Stays the source of truth for both the audit's
-# reference Poseidon perm and the eventual STARK circuit impl.
-zkmcu-babybear = { path = "../zkmcu-babybear" }
+# The audit deliberately uses raw `u64` arithmetic with explicit `mod p`
+# reductions, so it stays independent of any bug in `zkmcu-babybear`'s
+# Montgomery impl. No runtime dependencies as a result.
 
 [dev-dependencies]
 # Plonky3 reference impls (vendored at vendor/Plonky3/), used only at

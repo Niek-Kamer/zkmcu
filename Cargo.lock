@@ -2735,7 +2735,6 @@ dependencies = [
  "p3-field",
  "p3-poseidon2",
  "p3-symmetric",
- "zkmcu-babybear",
 ]
 
 [[package]]
