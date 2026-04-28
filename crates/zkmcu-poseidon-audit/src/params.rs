@@ -17,7 +17,7 @@
 //! optimization: in-circuit cost drops from `O(t²)` to `O(t)` per internal
 //! round while preserving the same security guarantees.
 //!
-//! See `vendor/poseidon2/papers/Poseidon2-2023-323.pdf`.
+//! See <https://eprint.iacr.org/2023/323>.
 //!
 //! # Target shape (rationale)
 //!

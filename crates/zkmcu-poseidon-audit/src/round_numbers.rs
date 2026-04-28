@@ -5,7 +5,8 @@
 //!
 //! - The five round-count bounds from the original Poseidon paper
 //!   (statistical, interpolation, Groebner-1/2/3) per Section 3.2 of
-//!   `vendor/poseidon2/papers/Poseidon2-2023-323.pdf`.
+//!   the Poseidon2 paper, eprint 2023/323
+//!   (<https://eprint.iacr.org/2023/323>).
 //! - The 2023/537 binomial cost addition for the CICO Groebner attack.
 //! - The +7.5% partial-round security margin and +2 full-round margin.
 //!
