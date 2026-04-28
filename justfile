@@ -77,9 +77,21 @@ test-bn:
 bench-fq2:
     cd vendor/bn && cargo test --release -- bench_fq2_ops --nocapture
 
-# Check formatting (does not modify files).
+# Check formatting (does not modify files). The 2>&1 + grep filter
+# suppresses rustfmt's "unstable features are only available in nightly"
+# warnings, wich come from vendored crates' rustfmt.toml files setting
+# options like `imports_granularity = "Module"` and propagate per
+# rustfmt invocation. The warnings are cosmetic (rustfmt ignores those
+# options on stable and still formats correctly), but they spam ~60
+# lines of output per fmt-check call. Filtering keeps real diff output
+# (`Diff in path:line` lines) unchanged so format violations still
+# fail the recipe.
 fmt-check:
-    cargo fmt --all --check
+    #!/usr/bin/env bash
+    out=$(cargo fmt --all --check 2>&1)
+    status=$?
+    echo "$out" | grep -vE 'imports_granularity|group_imports|unstable_features' || true
+    exit $status
 
 # Format every crate in the workspace.
 fmt:
