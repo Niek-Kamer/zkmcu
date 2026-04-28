@@ -8,6 +8,7 @@ members = [
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/zkmcu-poseidon-circuit",
+    "crates/zkmcu-poseidon-audit",
     "crates/zkmcu-bump-alloc",
     "crates/bench-core",
     "crates/bench-rp2350-m33",
@@ -39,6 +40,7 @@ default-members = [
     "crates/zkmcu-vectors",
     "crates/zkmcu-host-gen",
     "crates/zkmcu-poseidon-circuit",
+    "crates/zkmcu-poseidon-audit",
     "crates/zkmcu-bump-alloc",
 ]
 

@@ -1,0 +1,31 @@
+[package]
+name = "zkmcu-poseidon-audit"
+version = "0.1.0"
+description = "Host-only audit crate for Poseidon-BabyBear parameter design and verification (PQ-Semaphore milestone). Defines target parameters, proves MDS-ness over BabyBear, differential-tests against Plonky3, and emits the audit writeup."
+keywords = ["poseidon", "babybear", "audit", "zk-snark", "stark"]
+categories = ["cryptography", "development-tools"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Our BabyBear field. Stays the source of truth for both the audit's
+# reference Poseidon perm and the eventual STARK circuit impl.
+zkmcu-babybear = { path = "../zkmcu-babybear" }
+
+[dev-dependencies]
+# Plonky3 reference impls (vendored at vendor/Plonky3/), used only at
+# test time so the lib build stays dep-free. The diff test in
+# `tests/perm_diff.rs` runs both Plonky3's Poseidon2 and our reference
+# implementation with the same published `BABYBEAR_POSEIDON2_RC_16_*`
+# constants and confirms byte-identical outputs across random inputs.
+p3-baby-bear  = { path = "../../vendor/Plonky3/baby-bear" }
+p3-field      = { path = "../../vendor/Plonky3/field" }
+p3-poseidon2  = { path = "../../vendor/Plonky3/poseidon2" }
+p3-symmetric  = { path = "../../vendor/Plonky3/symmetric" }
