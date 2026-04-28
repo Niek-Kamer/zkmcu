@@ -53,7 +53,7 @@ def query(port: serial.Serial, proof: bytes) -> tuple[str, int, int]:
     assert len(proof) == PROOF_SIZE
     port.write(b"\x55\xaa" + proof)
     port.flush()
-    # readline() blocks until \n or timeout — avoids the in_waiting race where
+    # readline() blocks until \n or timeout avoids the in_waiting race where
     # a fast parse-error response arrives before Python checks in_waiting.
     line = port.readline().strip().decode(errors="replace")
     parts = line.split()
@@ -90,21 +90,25 @@ VALID_PROOF = (
     b"\xab\x171W\x87|F\x0f]\x89\xfe\xca}\xda\xaf\x13\x19,\x8b\xb2K\x84Y\x19"
     b"\xc4\xd8I\xf2\x1d\xe4\xc4\xd0z7J\x93<\xc6Xg\xfb4\x8c\xf9\xf5\xba}"
 )
-assert len(VALID_PROOF) == PROOF_SIZE, f"proof constant wrong length: {len(VALID_PROOF)}"
+assert len(VALID_PROOF) == PROOF_SIZE, (
+    f"proof constant wrong length: {len(VALID_PROOF)}"
+)
 
 
 def run(args: argparse.Namespace) -> None:
     valid_proof = VALID_PROOF
 
     print(f"Opening {args.port} ...")
-    port = serial.Serial(args.port, baudrate=115200, timeout=3, dsrdtr=False, rtscts=False)
+    port = serial.Serial(
+        args.port, baudrate=115200, timeout=3, dsrdtr=False, rtscts=False
+    )
     print("Syncing with device (sending probe) ...")
     sync_device(port)
     print(f"Device responding. Running {args.samples} samples per category.\n")
 
     categories: list[tuple[str, bytes]] = []
 
-    # Valid proof — this should always return T
+    # Valid proof this should always return T
     categories.append(("valid", valid_proof))
 
     # Bit-flip at byte 0 (first G1 x-coord — hits curve-check fast)
@@ -122,12 +126,14 @@ def run(args: argparse.Namespace) -> None:
     flip255[255] ^= 0x01
     categories.append(("bit_flip_byte_255", bytes(flip255)))
 
-    # All-zeros — parse should fail fast on the identity point check
+    # All-zeros, parse should fail fast on the identity point check
     categories.append(("all_zeros", bytes(PROOF_SIZE)))
 
-    # Random bytes — almost certainly a parse or verify failure
-    rng = random.Random(0xdeadbeef)
-    categories.append(("random_bytes", bytes(rng.getrandbits(8) for _ in range(PROOF_SIZE))))
+    # Random bytes, almost certainly a parse or verify failure
+    rng = random.Random(0xDEADBEEF)
+    categories.append(
+        ("random_bytes", bytes(rng.getrandbits(8) for _ in range(PROOF_SIZE)))
+    )
 
     results: dict[str, dict] = {}
 
@@ -140,14 +146,16 @@ def run(args: argparse.Namespace) -> None:
             timings.append(us)
             verdicts[v] = verdicts.get(v, 0) + 1
             if (i + 1) % 100 == 0:
-                print(f" {i+1}", end="", flush=True)
+                print(f" {i + 1}", end="", flush=True)
         print()
         results[label] = {"timings": timings, "verdicts": verdicts}
 
     port.close()
 
     print("Results (µs round-trip, measured on-device):\n")
-    print(f"  {'category':30s}  {'n':>7}  {'mean':>12}  {'std':>12}  {'cv':>9}  [min..max]")
+    print(
+        f"  {'category':30s}  {'n':>7}  {'mean':>12}  {'std':>12}  {'cv':>9}  [min..max]"
+    )
     print("  " + "-" * 90)
 
     for label, data in results.items():
@@ -181,9 +189,15 @@ def run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--port", default="/dev/ttyACM0", help="USB serial port (default: /dev/ttyACM0)")
-    parser.add_argument("--samples", type=int, default=1000, help="samples per category (default: 1000)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--port", default="/dev/ttyACM0", help="USB serial port (default: /dev/ttyACM0)"
+    )
+    parser.add_argument(
+        "--samples", type=int, default=1000, help="samples per category (default: 1000)"
+    )
     args = parser.parse_args()
     try:
         run(args)
