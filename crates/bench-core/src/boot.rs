@@ -32,6 +32,12 @@ pub fn init_rp2350(mut pac: hal::pac::Peripherals) -> (Timer0, UsbBusAllocator<h
     ) else {
         panic!("clock init");
     };
+    // Assert the configured system clock matches `SYS_HZ`. Every cycles->us
+    // conversion across the bench harness divides by `SYS_HZ` as a constant,
+    // so a silent drift in the rp235x-hal default would corrupt every
+    // published timing without visible failure. Panic at boot instead.
+    let actual_hz = <hal::clocks::SystemClock as hal::clocks::Clock>::freq(&clocks.system_clock);
+    assert!(actual_hz.to_Hz() == SYS_HZ, "SYS_HZ mismatch");
     let timer = hal::Timer::new_timer0(pac.TIMER0, &mut pac.RESETS, &clocks);
     let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
         pac.USB,

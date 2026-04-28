@@ -73,6 +73,14 @@ us_babybear_q_kara_tlsf = 129_054    # this run
 us_delta                = 16_654     # +14.8 % vs Goldilocks
 # Gap closed from +21.6 % (schoolbook) to +14.8 % (Karatsuba), but Goldilocks
 # still wins on Hazard3 at 95-bit conjectured security.
+#
+# NOTE (post bench-core rebase, 2026-04-24): the cited 112_400 us is from
+# the earlier `2026-04-24-rv32-stark-fib-1024-q-tlsf` run. The bench-core
+# rebaseline of the same Goldilocks benchmark
+# (`2026-04-24-bench-core-rv32-stark-goldilocks/result.toml`) reports
+# us_median = 107_960, so against fresh comparable numbers the BabyBear
+# delta is +19.5 %, not +14.8 %. Directional conclusion ("BabyBear-quartic
+# does not beat Goldilocks-quadratic at 95-bit on RV32") is unchanged.
 
 [bench.cross_isa]
 # Full arc on both ISAs after Karatsuba:

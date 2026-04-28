@@ -75,3 +75,11 @@ us_babybear_q_kara_tlsf = 124_223
 us_delta               = 49_571     # +66 % vs Goldilocks, unchanged from schoolbook run
 # 31-bit base field advantage is not recoverable on M33 at 95-bit security via
 # extension-mul optimization alone.
+#
+# NOTE (post bench-core rebase, 2026-04-24): the cited 74_652 us comes from
+# the earlier `2026-04-24-m33-stark-fib-1024-q-tlsf` run. The bench-core
+# rebaseline of the same Goldilocks benchmark
+# (`2026-04-24-bench-core-m33-stark-goldilocks/result.toml`) reports
+# us_median = 73_203, so against fresh comparable numbers the BabyBear delta
+# is +69.7 %, not +66 %. Directional conclusion ("BabyBear-quartic does not
+# beat Goldilocks-quadratic at 95-bit on M33") is unchanged.

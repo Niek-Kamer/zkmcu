@@ -174,3 +174,61 @@ fn perm_is_injective_on_single_bit_changes() {
         );
     }
 }
+
+/// Adversarial: every slot at the actual largest valid field element
+/// `p - 1`. Distinct from the prior `max_values` test wich used
+/// `2^31 - 1`, slightly above `p`, to verify that reduction agrees.
+#[test]
+fn diff_against_plonky3_all_p_minus_one() {
+    let p_minus_one: u64 = 2_013_265_921 - 1;
+    assert_perms_agree([p_minus_one; T]);
+}
+
+/// Adversarial: alternating zero and `p - 1` across slots. Catches
+/// any state-mixing bug that depends on parity of the active slot.
+#[test]
+fn diff_against_plonky3_alternating_zero_pmax() {
+    let p_minus_one: u64 = 2_013_265_921 - 1;
+    let mut input = [0_u64; T];
+    for i in (1..T).step_by(2) {
+        input[i] = p_minus_one;
+    }
+    assert_perms_agree(input);
+}
+
+/// Adversarial: one slot at `p - 1`, rest zero, walked across all
+/// 16 positions. Catches any per-slot indexing bug in either the
+/// internal layer's diagonal or the external M_E block structure.
+#[test]
+fn diff_against_plonky3_single_slot_pmax() {
+    let p_minus_one: u64 = 2_013_265_921 - 1;
+    for slot in 0..T {
+        let mut input = [0_u64; T];
+        input[slot] = p_minus_one;
+        assert_perms_agree(input);
+    }
+}
+
+/// Stress: 200 deterministic pseudo-random inputs reduced mod `p`.
+/// LCG seeded with a fixed constant so the test is reproducible.
+#[test]
+fn diff_against_plonky3_random_stress() {
+    let p: u64 = 2_013_265_921;
+    // splitmix64 step
+    let mut state: u64 = 0xDEAD_BEEF_CAFE_BABE;
+    let mut next = || -> u64 {
+        state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^ (z >> 31)
+    };
+
+    for _ in 0..200 {
+        let mut input = [0_u64; T];
+        for i in 0..T {
+            input[i] = next() % p;
+        }
+        assert_perms_agree(input);
+    }
+}
