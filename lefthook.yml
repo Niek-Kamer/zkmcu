@@ -1,0 +1,34 @@
+# lefthook config for zkmcu.
+#
+# Goal: keep local pre-push checks byte-for-byte aligned with the GitHub
+# Actions workflow (`.github/workflows/ci.yml`). Both call the same
+# `just ci-*` recipes, so a passing pre-push run is a strong signal CI
+# will also pass.
+#
+# Install lefthook once: `cargo install lefthook` (or `brew`/`pacman`).
+# Activate hooks once per clone: `lefthook install`.
+#
+# Bypass for emergencies: `LEFTHOOK=0 git push` (use sparingly).
+
+# Pre-commit: fast feedback loop per commit. Runs the host CI job only,
+# wich covers fmt + host clippy + tests. Skips firmware cross-compile
+# and docs (those go on pre-push).
+pre-commit:
+  parallel: false
+  commands:
+    ci-host:
+      # `just ci-host` is the same recipe `.github/workflows/ci.yml`
+      # runs in its `host` job.
+      run: just ci-host
+
+# Pre-push: full CI mirror. Blocks the push if any CI job would fail
+# locally. Slower than pre-commit (several minutes after first cache
+# warmup), so worth waiting through before pushing to a branch CI
+# also lints.
+pre-push:
+  parallel: false
+  commands:
+    ci-all:
+      # `just ci-all` runs ci-host + ci-firmware-m33 + ci-firmware-rv32
+      # + ci-docs. Same recipes the four CI jobs run.
+      run: just ci-all

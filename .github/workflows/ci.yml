@@ -1,14 +1,14 @@
 name: CI
 
-# Manual-only trigger. Re-enable the push / pull_request blocks below when
-# the workspace is in a shippable state, for now the phase 3 refactor is
-# in flight and automatic runs just burn attention on known failures.
-# Run manually with: gh workflow run CI
+# Each job calls a single `just ci-*` recipe. Those recipes are defined
+# in the root `justfile` and are the SINGLE SOURCE OF TRUTH for what
+# CI runs. Lefthook's pre-push hook calls the same recipes locally, so
+# a clean local push run is a strong signal CI will also pass.
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  # pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,28 +20,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
+      - uses: extractions/setup-just@v2
+
       - uses: Swatinem/rust-cache@v2
 
-      - name: cargo fmt --check
-        run: cargo fmt --all --check
-
-      - name: cargo clippy (host crates)
-        run: cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-verifier-stark -p zkmcu-vectors -p zkmcu-host-gen -p zkmcu-bump-alloc --all-targets --release -- -D warnings
-
-      - name: cargo test
-        run: cargo test --release
+      - name: just ci-host
+        run: just ci-host
 
   firmware-m33:
     name: firmware (Cortex-M33)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install stable Rust + thumbv8m.main target
         uses: dtolnay/rust-toolchain@stable
@@ -49,45 +49,20 @@ jobs:
           targets: thumbv8m.main-none-eabihf
           components: clippy
 
+      - uses: extractions/setup-just@v2
+
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "crates/bench-rp2350-m33"
 
-      - name: cargo check (zkmcu-verifier-bls12 on Cortex-M33)
-        run: cargo check -p zkmcu-verifier-bls12 --release --target thumbv8m.main-none-eabihf
-
-      - name: cargo check (zkmcu-verifier-stark on Cortex-M33)
-        run: cargo check -p zkmcu-verifier-stark --release --target thumbv8m.main-none-eabihf
-
-      - name: cargo clippy (BN254 firmware)
-        working-directory: crates/bench-rp2350-m33
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (BN254 firmware)
-        working-directory: crates/bench-rp2350-m33
-        run: cargo build --release
-
-      - name: cargo clippy (BLS12-381 firmware)
-        working-directory: crates/bench-rp2350-m33-bls12
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (BLS12-381 firmware)
-        working-directory: crates/bench-rp2350-m33-bls12
-        run: cargo build --release
-
-      - name: cargo clippy (STARK firmware)
-        working-directory: crates/bench-rp2350-m33-stark
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (STARK firmware)
-        working-directory: crates/bench-rp2350-m33-stark
-        run: cargo build --release
+      - name: just ci-firmware-m33
+        run: just ci-firmware-m33
 
   firmware-rv32:
     name: firmware (Hazard3 RV32)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install stable Rust + riscv32imac target
         uses: dtolnay/rust-toolchain@stable
@@ -95,39 +70,12 @@ jobs:
           targets: riscv32imac-unknown-none-elf
           components: clippy
 
+      - uses: extractions/setup-just@v2
+
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "crates/bench-rp2350-rv32"
 
-      - name: cargo check (zkmcu-verifier-bls12 on Hazard3 RV32)
-        run: cargo check -p zkmcu-verifier-bls12 --release --target riscv32imac-unknown-none-elf
-
-      - name: cargo check (zkmcu-verifier-stark on Hazard3 RV32)
-        run: cargo check -p zkmcu-verifier-stark --release --target riscv32imac-unknown-none-elf
-
-      - name: cargo clippy (BN254 firmware)
-        working-directory: crates/bench-rp2350-rv32
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (BN254 firmware)
-        working-directory: crates/bench-rp2350-rv32
-        run: cargo build --release
-
-      - name: cargo clippy (BLS12-381 firmware)
-        working-directory: crates/bench-rp2350-rv32-bls12
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (BLS12-381 firmware)
-        working-directory: crates/bench-rp2350-rv32-bls12
-        run: cargo build --release
-
-      - name: cargo clippy (STARK firmware)
-        working-directory: crates/bench-rp2350-rv32-stark
-        run: cargo clippy --release -- -D warnings
-
-      - name: cargo build (STARK firmware)
-        working-directory: crates/bench-rp2350-rv32-stark
-        run: cargo build --release
+      - name: just ci-firmware-rv32
+        run: just ci-firmware-rv32
 
   docs:
     name: Typst PDFs
@@ -140,20 +88,7 @@ jobs:
         with:
           typst-version: "0.14.2"
 
-      - name: Build research PDFs
-        run: |
-          mkdir -p research/out
-          typst compile --root . research/prior-art/main.typ research/out/prior-art.pdf
-          typst compile --root . research/whitepaper/main.typ research/out/whitepaper.pdf
-          typst compile --root . research/reports/2026-04-21-groth16-baseline.typ research/out/2026-04-21-groth16-baseline.pdf
-          typst compile --root . research/reports/2026-04-21-zkmcu-first-session.typ research/out/2026-04-21-zkmcu-first-session.pdf
-          typst compile --root . research/reports/2026-04-22-bls12-381-prediction.typ research/out/2026-04-22-bls12-381-prediction.pdf
-          typst compile --root . research/reports/2026-04-22-bls12-381-results.typ research/out/2026-04-22-bls12-381-results.pdf
-          typst compile --root . research/reports/2026-04-22-semaphore-baseline.typ research/out/2026-04-22-semaphore-baseline.pdf
-          typst compile --root . research/reports/2026-04-23-stark-prediction.typ research/out/2026-04-23-stark-prediction.pdf
-          typst compile --root . research/reports/2026-04-23-stark-results.typ research/out/2026-04-23-stark-results.pdf
-          typst compile --root . research/reports/2026-04-24-stark-quadratic-prediction.typ research/out/2026-04-24-stark-quadratic-prediction.pdf
-          typst compile --root . research/reports/2026-04-24-stark-quadratic-results.typ research/out/2026-04-24-stark-quadratic-results.pdf
-          typst compile --root . research/reports/2026-04-24-stark-variance-isolation.typ research/out/2026-04-24-stark-variance-isolation.pdf
-          typst compile --root . research/reports/2026-04-24-stark-bump-alloc.typ research/out/2026-04-24-stark-bump-alloc.pdf
-          typst compile --root . research/reports/2026-04-24-stark-allocator-matrix.typ research/out/2026-04-24-stark-allocator-matrix.pdf
+      - uses: extractions/setup-just@v2
+
+      - name: just ci-docs
+        run: just ci-docs

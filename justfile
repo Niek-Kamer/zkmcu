@@ -140,6 +140,53 @@ check: fmt-check lint test
 # Full gate including every firmware build, used before cutting a benchmark run.
 check-full: check build-m33 build-m33-bls12 build-m33-stark build-m33-stark-bb build-rv32 build-rv32-bls12 build-rv32-stark build-rv32-stark-bb
 
+# ---- CI mirror ----------------------------------------------------------
+#
+# The four `ci-*` recipes below are the SINGLE SOURCE OF TRUTH for what
+# `.github/workflows/ci.yml` runs. CI calls `just ci-<job>` directly.
+# Lefthook pre-push runs `just ci-all`. Local + CI cannot drift: editing
+# any recipe here updates both at once.
+
+# CI host job: fmt + host clippy + test, exactly what the `host` job runs.
+ci-host: fmt-check
+    cargo clippy -p zkmcu-verifier -p zkmcu-verifier-bls12 -p zkmcu-verifier-stark -p zkmcu-vectors -p zkmcu-host-gen -p zkmcu-bump-alloc -p zkmcu-poseidon-circuit -p zkmcu-poseidon-audit -p zkmcu-babybear --all-targets --release -- -D warnings
+    cargo test --release
+
+# CI Cortex-M33 job: cross-compile checks + clippy + build for every m33 firmware crate.
+ci-firmware-m33:
+    cargo check -p zkmcu-verifier-bls12 --release --target thumbv8m.main-none-eabihf
+    cargo check -p zkmcu-verifier-stark --release --target thumbv8m.main-none-eabihf
+    just lint-m33 build-m33
+    just lint-m33-bls12 build-m33-bls12
+    just lint-m33-stark build-m33-stark
+    just lint-m33-stark-bb build-m33-stark-bb
+    just lint-m33-stark-prover build-m33-stark-prover
+    just lint-m33-stark-prover-bb build-m33-stark-prover-bb
+    just lint-m33-bn-asm-test build-m33-bn-asm-test
+    just lint-m33-timing-oracle build-m33-timing-oracle
+
+# CI Hazard3 RV32 job: same shape as the m33 job, riscv32imac target.
+ci-firmware-rv32:
+    cargo check -p zkmcu-verifier-bls12 --release --target riscv32imac-unknown-none-elf
+    cargo check -p zkmcu-verifier-stark --release --target riscv32imac-unknown-none-elf
+    just lint-rv32 build-rv32
+    just lint-rv32-bls12 build-rv32-bls12
+    just lint-rv32-stark build-rv32-stark
+    just lint-rv32-stark-bb build-rv32-stark-bb
+    just lint-rv32-stark-prover build-rv32-stark-prover
+    just lint-rv32-stark-prover-bb build-rv32-stark-prover-bb
+
+# CI docs job: compile every Typst document under research/. Gracefully
+# skips with a warning if typst isn't installed locally, so the pre-push
+# hook doesn't block contributors who haven't installed it. CI's runner
+# always has typst from the workflow setup-typst step.
+ci-docs:
+    @command -v typst >/dev/null 2>&1 || { echo "typst not installed locally, skipping docs build (CI will run it)"; exit 0; }
+    just docs
+
+# Run every CI job locally, in the same order CI runs them.
+ci-all: ci-host ci-firmware-m33 ci-firmware-rv32 ci-docs
+
 # Regenerate the committed test vectors.
 regen-vectors:
     cargo run -p zkmcu-host-gen --release
