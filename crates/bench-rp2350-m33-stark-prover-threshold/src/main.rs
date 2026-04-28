@@ -48,9 +48,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable,
 };
 
-use zkmcu_verifier_stark::threshold_check::{
-    build_trace, PublicInputs, ThresholdAir, TRACE_LEN,
-};
+use zkmcu_verifier_stark::threshold_check::{build_trace, PublicInputs, ThresholdAir, TRACE_LEN};
 
 /// Sensor reading to prove below threshold.
 const VALUE: u32 = 37;
@@ -84,12 +82,12 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 4] = [
 // 64 queries at blowup=4: floor(log2(4)) × 64 = 2 × 64 = 128-bit conjectured security.
 const fn proof_options() -> ProofOptions {
     ProofOptions::new(
-        64,                      // num_queries — 128-bit conjectured security at blowup=4
-        4,                       // blowup_factor
-        0,                       // grinding_factor
+        64, // num_queries — 128-bit conjectured security at blowup=4
+        4,  // blowup_factor
+        0,  // grinding_factor
         FieldExtension::Quartic,
-        4,                       // fri_folding_factor
-        7,                       // fri_max_remainder_poly_degree
+        4, // fri_folding_factor
+        7, // fri_max_remainder_poly_degree
         BatchingMethod::Linear,
         BatchingMethod::Linear,
     )
@@ -118,7 +116,10 @@ impl Prover for ThresholdProver {
         DefaultConstraintEvaluator<'a, ThresholdAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs { value: self.value, threshold: self.threshold }
+        PublicInputs {
+            value: self.value,
+            threshold: self.threshold,
+        }
     }
 
     fn options(&self) -> &ProofOptions {
@@ -203,7 +204,11 @@ fn main() -> ! {
 
         let (prove_result, prove_cycles) = measure_cycles(|| {
             let trace = build_trace(VALUE, THRESHOLD);
-            let prover = ThresholdProver { options: proof_options(), value: VALUE, threshold: THRESHOLD };
+            let prover = ThresholdProver {
+                options: proof_options(),
+                value: VALUE,
+                threshold: THRESHOLD,
+            };
             prover.prove(trace)
         });
 
@@ -223,12 +228,18 @@ fn main() -> ! {
         bench.write_line(out.as_bytes());
 
         if let Some(p) = proof {
-            let public = PublicInputs { value: VALUE, threshold: THRESHOLD };
+            let public = PublicInputs {
+                value: VALUE,
+                threshold: THRESHOLD,
+            };
             let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
             let (verify_result, verify_cycles) = measure_cycles(|| {
-                winterfell::verify::<ThresholdAir, Blake3_256<BaseElement>,
+                winterfell::verify::<
+                    ThresholdAir,
+                    Blake3_256<BaseElement>,
                     DefaultRandomCoin<Blake3_256<BaseElement>>,
-                    MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                    MerkleTree<Blake3_256<BaseElement>>,
+                >(p, public, &opts)
             });
 
             let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
@@ -270,7 +281,11 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
 
     let (prove_result, stack_peak, prove_cycles) = measure_stack_peak(|| {
         let trace = build_trace(VALUE, THRESHOLD);
-        let prover = ThresholdProver { options: proof_options(), value: VALUE, threshold: THRESHOLD };
+        let prover = ThresholdProver {
+            options: proof_options(),
+            value: VALUE,
+            threshold: THRESHOLD,
+        };
         prover.prove(trace)
     });
 
@@ -292,12 +307,18 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
     bench.write_line(out.as_bytes());
 
     if let Some(p) = proof {
-        let public = PublicInputs { value: VALUE, threshold: THRESHOLD };
+        let public = PublicInputs {
+            value: VALUE,
+            threshold: THRESHOLD,
+        };
         let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
         let (verify_result, verify_cycles) = measure_cycles(|| {
-            winterfell::verify::<ThresholdAir, Blake3_256<BaseElement>,
+            winterfell::verify::<
+                ThresholdAir,
+                Blake3_256<BaseElement>,
                 DefaultRandomCoin<Blake3_256<BaseElement>>,
-                MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                MerkleTree<Blake3_256<BaseElement>>,
+            >(p, public, &opts)
         });
         let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
 

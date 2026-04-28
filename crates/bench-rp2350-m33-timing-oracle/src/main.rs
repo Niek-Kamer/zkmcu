@@ -6,9 +6,11 @@
 
 use core::mem::MaybeUninit;
 
-use bench_core::{init_cycle_counter, init_rp2350, measure_cycles, Bench, BenchConfig, UsbBus, SYS_HZ};
-use heapless::String;
+use bench_core::{
+    init_cycle_counter, init_rp2350, measure_cycles, Bench, BenchConfig, UsbBus, SYS_HZ,
+};
 use core::fmt::Write as _;
+use heapless::String;
 use panic_halt as _;
 use rp235x_hal as hal;
 
@@ -53,7 +55,10 @@ fn read_exact<B: UsbBus>(bench: &mut Bench<'_, B>, buf: &mut [u8]) {
     let mut filled = 0usize;
     while filled < buf.len() {
         bench.dev.poll(&mut [&mut bench.serial]);
-        match bench.serial.read(buf.get_mut(filled..).expect("filled <= buf.len() by loop invariant")) {
+        match bench.serial.read(
+            buf.get_mut(filled..)
+                .expect("filled <= buf.len() by loop invariant"),
+        ) {
             Ok(n) if n > 0 => filled += n,
             _ => {}
         }
@@ -112,9 +117,9 @@ fn main() -> ! {
     {
         let selftest = zkmcu_verifier::verify(&tv.vk, &tv.proof, &tv.public);
         let label = match selftest {
-            Ok(true)  => "SELFTEST: T (crypto OK)\r\n",
+            Ok(true) => "SELFTEST: T (crypto OK)\r\n",
             Ok(false) => "SELFTEST: F (wrong result)\r\n",
-            Err(_)    => "SELFTEST: E (verify error)\r\n",
+            Err(_) => "SELFTEST: E (verify error)\r\n",
         };
         bench.write_line(label.as_bytes());
 
@@ -145,7 +150,9 @@ fn main() -> ! {
         iter = iter.wrapping_add(1);
 
         let (result, cycles) = measure_cycles(|| {
-            let Ok(proof) = zkmcu_verifier::parse_proof(&proof_bytes) else { return b'E' };
+            let Ok(proof) = zkmcu_verifier::parse_proof(&proof_bytes) else {
+                return b'E';
+            };
             match zkmcu_verifier::verify(&tv.vk, &proof, &tv.public) {
                 Ok(true) => b'T',
                 Ok(false) => b'F',

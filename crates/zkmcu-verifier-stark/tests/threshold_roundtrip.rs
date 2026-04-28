@@ -13,7 +13,7 @@
     clippy::print_stderr,
     clippy::doc_markdown,
     clippy::indexing_slicing,
-    clippy::missing_panics_doc,
+    clippy::missing_panics_doc
 )]
 
 use winterfell::crypto::hashers::Blake3_256;
@@ -54,7 +54,10 @@ impl Prover for ThresholdProver {
         DefaultConstraintEvaluator<'a, ThresholdAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs { value: self.value, threshold: self.threshold }
+        PublicInputs {
+            value: self.value,
+            threshold: self.threshold,
+        }
     }
 
     fn options(&self) -> &ProofOptions {
@@ -100,9 +103,12 @@ impl Prover for ThresholdProver {
 
 const fn proof_options() -> ProofOptions {
     ProofOptions::new(
-        11, 4, 0,
+        11,
+        4,
+        0,
         FieldExtension::Quartic,
-        4, 7,
+        4,
+        7,
         BatchingMethod::Linear,
         BatchingMethod::Linear,
     )
@@ -111,8 +117,14 @@ const fn proof_options() -> ProofOptions {
 fn prove_and_verify(value: u32, threshold: u32) -> Result<(), winterfell::VerifierError> {
     let pub_inputs = PublicInputs { value, threshold };
     let trace = build_trace(value, threshold);
-    let prover = ThresholdProver { options: proof_options(), value, threshold };
-    let proof = prover.prove(trace).expect("prove must succeed for valid inputs");
+    let prover = ThresholdProver {
+        options: proof_options(),
+        value,
+        threshold,
+    };
+    let proof = prover
+        .prove(trace)
+        .expect("prove must succeed for valid inputs");
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     winterfell::verify::<
         ThresholdAir,
@@ -151,10 +163,17 @@ fn threshold_wrong_public_inputs_rejected() {
     // The boundary assertion remaining[0] = diff is bound to the correct public
     // inputs at prove time; different inputs change diff and break it.
     let trace = build_trace(37, 100);
-    let prover = ThresholdProver { options: proof_options(), value: 37, threshold: 100 };
+    let prover = ThresholdProver {
+        options: proof_options(),
+        value: 37,
+        threshold: 100,
+    };
     let proof = prover.prove(trace).unwrap();
 
-    let wrong = PublicInputs { value: 0, threshold: 100 };
+    let wrong = PublicInputs {
+        value: 0,
+        threshold: 100,
+    };
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     let result = winterfell::verify::<
         ThresholdAir,
@@ -163,7 +182,10 @@ fn threshold_wrong_public_inputs_rejected() {
         MerkleTree<Blake3_256<BaseElement>>,
     >(proof, wrong, &opts);
 
-    assert!(result.is_err(), "wrong public inputs must be rejected, got Ok(())");
+    assert!(
+        result.is_err(),
+        "wrong public inputs must be rejected, got Ok(())"
+    );
 }
 
 // ---- soundness (verifier-side guard) ---------------------------------------
@@ -188,10 +210,25 @@ fn threshold_air_new_rejects_false_claim_directly() {
     // verify(), so the verifier also rejects false claims before FRI runs.
     // Trigger it directly to confirm the guard is in the AIR, not only in
     // build_trace.
-    use winterfell::{Air, ProofOptions, TraceInfo, FieldExtension, BatchingMethod};
-    let options = ProofOptions::new(11, 4, 0, FieldExtension::Quartic, 4, 7,
-        BatchingMethod::Linear, BatchingMethod::Linear);
+    use winterfell::{Air, BatchingMethod, FieldExtension, ProofOptions, TraceInfo};
+    let options = ProofOptions::new(
+        11,
+        4,
+        0,
+        FieldExtension::Quartic,
+        4,
+        7,
+        BatchingMethod::Linear,
+        BatchingMethod::Linear,
+    );
     let info = TraceInfo::new(2, 64);
     // This should panic inside ThresholdAir::new() via checked_sub.
-    let _air = ThresholdAir::new(info, PublicInputs { value: 100, threshold: 37 }, options);
+    let _air = ThresholdAir::new(
+        info,
+        PublicInputs {
+            value: 100,
+            threshold: 37,
+        },
+        options,
+    );
 }

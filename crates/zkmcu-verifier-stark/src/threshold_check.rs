@@ -81,7 +81,10 @@ pub struct PublicInputs {
 
 impl ToElements<BaseElement> for PublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
-        vec![BaseElement::new(self.value), BaseElement::new(self.threshold)]
+        vec![
+            BaseElement::new(self.value),
+            BaseElement::new(self.threshold),
+        ]
     }
 }
 
@@ -101,7 +104,11 @@ impl Air for ThresholdAir {
     type PublicInputs = PublicInputs;
 
     fn new(trace_info: TraceInfo, pub_inputs: PublicInputs, options: ProofOptions) -> Self {
-        assert_eq!(2, trace_info.width(), "ThresholdAir expects a 2-column trace");
+        assert_eq!(
+            2,
+            trace_info.width(),
+            "ThresholdAir expects a 2-column trace"
+        );
         let degrees = vec![
             TransitionConstraintDegree::new(1), // shift constraint (degree 1)
             TransitionConstraintDegree::new(2), // bit constraint   (degree 2)
@@ -112,11 +119,15 @@ impl Air for ThresholdAir {
         // release mode and produce a field element that satisfies remaining[32]=0
         // trivially (all BabyBear elements are < 2^32), so the wrap must be
         // caught here rather than relying on the constraint system.
-        let diff = pub_inputs.threshold
+        let diff = pub_inputs
+            .threshold
             .checked_sub(pub_inputs.value)
             .and_then(|v| v.checked_sub(1))
             .expect("ThresholdAir: value must be strictly less than threshold");
-        Self { context, diff: BaseElement::new(diff) }
+        Self {
+            context,
+            diff: BaseElement::new(diff),
+        }
     }
 
     fn context(&self) -> &AirContext<Self::BaseField> {

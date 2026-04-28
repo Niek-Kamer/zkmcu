@@ -211,7 +211,9 @@ fn main() -> ! {
 
         let (prove_result, prove_cycles) = measure_cycles(|| {
             let trace = build_trace();
-            let prover = FibProver { options: proof_options() };
+            let prover = FibProver {
+                options: proof_options(),
+            };
             prover.prove(trace)
         });
 
@@ -234,9 +236,12 @@ fn main() -> ! {
             let public = recompute_public();
             let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
             let (verify_result, verify_cycles) = measure_cycles(|| {
-                winterfell::verify::<FibAir, Blake3_256<BaseElement>,
+                winterfell::verify::<
+                    FibAir,
+                    Blake3_256<BaseElement>,
                     DefaultRandomCoin<Blake3_256<BaseElement>>,
-                    MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                    MerkleTree<Blake3_256<BaseElement>>,
+                >(p, public, &opts)
             });
 
             let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
@@ -291,7 +296,9 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
 
     let (prove_result, stack_peak, prove_cycles) = measure_stack_peak(|| {
         let trace = build_trace();
-        let prover = FibProver { options: proof_options() };
+        let prover = FibProver {
+            options: proof_options(),
+        };
         prover.prove(trace)
     });
 
@@ -316,9 +323,12 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
         let public = recompute_public();
         let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
         let (verify_result, verify_cycles) = measure_cycles(|| {
-            winterfell::verify::<FibAir, Blake3_256<BaseElement>,
+            winterfell::verify::<
+                FibAir,
+                Blake3_256<BaseElement>,
                 DefaultRandomCoin<Blake3_256<BaseElement>>,
-                MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                MerkleTree<Blake3_256<BaseElement>>,
+            >(p, public, &opts)
         });
         let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
 

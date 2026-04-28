@@ -12,7 +12,7 @@
     clippy::print_stderr,
     clippy::doc_markdown,
     clippy::indexing_slicing,
-    clippy::missing_panics_doc,
+    clippy::missing_panics_doc
 )]
 
 use winterfell::crypto::hashers::Blake3_256;
@@ -28,7 +28,7 @@ use winterfell::{
 
 use zkmcu_babybear::BaseElement;
 use zkmcu_verifier_stark::poseidon_threshold::{
-    build_trace, poseidon_commit, PublicInputs, PoseidonThresholdAir,
+    build_trace, poseidon_commit, PoseidonThresholdAir, PublicInputs,
 };
 
 // ---- local prover ----------------------------------------------------------
@@ -105,9 +105,12 @@ impl Prover for PoseidonThresholdProver {
 const fn proof_options() -> ProofOptions {
     // blowup_factor=8 required for degree-7 Poseidon S-box constraints.
     ProofOptions::new(
-        8, 8, 0,
+        8,
+        8,
+        0,
         FieldExtension::Quartic,
-        4, 7,
+        4,
+        7,
         BatchingMethod::Linear,
         BatchingMethod::Linear,
     )
@@ -119,10 +122,20 @@ fn prove_and_verify(
     threshold: u32,
 ) -> Result<(), winterfell::VerifierError> {
     let commitment = poseidon_commit(value, nonce);
-    let pub_inputs = PublicInputs { commitment, threshold };
+    let pub_inputs = PublicInputs {
+        commitment,
+        threshold,
+    };
     let trace = build_trace(value, nonce, threshold);
-    let prover = PoseidonThresholdProver { options: proof_options(), value, nonce, threshold };
-    let proof = prover.prove(trace).expect("prove must succeed for valid inputs");
+    let prover = PoseidonThresholdProver {
+        options: proof_options(),
+        value,
+        nonce,
+        threshold,
+    };
+    let proof = prover
+        .prove(trace)
+        .expect("prove must succeed for valid inputs");
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     winterfell::verify::<
         PoseidonThresholdAir,
@@ -164,13 +177,20 @@ fn poseidon_threshold_small_diff_verifies() {
 fn poseidon_threshold_wrong_commitment_rejected() {
     // Prove (value=37, nonce=0, threshold=100), then verify with a different commitment.
     let trace = build_trace(37, 0, 100);
-    let prover =
-        PoseidonThresholdProver { options: proof_options(), value: 37, nonce: 0, threshold: 100 };
+    let prover = PoseidonThresholdProver {
+        options: proof_options(),
+        value: 37,
+        nonce: 0,
+        threshold: 100,
+    };
     let proof = prover.prove(trace).unwrap();
 
     // Swap commitment to that of a different value.
     let wrong_commitment = poseidon_commit(0, 0);
-    let wrong = PublicInputs { commitment: wrong_commitment, threshold: 100 };
+    let wrong = PublicInputs {
+        commitment: wrong_commitment,
+        threshold: 100,
+    };
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     let result = winterfell::verify::<
         PoseidonThresholdAir,

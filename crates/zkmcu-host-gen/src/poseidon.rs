@@ -68,7 +68,10 @@ fn build_tree(leaves: &[Fr]) -> Vec<Vec<Fr>> {
         let next = prev
             .chunks(2)
             .map(|pair| {
-                let left = pair.first().copied().expect("chunks(2) gives non-empty slices");
+                let left = pair
+                    .first()
+                    .copied()
+                    .expect("chunks(2) gives non-empty slices");
                 hash(left, pair.get(1).copied().unwrap_or_else(Fr::zero))
             })
             .collect();
@@ -106,11 +109,7 @@ fn merkle_path(levels: &[Vec<Fr>], leaf_idx: usize) -> (Fr, Fr, Vec<Fr>, Vec<boo
 
 // ---- Vector generation --------------------------------------------------
 
-fn generate(
-    out_root: &Path,
-    depth: usize,
-    seed: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn generate(out_root: &Path, depth: usize, seed: u64) -> Result<(), Box<dyn std::error::Error>> {
     let slug = format!("poseidon-depth-{depth}");
     let dir = out_root.join(&slug);
     fs::create_dir_all(&dir)?;

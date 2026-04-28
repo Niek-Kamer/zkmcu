@@ -82,12 +82,12 @@ pub static PICOTOOL_ENTRIES: [hal::binary_info::EntryAddr; 4] = [
 // 128-bit conjectured security at blowup=4 requires 64 queries; blowup=8 requires 43.
 const fn proof_options() -> ProofOptions {
     ProofOptions::new(
-        11,                     // num_queries — ~128-bit conjectured security target
-        4,                      // blowup_factor
-        0,                      // grinding_factor
+        11,                      // num_queries — ~128-bit conjectured security target
+        4,                       // blowup_factor
+        0,                       // grinding_factor
         FieldExtension::Quartic, // quartic extension over 31-bit BabyBear
-        4,                      // fri_folding_factor
-        7,                      // fri_max_remainder_poly_degree
+        4,                       // fri_folding_factor
+        7,                       // fri_max_remainder_poly_degree
         BatchingMethod::Linear,
         BatchingMethod::Linear,
     )
@@ -221,7 +221,9 @@ fn main() -> ! {
 
         let (prove_result, prove_cycles) = measure_cycles(|| {
             let trace = build_trace();
-            let prover = FibProver { options: proof_options() };
+            let prover = FibProver {
+                options: proof_options(),
+            };
             prover.prove(trace)
         });
 
@@ -244,9 +246,12 @@ fn main() -> ! {
             let public = recompute_public();
             let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
             let (verify_result, verify_cycles) = measure_cycles(|| {
-                winterfell::verify::<FibAir, Blake3_256<BaseElement>,
+                winterfell::verify::<
+                    FibAir,
+                    Blake3_256<BaseElement>,
                     DefaultRandomCoin<Blake3_256<BaseElement>>,
-                    MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                    MerkleTree<Blake3_256<BaseElement>>,
+                >(p, public, &opts)
             });
 
             let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
@@ -301,7 +306,9 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
 
     let (prove_result, stack_peak, prove_cycles) = measure_stack_peak(|| {
         let trace = build_trace();
-        let prover = FibProver { options: proof_options() };
+        let prover = FibProver {
+            options: proof_options(),
+        };
         prover.prove(trace)
     });
 
@@ -326,9 +333,12 @@ fn boot_measure<B: UsbBus>(bench: &mut Bench<'_, B>, sys_hz: u64) {
         let public = recompute_public();
         let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
         let (verify_result, verify_cycles) = measure_cycles(|| {
-            winterfell::verify::<FibAir, Blake3_256<BaseElement>,
+            winterfell::verify::<
+                FibAir,
+                Blake3_256<BaseElement>,
                 DefaultRandomCoin<Blake3_256<BaseElement>>,
-                MerkleTree<Blake3_256<BaseElement>>>(p, public, &opts)
+                MerkleTree<Blake3_256<BaseElement>>,
+            >(p, public, &opts)
         });
         let verify_us = verify_cycles.saturating_mul(1_000_000) / sys_hz;
 

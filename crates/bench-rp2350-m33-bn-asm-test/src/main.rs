@@ -67,12 +67,10 @@ fn run_and_report<B: UsbBus>(bench: &mut Bench<'_, B>, iter: u32, sys_hz: u64) {
     let seed_fq = 0x1111_1111_u64.wrapping_mul(u64::from(iter));
     let seed_fr = 0x2222_2222_u64.wrapping_mul(u64::from(iter));
 
-    let (fq_pass, fq_cycles) =
-        measure_cycles(|| substrate_bn::arith::selftest_fq(seed_fq, ITERS));
+    let (fq_pass, fq_cycles) = measure_cycles(|| substrate_bn::arith::selftest_fq(seed_fq, ITERS));
     let fq_us = fq_cycles.saturating_mul(1_000_000) / sys_hz;
 
-    let (fr_pass, fr_cycles) =
-        measure_cycles(|| substrate_bn::arith::selftest_fr(seed_fr, ITERS));
+    let (fr_pass, fr_cycles) = measure_cycles(|| substrate_bn::arith::selftest_fr(seed_fr, ITERS));
     let fr_us = fr_cycles.saturating_mul(1_000_000) / sys_hz;
 
     let mut out: String<192> = String::new();

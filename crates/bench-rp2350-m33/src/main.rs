@@ -276,13 +276,12 @@ fn main() -> ! {
         // Note: miller_loop_batch takes (G2, G1) pairs (reversed from pairing_batch).
         let ml_pairs = [
             (test_vector.proof.b, -test_vector.proof.a),
-            (test_vector.vk.beta,  test_vector.vk.alpha),
+            (test_vector.vk.beta, test_vector.vk.alpha),
             (test_vector.vk.gamma, vk_x_sq),
             (test_vector.vk.delta, test_vector.proof.c),
         ];
-        let (ml, c_miller) = measure_cycles(|| {
-            miller_loop_batch(&ml_pairs).unwrap_or_else(|_| Gt::one())
-        });
+        let (ml, c_miller) =
+            measure_cycles(|| miller_loop_batch(&ml_pairs).unwrap_or_else(|_| Gt::one()));
         core::hint::black_box(&ml);
         bench.print_result(iter, "miller_loop_4pair", c_miller, sys_hz);
 

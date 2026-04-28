@@ -48,8 +48,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
         // Generate proving key and measure serialized size.
         let mut rng = ChaCha20Rng::seed_from_u64(0x00c0_ffee);
-        let (pk, _vk) =
-            Groth16::<Bn254>::circuit_specific_setup(circuit_no_witness, &mut rng)?;
+        let (pk, _vk) = Groth16::<Bn254>::circuit_specific_setup(circuit_no_witness, &mut rng)?;
 
         // Uncompressed = what the prover holds in RAM.
         let mut pk_raw = Vec::new();
@@ -73,8 +72,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // Rough in-SRAM estimate: pk_raw + FFT workspace + witness values.
         // FFT domain = next power of 2 above n_constraints.
         let fft_domain = n_constraints.next_power_of_two();
-        let fft_kb = fft_domain * 32 / 1024;         // one Fr per domain element
-        let witness_kb = n_total * 32 / 1024;         // one Fr per variable
+        let fft_kb = fft_domain * 32 / 1024; // one Fr per domain element
+        let witness_kb = n_total * 32 / 1024; // one Fr per variable
         let est_sram_kb = pk_raw_kb + fft_kb + witness_kb;
         let fits = if est_sram_kb <= 520 { "YES" } else { "NO" };
 

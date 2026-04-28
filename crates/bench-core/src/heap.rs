@@ -75,8 +75,8 @@ macro_rules! define_tracking_heap {
                 // SAFETY: delegated.
                 let ptr = unsafe { self.inner.alloc(layout) };
                 if !ptr.is_null() {
-                    let new = self.current.fetch_add(layout.size(), Ordering::Relaxed)
-                        + layout.size();
+                    let new =
+                        self.current.fetch_add(layout.size(), Ordering::Relaxed) + layout.size();
                     self.peak.fetch_max(new, Ordering::Relaxed);
                 }
                 ptr

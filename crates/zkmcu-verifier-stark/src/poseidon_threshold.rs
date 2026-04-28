@@ -82,7 +82,9 @@ pub const TRACE_LEN: usize = 64;
 
 const fn rc(i: u32) -> u32 {
     const P: u64 = 2_013_265_921; // BabyBear modulus
-    let mut x = (i as u64).wrapping_add(1).wrapping_mul(0x9e37_79b9_7f4a_7c15_u64);
+    let mut x = (i as u64)
+        .wrapping_add(1)
+        .wrapping_mul(0x9e37_79b9_7f4a_7c15_u64);
     x ^= x >> 30;
     x = x.wrapping_mul(0xbf58_476d_1ce4_e5b9_u64);
     x ^= x >> 27;
@@ -139,7 +141,11 @@ impl Air for PoseidonThresholdAir {
     type PublicInputs = PublicInputs;
 
     fn new(trace_info: TraceInfo, pub_inputs: PublicInputs, options: ProofOptions) -> Self {
-        assert_eq!(4, trace_info.width(), "PoseidonThresholdAir expects a 4-column trace");
+        assert_eq!(
+            4,
+            trace_info.width(),
+            "PoseidonThresholdAir expects a 4-column trace"
+        );
         let degrees = vec![
             // Phase 1: s0 carry (s0 constant during bit decomp)
             TransitionConstraintDegree::with_cycles(1, vec![64]),
@@ -185,27 +191,47 @@ impl Air for PoseidonThresholdAir {
         let zero = BaseElement::ZERO;
 
         // phase1_mask: 1 for steps 0-31, 0 for steps 32-63.  period=64
-        let phase1: Vec<BaseElement> =
-            (0..TRACE_LEN).map(|i| if i < ACTIVE_ROWS { one } else { zero }).collect();
+        let phase1: Vec<BaseElement> = (0..TRACE_LEN)
+            .map(|i| if i < ACTIVE_ROWS { one } else { zero })
+            .collect();
 
         // phase2_mask: 1 for steps 32-55, 0 elsewhere.  period=64
         let phase2: Vec<BaseElement> = (0..TRACE_LEN)
-            .map(|i| if (ACTIVE_ROWS..ACTIVE_ROWS + POSEIDON_ROUNDS).contains(&i) { one } else { zero })
+            .map(|i| {
+                if (ACTIVE_ROWS..ACTIVE_ROWS + POSEIDON_ROUNDS).contains(&i) {
+                    one
+                } else {
+                    zero
+                }
+            })
             .collect();
 
         // coupling_mask: 1 at step 0 only.  period=64
-        let coupling: Vec<BaseElement> =
-            (0..TRACE_LEN).map(|i| if i == 0 { one } else { zero }).collect();
+        let coupling: Vec<BaseElement> = (0..TRACE_LEN)
+            .map(|i| if i == 0 { one } else { zero })
+            .collect();
 
         // rc_s0: round constants for s0.  period=32
         // At step i (32 ≤ i ≤ 55): periodic_values = rc_s0[i mod 32] = RC[i-32].0 ✓
         let rc_s0: Vec<BaseElement> = (0..ACTIVE_ROWS)
-            .map(|i| if i < POSEIDON_ROUNDS { BaseElement::new(RC[i].0) } else { zero })
+            .map(|i| {
+                if i < POSEIDON_ROUNDS {
+                    BaseElement::new(RC[i].0)
+                } else {
+                    zero
+                }
+            })
             .collect();
 
         // rc_s1: same structure for s1.  period=32
         let rc_s1: Vec<BaseElement> = (0..ACTIVE_ROWS)
-            .map(|i| if i < POSEIDON_ROUNDS { BaseElement::new(RC[i].1) } else { zero })
+            .map(|i| {
+                if i < POSEIDON_ROUNDS {
+                    BaseElement::new(RC[i].1)
+                } else {
+                    zero
+                }
+            })
             .collect();
 
         vec![phase1, phase2, coupling, rc_s0, rc_s1]
@@ -305,11 +331,7 @@ pub fn poseidon_commit(value: u32, nonce: u32) -> BaseElement {
 /// Panics if `value >= threshold - 1` (diff=0 makes the bit-decomp trace
 /// all-zeros, causing winterfell's degree check to fail).
 #[allow(clippy::panic, clippy::indexing_slicing)]
-pub fn build_trace(
-    value: u32,
-    nonce: u32,
-    threshold: u32,
-) -> winterfell::TraceTable<BaseElement> {
+pub fn build_trace(value: u32, nonce: u32, threshold: u32) -> winterfell::TraceTable<BaseElement> {
     assert!(
         value < threshold.saturating_sub(1),
         "value must be strictly less than threshold"

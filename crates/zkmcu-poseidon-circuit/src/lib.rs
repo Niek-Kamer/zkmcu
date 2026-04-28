@@ -49,9 +49,7 @@ fn sbox<F: PrimeField>(x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
 }
 
 // Poseidon permutation (t=3, placeholder MDS, zero ARK): 243 constraints.
-fn poseidon_perm<F: PrimeField>(
-    mut state: [FpVar<F>; 3],
-) -> Result<[FpVar<F>; 3], SynthesisError> {
+fn poseidon_perm<F: PrimeField>(mut state: [FpVar<F>; 3]) -> Result<[FpVar<F>; 3], SynthesisError> {
     for _ in 0..HALF_ROUNDS {
         state[0] = sbox(&state[0])?;
         state[1] = sbox(&state[1])?;

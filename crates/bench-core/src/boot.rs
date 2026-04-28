@@ -19,9 +19,7 @@ pub const SYS_HZ: u32 = 150_000_000;
 /// Hands back the pair the binary's `main` wants to keep in scope.
 /// Panics on clock-init failure: there is no useful recovery path for
 /// a PLL that won't lock.
-pub fn init_rp2350(
-    mut pac: hal::pac::Peripherals,
-) -> (Timer0, UsbBusAllocator<hal::usb::UsbBus>) {
+pub fn init_rp2350(mut pac: hal::pac::Peripherals) -> (Timer0, UsbBusAllocator<hal::usb::UsbBus>) {
     let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
     let Ok(clocks) = hal::clocks::init_clocks_and_plls(
         XTAL_HZ,
