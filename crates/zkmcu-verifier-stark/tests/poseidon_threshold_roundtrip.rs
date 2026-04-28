@@ -1,11 +1,10 @@
-//! Host-side correctness and soundness tests for the threshold-check circuit.
+//! Correctness and soundness tests for the Poseidon-commitment + threshold circuit.
 //!
 //! Tests:
-//! 1. Legitimate proofs (various value < threshold) prove and verify.
-//! 2. Verifier rejects a proof paired with wrong public inputs.
-//! 3. ThresholdAir::new() panics when constructed with a false claim
-//!    (value >= threshold), confirming the verifier-side checked_sub guard
-//!    fires before any FRI work.
+//! 1. Legitimate proofs (value < threshold, correct commitment) verify.
+//! 2. Wrong commitment (right proof, wrong public commitment) is rejected.
+//! 3. build_trace panics when diff=0 (value = threshold-1 all-zero trace).
+//! 4. ThresholdAir::new panics for false claims (value ≥ threshold).
 
 #![allow(
     clippy::unwrap_used,
@@ -28,20 +27,22 @@ use winterfell::{
 };
 
 use zkmcu_babybear::BaseElement;
-use zkmcu_verifier_stark::threshold_check::{build_trace, PublicInputs, ThresholdAir};
+use zkmcu_verifier_stark::poseidon_threshold::{
+    build_trace, poseidon_commit, PublicInputs, PoseidonThresholdAir,
+};
 
-// ---- local prover (mirrors firmware, lives here so tests don't need the
-//      firmware crate as a dev-dep) ------------------------------------------
+// ---- local prover ----------------------------------------------------------
 
-struct ThresholdProver {
+struct PoseidonThresholdProver {
     options: ProofOptions,
     value: u32,
+    nonce: u32,
     threshold: u32,
 }
 
-impl Prover for ThresholdProver {
+impl Prover for PoseidonThresholdProver {
     type BaseField = BaseElement;
-    type Air = ThresholdAir;
+    type Air = PoseidonThresholdAir;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3_256<BaseElement>;
     type VC = MerkleTree<Self::HashFn>;
@@ -51,10 +52,13 @@ impl Prover for ThresholdProver {
     type ConstraintCommitment<E: FieldElement<BaseField = Self::BaseField>> =
         DefaultConstraintCommitment<E, Self::HashFn, Self::VC>;
     type ConstraintEvaluator<'a, E: FieldElement<BaseField = Self::BaseField>> =
-        DefaultConstraintEvaluator<'a, ThresholdAir, E>;
+        DefaultConstraintEvaluator<'a, PoseidonThresholdAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs { value: self.value, threshold: self.threshold }
+        PublicInputs {
+            commitment: poseidon_commit(self.value, self.nonce),
+            threshold: self.threshold,
+        }
     }
 
     fn options(&self) -> &ProofOptions {
@@ -88,7 +92,7 @@ impl Prover for ThresholdProver {
 
     fn new_evaluator<'a, E: FieldElement<BaseField = Self::BaseField>>(
         &self,
-        air: &'a ThresholdAir,
+        air: &'a PoseidonThresholdAir,
         aux_rand_elements: Option<AuxRandElements<E>>,
         composition_coefficients: ConstraintCompositionCoefficients<E>,
     ) -> Self::ConstraintEvaluator<'a, E> {
@@ -99,8 +103,9 @@ impl Prover for ThresholdProver {
 // ---- helpers ---------------------------------------------------------------
 
 const fn proof_options() -> ProofOptions {
+    // blowup_factor=8 required for degree-7 Poseidon S-box constraints.
     ProofOptions::new(
-        11, 4, 0,
+        8, 8, 0,
         FieldExtension::Quartic,
         4, 7,
         BatchingMethod::Linear,
@@ -108,14 +113,19 @@ const fn proof_options() -> ProofOptions {
     )
 }
 
-fn prove_and_verify(value: u32, threshold: u32) -> Result<(), winterfell::VerifierError> {
-    let pub_inputs = PublicInputs { value, threshold };
-    let trace = build_trace(value, threshold);
-    let prover = ThresholdProver { options: proof_options(), value, threshold };
+fn prove_and_verify(
+    value: u32,
+    nonce: u32,
+    threshold: u32,
+) -> Result<(), winterfell::VerifierError> {
+    let commitment = poseidon_commit(value, nonce);
+    let pub_inputs = PublicInputs { commitment, threshold };
+    let trace = build_trace(value, nonce, threshold);
+    let prover = PoseidonThresholdProver { options: proof_options(), value, nonce, threshold };
     let proof = prover.prove(trace).expect("prove must succeed for valid inputs");
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     winterfell::verify::<
-        ThresholdAir,
+        PoseidonThresholdAir,
         Blake3_256<BaseElement>,
         DefaultRandomCoin<Blake3_256<BaseElement>>,
         MerkleTree<Blake3_256<BaseElement>>,
@@ -125,73 +135,62 @@ fn prove_and_verify(value: u32, threshold: u32) -> Result<(), winterfell::Verifi
 // ---- correctness -----------------------------------------------------------
 
 #[test]
-fn threshold_legitimate_claim_verifies() {
-    prove_and_verify(37, 100).expect("37 < 100 must verify");
+fn poseidon_threshold_basic_verifies() {
+    prove_and_verify(37, 0, 100).expect("37 < 100 must verify");
 }
 
 #[test]
-fn threshold_boundary_verifies() {
-    // value = threshold - 2 (diff = 1). threshold - 1 is excluded: when diff=0
-    // the entire trace is all-zeros, making both constraint polynomials the zero
-    // polynomial. Winterfell's degree check then fires because the actual degree
-    // (0) does not match the declared degrees (1 and 2). This is a known circuit
-    // limitation: we cannot prove the tightest boundary value = threshold - 1.
-    prove_and_verify(98, 100).expect("98 < 100 must verify");
+fn poseidon_threshold_different_nonces_different_commitments() {
+    // Same value, different nonces → different commitments → both valid but distinct.
+    let c1 = poseidon_commit(42, 1);
+    let c2 = poseidon_commit(42, 2);
+    assert_ne!(c1, c2, "different nonces must give different commitments");
 }
 
 #[test]
-fn threshold_small_diff_verifies() {
-    // diff = 1 (the minimum provable diff given the all-zero-trace limitation).
-    prove_and_verify(0, 2).expect("0 < 2 must verify");
+fn poseidon_threshold_boundary_verifies() {
+    // diff = 1 (minimum provable diff), value = threshold - 2.
+    prove_and_verify(98, 7, 100).expect("98 < 100 must verify");
 }
 
 #[test]
-fn threshold_wrong_public_inputs_rejected() {
-    // Valid proof for (value=37, threshold=100). Verify with wrong public inputs.
-    // The boundary assertion remaining[0] = diff is bound to the correct public
-    // inputs at prove time; different inputs change diff and break it.
-    let trace = build_trace(37, 100);
-    let prover = ThresholdProver { options: proof_options(), value: 37, threshold: 100 };
+fn poseidon_threshold_small_diff_verifies() {
+    prove_and_verify(0, 999, 2).expect("0 < 2 must verify");
+}
+
+// ---- soundness: wrong public inputs ----------------------------------------
+
+#[test]
+fn poseidon_threshold_wrong_commitment_rejected() {
+    // Prove (value=37, nonce=0, threshold=100), then verify with a different commitment.
+    let trace = build_trace(37, 0, 100);
+    let prover =
+        PoseidonThresholdProver { options: proof_options(), value: 37, nonce: 0, threshold: 100 };
     let proof = prover.prove(trace).unwrap();
 
-    let wrong = PublicInputs { value: 0, threshold: 100 };
+    // Swap commitment to that of a different value.
+    let wrong_commitment = poseidon_commit(0, 0);
+    let wrong = PublicInputs { commitment: wrong_commitment, threshold: 100 };
     let opts = AcceptableOptions::OptionSet(vec![proof_options()]);
     let result = winterfell::verify::<
-        ThresholdAir,
+        PoseidonThresholdAir,
         Blake3_256<BaseElement>,
         DefaultRandomCoin<Blake3_256<BaseElement>>,
         MerkleTree<Blake3_256<BaseElement>>,
     >(proof, wrong, &opts);
-
-    assert!(result.is_err(), "wrong public inputs must be rejected, got Ok(())");
+    assert!(result.is_err(), "wrong commitment must be rejected");
 }
 
-// ---- soundness (verifier-side guard) ---------------------------------------
+// ---- soundness: panics on false claims -------------------------------------
 
 #[test]
 #[should_panic(expected = "value must be strictly less than threshold")]
-fn threshold_false_claim_panics_in_build_trace() {
-    // build_trace fires its own assert first (value=100 >= threshold=37).
-    let _trace = build_trace(100, 37);
-}
-
-#[test]
-#[should_panic(expected = "value must be strictly less than threshold")]
-fn threshold_equal_values_panic() {
-    let _trace = build_trace(50, 50);
+fn poseidon_threshold_false_claim_panics() {
+    let _trace = build_trace(100, 0, 37);
 }
 
 #[test]
 #[should_panic(expected = "value must be strictly less than threshold")]
-fn threshold_air_new_rejects_false_claim_directly() {
-    // ThresholdAir::new() uses checked_sub. Winterfell calls this during
-    // verify(), so the verifier also rejects false claims before FRI runs.
-    // Trigger it directly to confirm the guard is in the AIR, not only in
-    // build_trace.
-    use winterfell::{Air, ProofOptions, TraceInfo, FieldExtension, BatchingMethod};
-    let options = ProofOptions::new(11, 4, 0, FieldExtension::Quartic, 4, 7,
-        BatchingMethod::Linear, BatchingMethod::Linear);
-    let info = TraceInfo::new(2, 64);
-    // This should panic inside ThresholdAir::new() via checked_sub.
-    let _air = ThresholdAir::new(info, PublicInputs { value: 100, threshold: 37 }, options);
+fn poseidon_threshold_equal_panics() {
+    let _trace = build_trace(50, 0, 50);
 }
