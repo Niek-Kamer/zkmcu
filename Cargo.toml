@@ -28,7 +28,7 @@ members = [
 # tests / profiles / lints don't inherit ours (and ours don't inherit theirs).
 # The `fuzz/` crate is also excluded: cargo-fuzz builds with its own profile
 # + `#![no_main]` and wants a separate target/ tree.
-exclude = ["vendor/bn", "vendor/winterfell", "fuzz"]
+exclude = ["vendor/bn", "vendor/winterfell", "vendor/Plonky3", "vendor/poseidon2", "fuzz"]
 # Default build targets exclude the firmware crates, which need embedded targets.
 # Build them explicitly from inside their crate directories.
 default-members = [

@@ -7,3 +7,9 @@
 [submodule "vendor/winterfell"]
 	path = vendor/winterfell
 	url = https://github.com/Niek-Kamer/winterfell.git
+[submodule "vendor/Plonky3"]
+	path = vendor/Plonky3
+	url = https://github.com/Niek-Kamer/Plonky3
+[submodule "vendor/poseidon2"]
+	path = vendor/poseidon2
+	url = https://github.com/Niek-Kamer/poseidon2
