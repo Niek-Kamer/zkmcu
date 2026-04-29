@@ -1,0 +1,81 @@
+zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof=p3-poseidon2-chain-bb
+
+[boot] vec=p3-poseidon2-chain-bb stack=2456 heap_base=84228 heap_peak=216292 cycles=73844932 us=492299 ms=492 ok=true
+[1] pq_poseidon_chain_verify start
+
+[1] pq_poseidon_chain_verify: cycles=73821762 us=492145 ms=492 ok=true
+[2] pq_poseidon_chain_verify start
+
+[2] pq_poseidon_chain_verify: cycles=73829802 us=492198 ms=492 ok=true
+[3] pq_poseidon_chain_verify start
+
+[3] pq_poseidon_chain_verify: cycles=73818469 us=492123 ms=492 ok=true
+[4] pq_poseidon_chain_verify start
+
+[4] pq_poseidon_chain_verify: cycles=73845449 us=492302 ms=492 ok=true
+[5] pq_poseidon_chain_verify start
+
+[5] pq_poseidon_chain_verify: cycles=73809388 us=492062 ms=492 ok=true
+[6] pq_poseidon_chain_verify start
+
+[6] pq_poseidon_chain_verify: cycles=73830729 us=492204 ms=492 ok=true
+[7] pq_poseidon_chain_verify start
+
+[7] pq_poseidon_chain_verify: cycles=73845308 us=492302 ms=492 ok=true
+[8] pq_poseidon_chain_verify start
+
+[8] pq_poseidon_chain_verify: cycles=73822244 us=492148 ms=492 ok=true
+[9] pq_poseidon_chain_verify start
+
+[9] pq_poseidon_chain_verify: cycles=73845546 us=492303 ms=492 ok=true
+[10] pq_poseidon_chain_verify start
+
+[10] pq_poseidon_chain_verify: cycles=73836764 us=492245 ms=492 ok=true
+[11] pq_poseidon_chain_verify start
+
+[11] pq_poseidon_chain_verify: cycles=73844310 us=492295 ms=492 ok=true
+[12] pq_poseidon_chain_verify start
+
+[12] pq_poseidon_chain_verify: cycles=73842735 us=492284 ms=492 ok=true
+[13] pq_poseidon_chain_verify start
+
+[13] pq_poseidon_chain_verify: cycles=73831436 us=492209 ms=492 ok=true
+[14] pq_poseidon_chain_verify start
+
+[14] pq_poseidon_chain_verify: cycles=73820121 us=492134 ms=492 ok=true
+[15] pq_poseidon_chain_verify start
+
+[15] pq_poseidon_chain_verify: cycles=73840422 us=492269 ms=492 ok=true
+[16] pq_poseidon_chain_verify start
+
+[16] pq_poseidon_chain_verify: cycles=73827070 us=492180 ms=492 ok=true
+[17] pq_poseidon_chain_verify start
+
+[17] pq_poseidon_chain_verify: cycles=73838750 us=492258 ms=492 ok=true
+[18] pq_poseidon_chain_verify start
+
+[18] pq_poseidon_chain_verify: cycles=73834662 us=492231 ms=492 ok=true
+[19] pq_poseidon_chain_verify start
+
+[19] pq_poseidon_chain_verify: cycles=73846925 us=492312 ms=492 ok=true
+[20] pq_poseidon_chain_verify start
+
+[20] pq_poseidon_chain_verify: cycles=73831030 us=492206 ms=492 ok=true
+[21] pq_poseidon_chain_verify start
+
+[21] pq_poseidon_chain_verify: cycles=73838941 us=492259 ms=492 ok=true
+[22] pq_poseidon_chain_verify start
+
+[22] pq_poseidon_chain_verify: cycles=73835869 us=492239 ms=492 ok=true
+[23] pq_poseidon_chain_verify start
+
+[23] pq_poseidon_chain_verify: cycles=73832627 us=492217 ms=492 ok=true
+[24] pq_poseidon_chain_verify start
+
+[24] pq_poseidon_chain_verify: cycles=73828237 us=492188 ms=492 ok=true
+[25] pq_poseidon_chain_verify start
+
+[25] pq_poseidon_chain_verify: cycles=73825128 us=492167 ms=492 ok=true
+[26] pq_poseidon_chain_verify start
+
+[26] pq_poseidon_chain_verify: cycles=73845619 us=492304 ms=492 ok=true
