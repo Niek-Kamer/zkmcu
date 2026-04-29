@@ -65,6 +65,14 @@ build-rv32-stark:
 build-rv32-stark-bb:
     cd crates/bench-rp2350-rv32-stark && cargo build --release --features babybear
 
+# Build the Plonky3 PQ-Poseidon-chain verifier firmware for the Pico 2 W (Cortex-M33, phase 4.0).
+build-m33-pq-poseidon-chain:
+    cd crates/bench-rp2350-m33-pq-poseidon-chain && cargo build --release
+
+# Build the Plonky3 PQ-Poseidon-chain verifier firmware for the Pico 2 W (Hazard3 RV32, phase 4.0).
+build-rv32-pq-poseidon-chain:
+    cd crates/bench-rp2350-rv32-pq-poseidon-chain && cargo build --release
+
 # Run every native test (cross-check: arkworks <-> substrate-bn).
 test:
     cargo test --release
@@ -120,7 +128,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-bn-asm-test lint-m33-timing-oracle lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb
+lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-pq-poseidon-chain lint-m33-bn-asm-test lint-m33-timing-oracle lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb lint-rv32-pq-poseidon-chain
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -167,6 +175,12 @@ lint-rv32-stark-prover:
 lint-rv32-stark-prover-bb:
     cd crates/bench-rp2350-rv32-stark-prover-bb && cargo clippy --release -- -D warnings
 
+lint-m33-pq-poseidon-chain:
+    cd crates/bench-rp2350-m33-pq-poseidon-chain && cargo clippy --release -- -D warnings
+
+lint-rv32-pq-poseidon-chain:
+    cd crates/bench-rp2350-rv32-pq-poseidon-chain && cargo clippy --release -- -D warnings
+
 # Everything that must pass before a commit.
 check: fmt-check lint test
 
@@ -189,12 +203,14 @@ ci-host: fmt-check
 ci-firmware-m33:
     cargo check -p zkmcu-verifier-bls12 --release --target thumbv8m.main-none-eabihf
     cargo check -p zkmcu-verifier-stark --release --target thumbv8m.main-none-eabihf
+    cargo check -p zkmcu-verifier-plonky3 --release --target thumbv8m.main-none-eabihf
     just lint-m33 build-m33
     just lint-m33-bls12 build-m33-bls12
     just lint-m33-stark build-m33-stark
     just lint-m33-stark-bb build-m33-stark-bb
     just lint-m33-stark-prover build-m33-stark-prover
     just lint-m33-stark-prover-bb build-m33-stark-prover-bb
+    just lint-m33-pq-poseidon-chain build-m33-pq-poseidon-chain
     just lint-m33-bn-asm-test build-m33-bn-asm-test
     just lint-m33-timing-oracle build-m33-timing-oracle
 
@@ -202,12 +218,14 @@ ci-firmware-m33:
 ci-firmware-rv32:
     cargo check -p zkmcu-verifier-bls12 --release --target riscv32imac-unknown-none-elf
     cargo check -p zkmcu-verifier-stark --release --target riscv32imac-unknown-none-elf
+    cargo check -p zkmcu-verifier-plonky3 --release --target riscv32imac-unknown-none-elf
     just lint-rv32 build-rv32
     just lint-rv32-bls12 build-rv32-bls12
     just lint-rv32-stark build-rv32-stark
     just lint-rv32-stark-bb build-rv32-stark-bb
     just lint-rv32-stark-prover build-rv32-stark-prover
     just lint-rv32-stark-prover-bb build-rv32-stark-prover-bb
+    just lint-rv32-pq-poseidon-chain build-rv32-pq-poseidon-chain
 
 # CI docs job: compile every Typst document under research/. Gracefully
 # skips with a warning if typst isn't installed locally, so the pre-push

@@ -171,7 +171,24 @@ pub fn parse_proof(bytes: &[u8]) -> Result<Proof, Error> {
     Ok(proof)
 }
 
-/// Verify a parsed proof against the AIR with no public inputs.
+/// Verify a parsed proof against a precomputed `Config` and `Air`.
+///
+/// Variant of [`verify_proof`] that does not allocate a fresh
+/// `StarkConfig` per call. Firmware bench loops should build the
+/// config once at boot (`make_config()` allocates ~ten `Vec`s for
+/// the round constants and FRI parameters) and reuse it across
+/// iterations so the timing window measures actual verify work
+/// rather than setup churn.
+///
+/// # Errors
+///
+/// Returns [`Error::VerificationFailed`] if Plonky3's verifier rejects
+/// the proof.
+pub fn verify_with_config(proof: &Proof, config: &Config, air: &Air) -> Result<(), Error> {
+    verify(config, air, proof, &[]).map_err(|_| Error::VerificationFailed)
+}
+
+/// Verify a parsed proof, building a fresh `Config` and `Air` per call.
 ///
 /// # Errors
 ///
@@ -179,9 +196,7 @@ pub fn parse_proof(bytes: &[u8]) -> Result<Proof, Error> {
 /// the proof (FRI failure, constraint mismatch, OOD evaluation
 /// mismatch, etc.).
 pub fn verify_proof(proof: &Proof) -> Result<(), Error> {
-    let config = make_config();
-    let air = build_air();
-    verify(&config, &air, proof, &[]).map_err(|_| Error::VerificationFailed)
+    verify_with_config(proof, &make_config(), &build_air())
 }
 
 /// Convenience: parse and verify in one call.
