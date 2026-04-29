@@ -29,7 +29,7 @@ static SEMAPHORE_PUBLIC: &[u8] =
 #[global_allocator]
 static HEAP: TrackingTlsf = TrackingTlsf::empty();
 
-const HEAP_SIZE: usize = 256 * 1024;
+const HEAP_SIZE: usize = 384 * 1024;
 static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
 
 #[link_section = ".start_block"]
@@ -72,16 +72,21 @@ fn main() -> ! {
     let mut boot_line: String<128> = String::new();
     let _ = writeln!(
         &mut boot_line,
-        "zkmcu boot: heap=256K sys=150MHz core=cortex-m33 alloc=tlsf proof={VEC_LABEL}\r",
+        "zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf proof={VEC_LABEL}\r",
     );
     bench.write_line(boot_line.as_bytes());
 
     let sys_hz: u64 = u64::from(SYS_HZ);
 
+    fence(&mut bench, "before parse_proof");
     let proof = parse_proof(SEMAPHORE_PROOF).expect("parse pq-semaphore proof");
+    fence(&mut bench, "after parse_proof");
     let public = parse_public_inputs(SEMAPHORE_PUBLIC).expect("parse pq-semaphore public");
+    fence(&mut bench, "after parse_public_inputs");
     let config = make_config();
+    fence(&mut bench, "after make_config");
     let air = build_air();
+    fence(&mut bench, "after build_air");
 
     boot_measure(&mut bench, sys_hz, &proof, &public, &config, &air);
 
@@ -110,6 +115,17 @@ fn main() -> ! {
     }
 }
 
+fn fence<B: UsbBus>(bench: &mut Bench<'_, B>, where_: &str) {
+    let mut out: String<96> = String::new();
+    let _ = writeln!(
+        &mut out,
+        "[fp] {where_} heap_cur={} heap_peak={}\r",
+        HEAP.current(),
+        HEAP.peak(),
+    );
+    bench.write_line(out.as_bytes());
+}
+
 fn boot_measure<B: UsbBus>(
     bench: &mut Bench<'_, B>,
     sys_hz: u64,
@@ -120,6 +136,7 @@ fn boot_measure<B: UsbBus>(
 ) {
     HEAP.reset_peak();
     let heap_before = HEAP.current();
+    fence(bench, "boot_measure entered");
 
     let (verify_ok, stack_peak, cycles) =
         measure_stack_peak(|| verify_with_config(proof, public, config, air));
