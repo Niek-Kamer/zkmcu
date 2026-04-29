@@ -1,0 +1,48 @@
+zkmcu boot: heap=256K sys=150MHz core=hazard3 alloc=tlsf proof=p3-poseidon2-chain-bb
+
+[boot] vec=p3-poseidon2-chain-bb stack=1964 heap_base=84228 heap_peak=216292 cycles=92357158 us=615714 ms=615 ok=true
+[1] pq_poseidon_chain_verify start
+
+[1] pq_poseidon_chain_verify: cycles=92421757 us=616145 ms=616 ok=true
+[2] pq_poseidon_chain_verify start
+
+[2] pq_poseidon_chain_verify: cycles=92414308 us=616095 ms=616 ok=true
+[3] pq_poseidon_chain_verify start
+
+[3] pq_poseidon_chain_verify: cycles=92351800 us=615678 ms=615 ok=true
+[4] pq_poseidon_chain_verify start
+
+[4] pq_poseidon_chain_verify: cycles=92380829 us=615872 ms=615 ok=true
+[5] pq_poseidon_chain_verify start
+
+[5] pq_poseidon_chain_verify: cycles=92385933 us=615906 ms=615 ok=true
+[6] pq_poseidon_chain_verify start
+
+[6] pq_poseidon_chain_verify: cycles=92386138 us=615907 ms=615 ok=true
+[7] pq_poseidon_chain_verify start
+
+[7] pq_poseidon_chain_verify: cycles=92379740 us=615864 ms=615 ok=true
+[8] pq_poseidon_chain_verify start
+
+[8] pq_poseidon_chain_verify: cycles=92383559 us=615890 ms=615 ok=true
+[9] pq_poseidon_chain_verify start
+
+[9] pq_poseidon_chain_verify: cycles=92393525 us=615956 ms=615 ok=true
+[10] pq_poseidon_chain_verify start
+
+[10] pq_poseidon_chain_verify: cycles=92371855 us=615812 ms=615 ok=true
+[11] pq_poseidon_chain_verify start
+
+[11] pq_poseidon_chain_verify: cycles=92367918 us=615786 ms=615 ok=true
+[12] pq_poseidon_chain_verify start
+
+[12] pq_poseidon_chain_verify: cycles=92371477 us=615809 ms=615 ok=true
+[13] pq_poseidon_chain_verify start
+
+[13] pq_poseidon_chain_verify: cycles=92353595 us=615690 ms=615 ok=true
+[14] pq_poseidon_chain_verify start
+
+[14] pq_poseidon_chain_verify: cycles=92370756 us=615805 ms=615 ok=true
+[15] pq_poseidon_chain_verify start
+
+[15] pq_poseidon_chain_verify: cycles=92398723 us=615991 ms=615 ok=true

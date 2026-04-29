@@ -1,0 +1,124 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = ""
+
+[hardware]
+board      = "Raspberry Pi Pico 2 W"
+cpu        = "Hazard3 RV32 @ 150 MHz"
+clock_hz   = 150_000_000
+sram_bytes = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"          = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"          = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"      = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"              = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0"
+"zkmcu-vectors"         = "(committed proof at data/p3-poseidon2-chain-bb/)"
+"bench-core"            = "0.1.0"
+"rp235x-hal"            = "0.4.0"
+
+[footprint]
+text_bytes       = 195_368
+data_bytes       = 0
+bss_bytes        = 524_288         # full RAM bank reserved by linker script
+heap_bytes       = 262_144         # configured static heap (256 KB)
+stack_peak_bytes = 1_964
+heap_peak_bytes  = 216_292
+heap_base_bytes  = 84_228
+
+[circuit]
+name           = "p3-poseidon2-chain-bb"
+description    = "Plonky3 VectorizedPoseidon2Air over BabyBear, 64 audited Poseidon2 permutations (R_F=8, R_P=13, alpha=7, t=16)"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash           = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+trace_rows     = 64
+vector_len     = 1
+trace_cols     = "~200 (VectorizedPoseidon2Air full)"
+blowup_factor  = 2
+num_queries    = 28
+fri_folding    = 4
+proof_bytes    = 90_254
+public_inputs  = 0
+security_bits_conjectured = 95
+
+# ---- Headline result. First Plonky3 STARK verifier path on RP2350 RV32. ----
+
+[bench.pq_poseidon_chain_verify]
+circuit       = "p3-poseidon2-chain-bb, 64 Poseidon2 permutations, 28 queries"
+iterations    = 15
+cycles_min    = 92_351_800
+cycles_max    = 92_421_757
+cycles_median = 92_380_829
+cycles_mean   = 92_382_127
+us_min        = 615_678
+us_max        = 616_145
+us_median     = 615_872
+range_pct     = 0.076
+result        = "ok"
+
+[bench.boot_measure]
+iterations  = 1
+cycles      = 92_357_158
+us          = 615_714
+stack_bytes = 1_964
+heap_peak   = 216_292
+heap_base   = 84_228
+result      = "ok"
+
+# ---- Cross-ISA comparison vs the M33 sibling run ----
+
+[compare.vs_m33]
+m33_run                 = "benchmarks/runs/2026-04-29-m33-pq-poseidon-chain"
+m33_us_median           = 492_224
+m33_cycles_median       = 73_833_644
+rv32_us_median          = 615_872
+rv32_cycles_median      = 92_380_829
+ratio_rv32_over_m33     = 1.2512
+delta_us                = 123_648    # rv32 - m33
+delta_cycles            = 18_547_185
+note                    = "RV32 is 25.1% slower than M33 on this AIR. Diverges from the phase-3.3 BabyBear+Quartic Fibonacci-on-winterfell pattern (1.04x ratio). Most plausible cause: Plonky3's `p3-monty-31` BabyBear arithmetic, which uses native u32 mul/widen on both ISAs; Cortex-M33 has UMAAL (32x32->64 multiply-accumulate) which Plonky3's pure-Rust `mul` shape lets the compiler emit, while RV32 lacks an equivalent fused instruction. The wider trace + Poseidon2 hashing exercises BabyBear arithmetic far more heavily than Fibonacci's two-column trace did, exposing the per-multiply gap. To be confirmed by a like-for-like Fibonacci-on-Plonky3 measurement (phase 4.x)."
+
+# ---- Falsification scorecard against research/reports/2026-04-29-pq-semaphore-scoping.typ.
+
+[scoping_predictions_2026_04_29]
+predicted_verify_ms_low   = 940
+predicted_verify_ms_point = 1250
+predicted_verify_ms_high  = 1880
+measured_verify_ms        = 616
+verdict_verify            = "FALSIFIED LOW: measured ~1.5x faster than the lower bound. Same direction as the M33 measurement, slightly less aggressive (RV32/M33 ratio is higher than predicted). Plonky3 verifier on RV32 also outperforms the winterfell-anchored prediction."
+
+predicted_rv32_over_m33_low  = 0.85
+predicted_rv32_over_m33_high = 1.20
+measured_rv32_over_m33       = 1.2512
+verdict_cross_isa            = "FALSIFIED HIGH: 1.25x measured vs 1.20x predicted upper bound. Falsifies the prediction by ~5 percent. The phase-3.3 BabyBear+Quartic Fibonacci 1.04x ratio does not generalise to wide-trace AIRs with heavy Poseidon2 hashing. Cortex-M33's UMAAL advantage on BabyBear Montgomery multiplication is more visible here than in any prior phase."
+
+predicted_proof_kb_low    = 15
+predicted_proof_kb_high   = 30
+measured_proof_kb         = 88
+verdict_proof_size        = "OUTSIDE PREDICTED RANGE: same 88 KB as M33 (proof bytes are AIR-dependent, not ISA-dependent). Wide trace cause; PQ-Semaphore proper should land back in 15-30 KB."
+
+predicted_total_ram_kb_low  = 80
+predicted_total_ram_kb_high = 140
+measured_heap_peak_kb       = 211
+measured_stack_peak_kb      = 1.9
+verdict_ram                 = "OUTSIDE PREDICTED RANGE (high): same heap profile as M33 (ISA-independent). Stack peak at 1.9 KB, even tighter than M33's 2.4 KB."
+
+predicted_variance_low_pct  = 0.05
+predicted_variance_high_pct = 0.15
+measured_variance_pct       = 0.076
+verdict_variance            = "INSIDE PREDICTED RANGE: 0.076% across 15 iterations. Slightly looser than M33's 0.051% but still well within the predicted band. Consistent with the M33 variance discipline."
+
+# ---- Comparison vs the Groth16/BN254 RV32 baseline this milestone replaces. ----
+
+[compare.vs_groth16_bn254_rv32]
+groth16_us_median       = 1_363_003   # benchmarks/runs/2026-04-24-bench-core-rv32-bn254-groth16
+plonky3_us_median       = 615_872
+verify_speedup          = "2.214x faster (Plonky3 < Groth16 on RV32)"
+note                    = "Plonky3 verifier on this AIR is more than 2x FASTER than the Groth16/BN254 baseline on RV32. The cross-ISA story is even better than on M33 (1.12x speedup): RV32 lacks UMAAL, and BN254 verify is dominated by Fq Montgomery multiplication where M33's UMAAL helps but RV32 falls back to slower 32x32->64 expansion. Plonky3's BabyBear arithmetic uses simpler 32-bit Montgomery (BabyBear is a 31-bit prime, fits in one register), so the per-multiply gap closes substantially. Net: PQ-Semaphore arc on RV32 may end up MORE competitive than on M33 vs the BN254 baseline."
