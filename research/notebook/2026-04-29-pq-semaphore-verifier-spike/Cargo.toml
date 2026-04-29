@@ -1,0 +1,32 @@
+[package]
+name = "spike-pq-semaphore-verifier"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Standalone workspace so the parent's members list + [patch.crates-io]
+# don't interfere with this spike. Scratch / notebook only — not part of
+# the zkmcu workspace.
+[workspace]
+
+[dependencies]
+# Plonky3 verify-side stack via path deps to vendor/Plonky3.
+# Goal: prove this builds for thumbv8m.main-none-eabihf and
+# riscv32imac-unknown-none-elf without enabling any std-only feature.
+p3-uni-stark = { path = "../../../vendor/Plonky3/uni-stark" }
+p3-baby-bear = { path = "../../../vendor/Plonky3/baby-bear" }
+p3-field     = { path = "../../../vendor/Plonky3/field" }
+p3-fri       = { path = "../../../vendor/Plonky3/fri" }
+p3-poseidon2 = { path = "../../../vendor/Plonky3/poseidon2" }
+p3-symmetric = { path = "../../../vendor/Plonky3/symmetric" }
+p3-merkle-tree = { path = "../../../vendor/Plonky3/merkle-tree" }
+p3-commit    = { path = "../../../vendor/Plonky3/commit" }
+p3-challenger = { path = "../../../vendor/Plonky3/challenger" }
+p3-matrix    = { path = "../../../vendor/Plonky3/matrix" }
+p3-air       = { path = "../../../vendor/Plonky3/air" }
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
