@@ -1,0 +1,51 @@
+[package]
+name = "zkmcu-verifier-plonky3"
+version = "0.1.0"
+description = "no_std STARK (Plonky3) verifier for ARM Cortex-M and RISC-V microcontrollers"
+keywords = ["no-std", "stark", "fri", "plonky3", "cryptography"]
+categories = ["cryptography", "embedded", "no-std"]
+readme = "../../README.md"
+homepage = "https://github.com/Niek-Kamer/zkmcu"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Plonky3 verifier side via vendored path deps (vendor/Plonky3/). Sibling
+# crate `zkmcu-poseidon-audit` already imports `p3-baby-bear`,
+# `p3-poseidon2`, etc. via the same path-dep pattern at dev-time. This
+# crate does so at runtime so `verify` is reachable from firmware.
+#
+# § 3.1 of `research/reports/2026-04-29-pq-semaphore-scoping.typ`
+# (resolved by the spike at
+# `research/notebook/2026-04-29-pq-semaphore-verifier-spike.md`)
+# committed to the Plonky3 verifier over winterfell because the audit
+# at `crates/zkmcu-poseidon-audit` validates Plonky3's *exact* field
+# and hash code paths. Path 2 inherits that audit byte-for-byte; path 1
+# (winterfell + ported BabyBear + ported Poseidon2) would have invalidated
+# audit coverage and required a re-audit.
+p3-uni-stark     = { path = "../../vendor/Plonky3/uni-stark" }
+p3-baby-bear     = { path = "../../vendor/Plonky3/baby-bear" }
+p3-poseidon2-air = { path = "../../vendor/Plonky3/poseidon2-air" }
+p3-field         = { path = "../../vendor/Plonky3/field" }
+p3-fri           = { path = "../../vendor/Plonky3/fri" }
+p3-merkle-tree   = { path = "../../vendor/Plonky3/merkle-tree" }
+p3-commit        = { path = "../../vendor/Plonky3/commit" }
+p3-challenger    = { path = "../../vendor/Plonky3/challenger" }
+p3-symmetric     = { path = "../../vendor/Plonky3/symmetric" }
+p3-dft           = { path = "../../vendor/Plonky3/dft" }
+p3-matrix        = { path = "../../vendor/Plonky3/matrix" }
+# Wire format for `Proof<SC>`. Plonky3's `Proof` is `serde::Serialize` /
+# `Deserialize`, postcard is the no_std-compatible binary format Plonky3's
+# own dev-deps use (`vendor/Plonky3/Cargo.toml` line 75).
+postcard         = { version = "1.1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+# `tests/poseidon_chain.rs` drives prove + verify end-to-end. The prove
+# side is host-only and lives behind dev-dep flags. The runtime verifier
+# crate above does not depend on prove.
+rand             = { version = "0.10", default-features = false, features = ["std_rng"] }
