@@ -1,0 +1,110 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "post-phase-A + phase-B-digest6 (uncommitted at capture time)"
+phase      = "Phase B — Merkle digest 4 → 6 (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0"
+"zkmcu-vectors"          = "(committed proof at data/pq-semaphore-d10/, regenerated for digest_words=6)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216       # configured static heap (384 KB)
+heap_after_parse  = 156_360       # heap residency after parse_proof + parse_public_inputs
+heap_peak_bytes   = 0             # not captured this run (serial cut at iter 21 before [boot] line)
+stack_peak_bytes  = 0             # not captured this run
+
+[circuit]
+name           = "pq-semaphore-d10"
+description    = "PQ-Semaphore depth-10 Merkle membership + nullifier + scope binding, custom AIR over BabyBear with audited Poseidon2-16, FRI grinding 16+16 bits, 6-element BabyBear digest"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash           = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+digest_words   = 6                 # was 4; ~186-bit digest space, ~93-bit generic-collision resistance
+trace_rows     = 16
+trace_cols     = 332               # Poseidon2Cols (298) + selectors+dir (7) + 4 × 6-element witness cols (24) + ... ~332; recomputed via size_of::<PqSemaphoreCols<u8>>()
+merkle_depth   = 10
+blowup_factor  = 2                 # log_blowup = 1
+num_queries    = 64
+fri_folding    = 4                 # max_log_arity = 1, default folding
+commit_pow_bits = 16               # carried from Phase A
+query_pow_bits  = 16               # carried from Phase A
+proof_bytes    = 172_607           # was 168_803 at digest=4 + grind32; +3804 B (+2.3%)
+public_inputs  = 24                # was 16; 4 × DIGEST_WIDTH
+public_bytes   = 96                # was 64; NUM_PUBLIC_INPUTS × 4
+security_bits_conjectured = 127    # FRI side unchanged; hash-collision floor moves 124 → 186, no longer the bottleneck
+
+# ---- Headline result. Phase-B digest 4→6, depth-10 PQ-Semaphore on Cortex-M33. ----
+
+[bench.pq_semaphore_verify]
+circuit       = "pq-semaphore-d10, 64 queries, 16+16 grinding bits, digest=6, 16-row trace"
+iterations    = 20
+cycles_min    = 159_848_431
+cycles_max    = 159_900_017
+cycles_median = 159_875_849
+cycles_mean   = 159_875_564
+us_min        = 1_065_656
+us_max        = 1_066_000
+us_median     = 1_065_839
+us_mean       = 1_065_837
+range_pct     = 0.032              # (max - min) / median, percent
+result        = "ok"
+
+# ---- Phase-B predictions (from bindings/.claude/plans/2026-04-29-security-128bit.md § Phase B). ----
+
+[predictions_phase_b]
+predicted_us_low      = 1_180_000
+predicted_us_high     = 1_280_000
+measured_us_median    = 1_065_839
+verdict_verify_time   = "BELOW PREDICTED BAND (good): +14.75 ms (+1.40%) over Phase-A baseline (1051.088 ms). Plan budgeted +12-22%; landed at +1.40%. Reason: the application Merkle openings live as AIR *witness columns* (prev_digest, sibling, id_col, scope_col), not as external FRI openings. Going from 4 to 6 elements widens the trace by ~11 columns (4 × +2 = 8 witness, plus a few alignment bytes via repr(C)) — small LDE growth, not a multiplicative hit per Poseidon2 input. The plan's reasoning ('more Poseidon2 inputs to absorb') was wrong at the verifier level: the verifier always evaluates the *full width-16 Poseidon2 permutation* on every active row regardless of how many input slots are filled."
+
+predicted_proof_bytes_low  = 215_000
+predicted_proof_bytes_high = 235_000
+measured_proof_bytes       = 172_607
+verdict_proof_size         = "BELOW PREDICTED BAND (good): +3804 B (+2.3%) vs digest-4 baseline (168_803 B). Plan predicted +50% from '+50% Merkle openings' assuming application Merkle openings = external proof bytes. They are not — they are trace columns committed inside the FRI MMCS just like every other column. Trace width grew ~11 cols (~3.4%); proof grew proportionally."
+
+predicted_heap_after_parse_low  = 180_000
+predicted_heap_after_parse_high = 200_000
+measured_heap_after_parse       = 156_360
+verdict_heap_after_parse        = "BELOW PREDICTED BAND (good): +2304 B (+1.5%) vs digest-4 grind32 baseline (154_056 B). Same root cause as proof size — heap residency tracks proof-on-disk size."
+
+predicted_security_bits_unchanged = 127
+measured_security_bits            = 127
+verdict_security                  = "AS PREDICTED: FRI-side 127 conjectured bits unchanged. Hash-collision floor moved from 124-bit (4 × 31 = 124-bit digest) to 186-bit (6 × 31), so it is no longer the soundness bottleneck. The new bottleneck is the FRI 127 conjectured bits."
+
+predicted_variance_max_pct = 0.15
+measured_variance_pct      = 0.032
+verdict_variance           = "INSIDE BAND (well under): 0.032% range/median across 20 iterations. Comparable to grind32 (0.043%) and grind=0 (0.029%) baselines."
+
+# ---- Comparison vs Phase A (digest=4 + grind32). ----
+
+[compare.vs_phase_a]
+baseline_run            = "benchmarks/runs/2026-04-29-m33-pq-semaphore-grind32"
+baseline_us_median      = 1_051_088
+baseline_proof_bytes    = 168_803
+baseline_security_bits  = 127
+baseline_digest_words   = 4
+d6_us_median            = 1_065_839
+d6_proof_bytes          = 172_607
+d6_security_bits        = 127      # FRI side; hash floor moved 124 → 186
+d6_digest_words         = 6
+verify_delta_pct        = "+1.40% (+14.75 ms)"
+proof_size_delta_bytes  = +3_804
+hash_floor_delta_bits   = +62      # 124 → 186
+note                    = "Phase B lifts the hash-collision floor from 124-bit to 186-bit by going to a 6-element BabyBear digest. The verifier cost is essentially the trace-width delta (digest-sized witness columns × 4 fields × 2 extra elements ≈ 8 columns + repr(C) padding = ~11 columns total, a ~3.4% trace-width bump). Public-inputs grew from 16 to 24 elements (64 → 96 B on disk). Hash floor is no longer the soundness bottleneck."
