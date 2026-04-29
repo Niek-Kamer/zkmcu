@@ -243,6 +243,7 @@ regen-vectors:
     cargo run -p zkmcu-host-gen --release
     cargo run -p zkmcu-host-gen --release -- poseidon
     cargo run -p zkmcu-host-gen --release -- pq-poseidon-chain
+    cargo run -p zkmcu-host-gen --release -- pq-semaphore
 
 # Phase-1 measurement: constraint counts + proving key sizes for Poseidon Merkle.
 measure-poseidon:

@@ -61,6 +61,7 @@
 extern crate alloc;
 
 pub mod poseidon2_chain;
+pub mod pq_semaphore;
 
 // Re-export the Plonky3 surface downstream consumers need. Anchors the
 // public API to this crate so callers don't need a direct dep on
@@ -71,15 +72,14 @@ pub use p3_uni_stark::{verify, Proof, StarkGenericConfig, VerificationError};
 /// Upper bound on the byte length accepted by the AIR-specific
 /// `parse_proof_<name>` functions added in later phases.
 ///
-/// Predicted PQ-Semaphore proof size is *15 -- 30 KB* per
-/// `research/reports/2026-04-29-pq-semaphore-scoping.typ` § 5; 128 KB
-/// leaves comfortable headroom while capping the attack surface for
-/// adversary-controlled length prefixes inside the serde decoder. Value
-/// matches the equivalent constant in [`zkmcu-verifier-stark`] so the
-/// two STARK verifiers have a uniform input-size policy.
+/// PQ-Semaphore proof size at 64 FRI queries / 16 rows / ~324 cols is
+/// ~ 175 KB; 256 KB leaves comfortable headroom while capping the
+/// attack surface for adversary-controlled length prefixes inside the
+/// serde decoder. The poseidon2-chain anchor AIR (28 queries, 64 rows)
+/// fits in ~ 88 KB, well within this cap.
 ///
 /// [`zkmcu-verifier-stark`]: https://crates.io/crates/zkmcu-verifier-stark
-pub const MAX_PROOF_SIZE: usize = 128 * 1024;
+pub const MAX_PROOF_SIZE: usize = 256 * 1024;
 
 /// Unified error type spanning parse and verify failures.
 ///

@@ -2902,6 +2902,11 @@ dependencies = [
  "ark-std",
  "bls12_381",
  "group",
+ "p3-baby-bear",
+ "p3-field",
+ "p3-matrix",
+ "p3-poseidon2",
+ "p3-poseidon2-air",
  "p3-uni-stark",
  "pairing",
  "rand 0.8.6",
@@ -2970,6 +2975,7 @@ dependencies = [
 name = "zkmcu-verifier-plonky3"
 version = "0.1.0"
 dependencies = [
+ "p3-air",
  "p3-baby-bear",
  "p3-challenger",
  "p3-commit",
@@ -2978,6 +2984,7 @@ dependencies = [
  "p3-fri",
  "p3-matrix",
  "p3-merkle-tree",
+ "p3-poseidon2",
  "p3-poseidon2-air",
  "p3-symmetric",
  "p3-uni-stark",

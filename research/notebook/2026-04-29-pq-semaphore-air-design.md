@@ -410,3 +410,86 @@ Step 8: 0.5 day (results report).
 Total: **~ 4 days** of focused engineering, plus the BOOTSEL session.
 Reasonable to fork steps 1-4 as one chunk (the AIR + host prover) to
 keep iteration noise out of the main thread.
+
+## Design adjustments during implementation
+
+Discovered while building the AIR + witness generator (step 4.1-4.4
+implementation, 2026-04-29). Each item is preserved here as part of
+the audit trail; the original sections above remain unchanged.
+
+1. **A 13th active row is needed for the leaf hash.** The original
+   table above had rows 0-9 for Merkle hops + row 10 for the nullifier
+   + row 11 for scope binding, giving 12 active rows. But the Merkle
+   path's leaf is `H(id || 0^12)`, which itself requires a Poseidon2
+   permutation. To bind the proof to a specific `id` (rather than to
+   an unbound leaf value), `H(id)` must be computed inside the AIR.
+   We added row 0 as the leaf-hash row; the Merkle hops shifted to
+   rows 1-10; nullifier moved to row 11; scope binding to row 12;
+   padding rows 13-15. Total 13 active rows, still 16 total rows
+   after rounding to the next power of two.
+
+2. **Cross-row equality (`id`, `scope`) needs witness columns.**
+   `uni-stark` only supports adjacent-row transition constraints.
+   The leaf hash (row 0), the nullifier (row 11), and the scope
+   binding (row 12) all need to share the same `id` / `scope` values.
+   Solution: per-row witness columns `id_col[0..4]` and
+   `scope_col[0..4]` that hold those values on every row. Constraints:
+   - Constancy via `when_transition`:
+     `id_col[next] == id_col[local]` for each of the 4 elements (and
+     similarly for `scope_col`).
+   - Per-row binding: each active row enforces its `inputs[0..4]` or
+     `inputs[4..8]` equals the corresponding `id_col` / `scope_col`.
+
+   Net: +8 witness columns and ~24 transition / binding constraints.
+
+3. **Sibling and `prev_digest` are witness columns.** The Merkle
+   conditional swap reads `current` and `sibling` from witness; the
+   AIR doesn't synthesise either. We added `prev_digest[0..4]` (the
+   digest squeezed from the previous row) and `sibling[0..4]` as
+   trace columns, totalling 8 more witness columns. Inter-row
+   continuity then enforces `next.prev_digest == local.post[0..4]`
+   conditioned on `next.is_merkle_hop`.
+
+4. **Padding rows are valid zero-input Poseidon2 permutations.** All
+   conditional-swap, continuity, and public-input binding constraints
+   are gated by their corresponding selectors (`is_merkle_hop`,
+   `is_nullifier`, etc.). On padding rows every selector except
+   `is_padding` is zero, so all auxiliary constraints are vacuously
+   satisfied. The audited Poseidon2 round constraints still apply on
+   every row, which is why padding rows must be a valid permutation
+   — we feed them all-zero input.
+
+5. **Final trace shape: 16 rows × 321 columns** (per
+   `trace_width()` at runtime). Decomposition:
+   - 298 Poseidon2 columns (`Poseidon2Cols<F, 16, 7, 1, 4, 13>`).
+   - 7 selectors / direction bits: `is_merkle_hop`, `is_leaf`,
+     `is_nullifier`, `is_scope`, `is_root_check`, `is_padding`,
+     `direction_bit`.
+   - 16 auxiliary digest columns: `prev_digest[0..4]`,
+     `sibling[0..4]`, `id_col[0..4]`, `scope_col[0..4]`.
+
+6. **`max_constraint_degree()` returns `None`.** A hint of
+   `SBOX_DEGREE = 7` was rejected by Plonky3's symbolic constraint
+   walker — the actual max constraint degree pencils out higher once
+   selector multiplications stack on top of the round-7 S-box
+   constraint shape. Returning `None` lets Plonky3 compute the actual
+   degree symbolically. This pushes verifier work up slightly (more
+   quotient chunks) but the alternative (a tight hand-derived bound)
+   risks soundness issues if the bound is wrong.
+
+7. **64-query FRI proof size: ~ 169 KB.** The original size estimate
+   in the prediction table (30-50 KB) was based on the 4-row digest
+   reduction; with 64 queries (95-bit security), 16 rows, 320 columns,
+   and `log_blowup = 1`, the actual postcard-encoded proof is ~ 169 KB.
+   `MAX_PROOF_SIZE` was bumped from 128 KB to 256 KB to fit. This
+   does not affect the on-MCU verifier's heap usage materially; the
+   size delta is dominated by Merkle authentication paths in the FRI
+   proof rather than committed trace data.
+
+8. **Module-local clippy allows.** The implementation uses the
+   audited Plonky3 `Poseidon2Cols` shape, which clippy can't see
+   through (const-generic round counters etc.). We allow
+   `indexing_slicing`, `needless_range_loop`, and a handful of
+   doc-style lints at the module level. Plonky3 itself silences
+   these workspace-wide; we scope the allow tightly so the rest of
+   the verifier crate keeps the strict workspace policy.
