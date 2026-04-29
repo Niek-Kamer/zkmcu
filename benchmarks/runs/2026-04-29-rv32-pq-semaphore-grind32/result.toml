@@ -1,0 +1,106 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "post-95bit-headline + phase-A-grinding (uncommitted at capture time)"
+phase      = "Phase A — grinding to 128-bit conjectured (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Hazard3 RV32IMAC @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0"
+"zkmcu-vectors"          = "(committed proof at data/pq-semaphore-d10/, regenerated for grind32)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216       # configured static heap (384 KB)
+heap_after_parse  = 154_056       # heap residency after parse_proof + parse_public_inputs
+heap_peak_bytes   = 298_324       # captured in this run via [boot] line
+stack_peak_bytes  = 2_524         # captured in this run via [boot] line
+
+[circuit]
+name           = "pq-semaphore-d10"
+description    = "PQ-Semaphore depth-10 Merkle membership + nullifier + scope binding, custom AIR over BabyBear with audited Poseidon2-16, FRI grinding 16+16 bits"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash           = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+digest_words   = 4                 # 4-element BabyBear digest, ~124-bit collision
+trace_rows     = 16
+trace_cols     = 321               # Poseidon2Cols + cross-row id/scope columns
+merkle_depth   = 10
+blowup_factor  = 2                 # log_blowup = 1
+num_queries    = 64
+fri_folding    = 4                 # max_log_arity = 1, default folding
+commit_pow_bits = 16               # Phase A: was 0
+query_pow_bits  = 16               # Phase A: was 0
+proof_bytes    = 168_803           # was 168_970 at grind=0
+public_inputs  = 16
+public_bytes   = 64
+security_bits_conjectured = 127    # 95 + 32 (grinding)
+
+# ---- Headline result. Phase-A grinding, depth-10 PQ-Semaphore on Hazard3 RV32. ----
+
+[bench.pq_semaphore_verify]
+circuit       = "pq-semaphore-d10, 64 queries, 16+16 grinding bits, 16-row trace"
+iterations    = 19
+cycles_min    = 188_372_804
+cycles_max    = 188_447_657
+cycles_median = 188_397_168
+cycles_mean   = 188_401_737
+us_min        = 1_255_818
+us_max        = 1_256_317
+us_median     = 1_255_981
+us_mean       = 1_256_011
+range_pct     = 0.040              # (max - min) / median, percent
+result        = "ok"
+
+# ---- Phase-A predictions (from bindings/.claude/plans/2026-04-29-security-128bit.md § Phase A). ----
+
+[predictions_phase_a]
+predicted_us_low      = 1_250_000
+predicted_us_high     = 1_262_000
+measured_us_median    = 1_255_981
+verdict_verify_time   = "INSIDE PREDICTED BAND: +6.39 ms (+0.51%) over the grind=0 baseline of 1249.59 ms. The plan budgeted +0–12 ms; landed mid-band. The slowdown is slightly larger than the M33 fraction (+0.13%) — Hazard3 lacks UMAAL so the extra Poseidon2 hash per FRI commit costs proportionally more here, exactly the cross-ISA pattern from phase 3.3."
+
+predicted_security_bits_delta = 32
+measured_security_bits        = 127
+verdict_security              = "AS PREDICTED: 95 + 32 = 127 conjectured bits."
+
+predicted_variance_max_pct = 0.10
+measured_variance_pct      = 0.040
+verdict_variance           = "INSIDE BAND: 0.040% range/median across 19 iterations. Tighter than the 0.055% grind=0 baseline; the regenerated vector with grinded queries appears to land in a slightly more cache-stable code path. Tightest RV32 PQ-Semaphore variance to date."
+
+# ---- Comparison vs the Phase 4.0 PQ-Semaphore headline (grind=0). ----
+
+[compare.vs_grind0_baseline]
+baseline_run            = "benchmarks/runs/2026-04-29-rv32-pq-semaphore"
+baseline_us_median      = 1_249_587
+baseline_proof_bytes    = 168_970
+baseline_security_bits  = 95
+grind32_us_median       = 1_255_981
+grind32_proof_bytes     = 168_803
+grind32_security_bits   = 127
+verify_delta_pct        = "+0.51% (+6.39 ms)"
+proof_size_delta_bytes  = -167
+security_delta_bits     = +32
+note                    = "Same +0–8 / +0–12 ms band as M33, RV32 lands ~4x higher in the band consistent with RV32's ~1.19x cross-ISA factor. +0.51% verifier cost for +32 conjectured bits is still firmly in 'free' territory."
+
+# ---- Cross-ISA: M33 vs RV32 with grinding. ----
+
+[compare.cross_isa_grind32]
+m33_us_median     = 1_051_088    # benchmarks/runs/2026-04-29-m33-pq-semaphore-grind32
+rv32_us_median    = 1_255_981
+rv32_over_m33     = 1.195        # was 1.190 at grind=0; grinding tax slightly heavier on RV32
+note              = "Cross-ISA ratio held within +0.005x of the grind=0 baseline. Grinding does not meaningfully shift the cross-ISA story."

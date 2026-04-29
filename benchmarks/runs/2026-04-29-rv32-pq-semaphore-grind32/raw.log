@@ -1,0 +1,67 @@
+zkmcu boot: heap=384K sys=150MHz core=hazard3 alloc=tlsf proof=pq-semaphore-d10
+
+[fp] before parse_proof heap_cur=0 heap_peak=0
+
+[fp] after parse_proof heap_cur=154056 heap_peak=154072
+
+[fp] a[fp] boot_measure entered heap_cur=156948 heap_peak=156948
+
+[boot] vec=pq-semaphore-d10 stack=2524 heap_base=156948 heap_peak=298324 cycles=188384441 us=1255896 ms=1255 ok=true
+[1] pq_semaphore_verify start
+
+[1] pq_semaphore_verify: cycles=188402703 us=1256018 ms=1256 ok=true
+[2] pq_semaphore_verify start
+
+[2] pq_semaphore_verify: cycles=188397168 us=1255981 ms=1255 ok=true
+[3] pq_semaphore_verify start
+
+[3] pq_semaphore_verify: cycles=188417133 us=1256114 ms=1256 ok=true
+[4] pq_semaphore_verify start
+
+[4] pq_semaphore_verify: cycles=188420639 us=1256137 ms=1256 ok=true
+[5] pq_semaphore_verify start
+
+[5] pq_semaphore_verify: cycles=188403760 us=1256025 ms=1256 ok=true
+[6] pq_semaphore_verify start
+
+[6] pq_semaphore_verify: cycles=188387961 us=1255919 ms=1255 ok=true
+[7] pq_semaphore_verify start
+
+[7] pq_semaphore_verify: cycles=188395712 us=1255971 ms=1255 ok=true
+[8] pq_semaphore_verify start
+
+[8] pq_semaphore_verify: cycles=188447657 us=1256317 ms=1256 ok=true
+[9] pq_semaphore_verify start
+
+[9] pq_semaphore_verify: cycles=188382399 us=1255882 ms=1255 ok=true
+[10] pq_semaphore_verify start
+
+[10] pq_semaphore_verify: cycles=188439319 us=1256262 ms=1256 ok=true
+[11] pq_semaphore_verify start
+
+[11] pq_semaphore_verify: cycles=188431293 us=1256208 ms=1256 ok=true
+[12] pq_semaphore_verify start
+
+[12] pq_semaphore_verify: cycles=188377202 us=1255848 ms=1255 ok=true
+[13] pq_semaphore_verify start
+
+[13] pq_semaphore_verify: cycles=188408463 us=1256056 ms=1256 ok=true
+[14] pq_semaphore_verify start
+
+[14] pq_semaphore_verify: cycles=188403556 us=1256023 ms=1256 ok=true
+[15] pq_semaphore_verify start
+
+[15] pq_semaphore_verify: cycles=188391642 us=1255944 ms=1255 ok=true
+[16] pq_semaphore_verify start
+
+[16] pq_semaphore_verify: cycles=188376791 us=1255845 ms=1255 ok=true
+[17] pq_semaphore_verify start
+
+[17] pq_semaphore_verify: cycles=188382132 us=1255880 ms=1255 ok=true
+[18] pq_semaphore_verify start
+
+[18] pq_semaphore_verify: cycles=188372804 us=1255818 ms=1255 ok=true
+[19] pq_semaphore_verify start
+
+[19] pq_semaphore_verify: cycles=188394670 us=1255964 ms=1255 ok=true
+[20] pq_semaphore_verify start
