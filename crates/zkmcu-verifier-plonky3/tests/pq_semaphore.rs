@@ -27,7 +27,9 @@ use zkmcu_verifier_plonky3::MAX_PROOF_SIZE;
 
 type Val = BabyBear;
 
-fn seed_to_digest(seed: &[u8; 32]) -> [Val; DIGEST_WIDTH] {
+const SEED_BYTES: usize = DIGEST_WIDTH * 8;
+
+fn seed_to_digest(seed: &[u8; SEED_BYTES]) -> [Val; DIGEST_WIDTH] {
     const BABYBEAR_PRIME: u64 = 0x7800_0001;
     let mut out = [Val::ZERO; DIGEST_WIDTH];
     for (i, slot) in out.iter_mut().enumerate() {
@@ -39,13 +41,32 @@ fn seed_to_digest(seed: &[u8; 32]) -> [Val; DIGEST_WIDTH] {
     out
 }
 
+const fn make_seed(prefix: &[u8]) -> [u8; SEED_BYTES] {
+    let mut out = [b'!'; SEED_BYTES];
+    let len = if prefix.len() < SEED_BYTES {
+        prefix.len()
+    } else {
+        SEED_BYTES
+    };
+    let mut i = 0;
+    while i < len {
+        out[i] = prefix[i];
+        i += 1;
+    }
+    out
+}
+
+// Distinct in-test seeds so a regression in the committed-vector
+// path doesn't silently mask a regression here, and vice versa.
+const RT_ID: [u8; SEED_BYTES] = make_seed(b"test-pq-semaphore-roundtrip-id-d6");
+const RT_SCOPE: [u8; SEED_BYTES] = make_seed(b"test-pq-semaphore-roundtrip-sc-d6");
+const RT_SIGNAL: [u8; SEED_BYTES] = make_seed(b"test-pq-semaphore-rt-message-d6");
+
 #[test]
 fn pq_semaphore_roundtrip() {
-    // Distinct in-test seeds so a regression in the committed-vector
-    // path doesn't silently mask a regression here, and vice versa.
-    let id = seed_to_digest(b"test-pq-semaphore-roundtrip-id!!");
-    let scope = seed_to_digest(b"test-pq-semaphore-roundtrip-sc!!");
-    let signal = seed_to_digest(b"test-pq-semaphore-rt-message!!!1");
+    let id = seed_to_digest(&RT_ID);
+    let scope = seed_to_digest(&RT_SCOPE);
+    let signal = seed_to_digest(&RT_SIGNAL);
 
     let witness = build_witness(id, scope, signal);
     let public = pack_public_inputs(&witness);

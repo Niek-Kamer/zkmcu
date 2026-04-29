@@ -6,19 +6,19 @@
 //!
 //! ## Witness construction
 //!
-//! Deterministic seeds:
-//! - `id` derived from `b"zkmcu-pq-semaphore-v0-id-seed!!!"`
-//! - `scope` derived from `b"zkmcu-pq-semaphore-v0-scope-seed"`
-//! - `message` derived from `b"zkmcu-pq-sem-v0-message-payload!"`
+//! Deterministic seeds, each `DIGEST_WIDTH * 8 = 48` bytes wide:
+//! - `id` derived from `b"zkmcu-pq-semaphore-v0-id-seed-d6!!!!!!!!!!!!!!!!"`
+//! - `scope` derived from `b"zkmcu-pq-semaphore-v0-scope-seed-d6!!!!!!!!!!!"`
+//! - `message` derived from `b"zkmcu-pq-sem-v0-message-payload-d6!!!!!!!!!!!!"`
 //!
-//! Each 32-byte seed is squeezed into 4 `BabyBear` elements via
-//! splitmix-style chunking, giving 4 elements ≈ 124-bit witness space.
-//! `signal_hash` is `message` directly (we treat the message as already
-//! pre-hashed for v0; downstream callers can swap in a real hasher if
-//! needed). Merkle tree: depth 10, 1024 leaves. Leaf 0 is `H(id || 0^12)`,
-//! leaves 1..1024 are `H(i || 0^12)` for `i = 1..1023`. The prover claims
-//! membership of leaf 0; the path is trivially "all left" (direction
-//! bits all zero) and siblings are computed bottom-up.
+//! Each 48-byte seed is squeezed into 6 `BabyBear` elements via
+//! splitmix-style chunking. `signal_hash` is `message` directly (we
+//! treat the message as already pre-hashed for v0; downstream callers
+//! can swap in a real hasher if needed). Merkle tree: depth 10, 1024
+//! leaves. Leaf 0 is `H(id || 0^10)`, leaves 1..1024 are
+//! `H(i || 0^10)` for `i = 1..1023`. The prover claims membership of
+//! leaf 0; the path is trivially "all left" (direction bits all zero)
+//! and siblings are computed bottom-up.
 //!
 //! ## Determinism
 //!
@@ -46,8 +46,13 @@ use zkmcu_verifier_plonky3::MAX_PROOF_SIZE;
 
 type Val = BabyBear;
 
-/// Squeeze a 32-byte seed into 4 canonical `BabyBear` elements.
-fn seed_to_digest(seed: &[u8; 32]) -> [Val; DIGEST_WIDTH] {
+/// Length in bytes required to derive `DIGEST_WIDTH` `BabyBear` elements
+/// (8 bytes per element, splitmix-style).
+const SEED_BYTES: usize = DIGEST_WIDTH * 8;
+
+/// Squeeze an 8 × `DIGEST_WIDTH`-byte seed into `DIGEST_WIDTH` canonical
+/// `BabyBear` elements.
+fn seed_to_digest(seed: &[u8; SEED_BYTES]) -> [Val; DIGEST_WIDTH] {
     const BABYBEAR_PRIME: u64 = 0x7800_0001;
     let mut out = [Val::ZERO; DIGEST_WIDTH];
     for (i, slot) in out.iter_mut().enumerate() {
@@ -59,17 +64,34 @@ fn seed_to_digest(seed: &[u8; 32]) -> [Val; DIGEST_WIDTH] {
     out
 }
 
+/// Pad a prefix string into a `[u8; SEED_BYTES]` with `!` filler so the
+/// committed seed identity is human-readable without hand-counting bytes.
+const fn make_seed(prefix: &[u8]) -> [u8; SEED_BYTES] {
+    let mut out = [b'!'; SEED_BYTES];
+    let len = if prefix.len() < SEED_BYTES {
+        prefix.len()
+    } else {
+        SEED_BYTES
+    };
+    let mut i = 0;
+    while i < len {
+        out[i] = prefix[i];
+        i += 1;
+    }
+    out
+}
+
+const ID_SEED: [u8; SEED_BYTES] = make_seed(b"zkmcu-pq-semaphore-v0-id-seed-d6");
+const SCOPE_SEED: [u8; SEED_BYTES] = make_seed(b"zkmcu-pq-semaphore-v0-scope-seed-d6");
+const MESSAGE_SEED: [u8; SEED_BYTES] = make_seed(b"zkmcu-pq-sem-v0-message-payload-d6");
+
 pub fn run(out_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let dir = out_root.join("pq-semaphore-d10");
     fs::create_dir_all(&dir)?;
 
-    let id_seed: [u8; 32] = *b"zkmcu-pq-semaphore-v0-id-seed!!!";
-    let scope_seed: [u8; 32] = *b"zkmcu-pq-semaphore-v0-scope-seed";
-    let message_seed: [u8; 32] = *b"zkmcu-pq-sem-v0-message-payload!";
-
-    let id = seed_to_digest(&id_seed);
-    let scope = seed_to_digest(&scope_seed);
-    let signal_hash = seed_to_digest(&message_seed);
+    let id = seed_to_digest(&ID_SEED);
+    let scope = seed_to_digest(&SCOPE_SEED);
+    let signal_hash = seed_to_digest(&MESSAGE_SEED);
 
     let witness = build_witness(id, scope, signal_hash);
     let public = pack_public_inputs(&witness);

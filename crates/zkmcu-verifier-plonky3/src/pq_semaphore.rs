@@ -14,23 +14,23 @@
 //! ## Trace layout (16 rows total, 13 active)
 //!
 //! ```text
-//! row  0 : leaf hash       H(id || 0^12)             — leaf = post[0..4]
+//! row  0 : leaf hash       H(id || 0^10)             — leaf = post[0..6]
 //! row  1 : Merkle hop  0   H(left || right)          — depth-0 -> depth-1
 //! row  2 : Merkle hop  1   ...
 //! ...
-//! row 10 : Merkle hop  9   final hop, post[0..4] == merkle_root
-//! row 11 : Nullifier       H(id || scope)            — post[0..4] == nullifier
-//! row 12 : Scope binding   H(scope || message)       — post[0..4] == scope_hash
+//! row 10 : Merkle hop  9   final hop, post[0..6] == merkle_root
+//! row 11 : Nullifier       H(id || scope)            — post[0..6] == nullifier
+//! row 12 : Scope binding   H(scope || message)       — post[0..6] == scope_hash
 //! row 13-15 : padding (valid zero-input Poseidon2 permutations)
 //! ```
 //!
-//! ## Public input layout (`16` `BabyBear` elements, 64 bytes on disk)
+//! ## Public input layout (`24` `BabyBear` elements, 96 bytes on disk)
 //!
 //! ```text
-//! public[ 0.. 4] = merkle_root[0..4]
-//! public[ 4.. 8] = nullifier[0..4]
-//! public[ 8..12] = signal_hash[0..4]
-//! public[12..16] = scope_hash[0..4]
+//! public[ 0.. 6] = merkle_root[0..6]
+//! public[ 6..12] = nullifier[0..6]
+//! public[12..18] = signal_hash[0..6]
+//! public[18..24] = scope_hash[0..6]
 //! ```
 //!
 //! ## Design adjustments during implementation
@@ -69,12 +69,12 @@
 //!    selectors so padding rows pass vacuously while still satisfying
 //!    the audited Poseidon2 constraint surface.
 //!
-//! 5. **Final column count: ~324 columns** =
-//!    298 (Poseidon2) + 6 (selectors / direction bit) + 4 (prev_digest)
-//!    + 4 (sibling) + 4 (id_col) + 4 (scope_col) +
-//!    a couple of bookkeeping columns. The `width()` impl returns
-//!    `num_cols::<...>() + AUX_COLS` where `AUX_COLS` is computed below
-//!    so the column count is single-source-of-truth.
+//! 5. **Final column count: ~332 columns** =
+//!    298 (Poseidon2) + 7 (selectors / direction bit) + 6 (prev_digest)
+//!    + 6 (sibling) + 6 (id_col) + 6 (scope_col). The `width()` impl
+//!    returns `size_of::<PqSemaphoreCols<u8>>()` so the column count is
+//!    single-source-of-truth and rescales automatically with
+//!    [`DIGEST_WIDTH`].
 //!
 //! ## Lints
 //!
@@ -133,8 +133,15 @@ use crate::Error;
 
 /// State width — width-16 Poseidon2 instance (audit-locked).
 pub const WIDTH: usize = 16;
-/// Capacity zeros: state slots `[8..16]` are always zero on input.
-pub const CAPACITY_START: usize = 8;
+/// Capacity zeros: state slots `[CAPACITY_START..WIDTH]` are always zero
+/// on input. Equals `2 * DIGEST_WIDTH` because every active row absorbs
+/// at most two digest-sized chunks (e.g. `H(left || right)`); the
+/// remaining slots are zero. With digest=6 and width=16 this leaves
+/// 4 slots of zero-padding. This is *not* sponge capacity in the
+/// absorption sense — every active row is a single fixed-input
+/// permutation, not a multi-block sponge — so the audited
+/// Poseidon2-BabyBear-16 round constants remain valid.
+pub const CAPACITY_START: usize = 2 * DIGEST_WIDTH;
 /// Half external rounds (`R_F / 2 = 4`).
 pub const HALF_FULL_ROUNDS: usize = BABYBEAR_POSEIDON2_HALF_FULL_ROUNDS;
 /// Partial rounds (`R_P = 13`).
@@ -148,12 +155,15 @@ pub const SBOX_REGISTERS: usize = 1;
 pub const TREE_DEPTH: usize = 10;
 /// Total trace rows (next power of two ≥ 13 active rows).
 pub const NUM_TRACE_ROWS: usize = 16;
-/// Number of public BabyBear elements.
-pub const NUM_PUBLIC_INPUTS: usize = 16;
-/// Public-inputs wire size = 16 × 4 bytes.
+/// Number of public BabyBear elements (4 digest-sized fields:
+/// merkle_root, nullifier, signal_hash, scope_hash).
+pub const NUM_PUBLIC_INPUTS: usize = 4 * DIGEST_WIDTH;
+/// Public-inputs wire size = `NUM_PUBLIC_INPUTS` × 4 bytes.
 pub const PUBLIC_INPUTS_BYTES: usize = NUM_PUBLIC_INPUTS * 4;
-/// Digest length (4 `BabyBear` elements ≈ 124-bit collision resistance).
-pub const DIGEST_WIDTH: usize = 4;
+/// Digest length (6 `BabyBear` elements = 186-bit digest space, ~93-bit
+/// generic-collision resistance — removes the hash-collision floor as the
+/// soundness bottleneck for the 128-bit-class target).
+pub const DIGEST_WIDTH: usize = 6;
 
 /// Row index of the leaf hash row.
 pub const ROW_LEAF: usize = 0;
@@ -403,17 +413,18 @@ impl<AB: AirBuilder<F = Val>> Air<AB> for PqSemaphoreAir {
             .assert_zero(local.is_root_check.into() * (AB::Expr::ONE - local.is_merkle_hop.into()));
 
         // 4. Capacity zeros on active rows (leaf / merkle / nullifier / scope).
-        //    On Merkle rows the conditional swap fills inputs[0..8]; the
-        //    remaining capacity is always zero. On nullifier / scope rows
-        //    we use inputs[0..4] = id/scope, [4..8] = scope/signal_hash,
-        //    [8..16] = 0. On the leaf row we use inputs[0..4] = id,
-        //    [4..16] = 0.
+        //    On Merkle rows the conditional swap fills inputs[0..2*DIGEST_WIDTH];
+        //    the remaining capacity is always zero. On nullifier / scope rows
+        //    we use inputs[0..DIGEST_WIDTH] = id/scope,
+        //    [DIGEST_WIDTH..2*DIGEST_WIDTH] = scope/signal_hash,
+        //    [2*DIGEST_WIDTH..WIDTH] = 0. On the leaf row we use
+        //    inputs[0..DIGEST_WIDTH] = id, the rest = 0.
         let active = AB::Expr::ONE - local.is_padding.into();
         for j in CAPACITY_START..WIDTH {
             builder.assert_zero(active.dup() * local.poseidon2.inputs[j].into());
         }
 
-        // 5. Leaf row: inputs[0..4] == id_col[0..4], inputs[4..8] == 0.
+        // 5. Leaf row: inputs[0..DIGEST_WIDTH] == id_col, inputs[DIGEST_WIDTH..2*DIGEST_WIDTH] == 0.
         for j in 0..DIGEST_WIDTH {
             builder.assert_zero(
                 local.is_leaf.into() * (local.poseidon2.inputs[j].into() - local.id_col[j].into()),
@@ -423,9 +434,9 @@ impl<AB: AirBuilder<F = Val>> Air<AB> for PqSemaphoreAir {
             );
         }
 
-        // 6. Merkle hop conditional swap. For j in 0..4:
-        //    inputs[j]   = prev_digest[j] * (1 - dir) + sibling[j] * dir
-        //    inputs[j+4] = prev_digest[j] * dir       + sibling[j] * (1 - dir)
+        // 6. Merkle hop conditional swap. For j in 0..DIGEST_WIDTH:
+        //    inputs[j]               = prev_digest[j] * (1 - dir) + sibling[j] * dir
+        //    inputs[j+DIGEST_WIDTH]  = prev_digest[j] * dir       + sibling[j] * (1 - dir)
         let dir = local.direction_bit.into();
         let one_minus_dir = AB::Expr::ONE - dir.dup();
         for j in 0..DIGEST_WIDTH {
@@ -442,7 +453,8 @@ impl<AB: AirBuilder<F = Val>> Air<AB> for PqSemaphoreAir {
             );
         }
 
-        // 7. Nullifier row: inputs[0..4] = id, inputs[4..8] = scope.
+        // 7. Nullifier row: inputs[0..DIGEST_WIDTH] = id,
+        //    inputs[DIGEST_WIDTH..2*DIGEST_WIDTH] = scope.
         for j in 0..DIGEST_WIDTH {
             builder.assert_zero(
                 local.is_nullifier.into()
@@ -454,35 +466,36 @@ impl<AB: AirBuilder<F = Val>> Air<AB> for PqSemaphoreAir {
             );
         }
 
-        // 8. Scope-binding row: inputs[0..4] = scope, inputs[4..8] = signal_hash.
+        // 8. Scope-binding row: inputs[0..DIGEST_WIDTH] = scope,
+        //    inputs[DIGEST_WIDTH..2*DIGEST_WIDTH] = signal_hash.
         for j in 0..DIGEST_WIDTH {
             builder.assert_zero(
                 local.is_scope.into()
                     * (local.poseidon2.inputs[j].into() - local.scope_col[j].into()),
             );
-            // signal_hash binds to public[8..12].
-            let signal = public[8 + j].into();
+            // signal_hash occupies public[2*DIGEST_WIDTH..3*DIGEST_WIDTH].
+            let signal = public[2 * DIGEST_WIDTH + j].into();
             builder.assert_zero(
                 local.is_scope.into() * (local.poseidon2.inputs[j + DIGEST_WIDTH].into() - signal),
             );
         }
 
-        // 9. Public-input bindings on output (post[0..4] of the final
-        //    full round) for each of the four "binding" rows.
+        // 9. Public-input bindings on output (post[0..DIGEST_WIDTH] of the
+        //    final full round) for each of the four "binding" rows.
         let final_full = HALF_FULL_ROUNDS - 1;
         for j in 0..DIGEST_WIDTH {
             let post = local.poseidon2.ending_full_rounds[final_full].post[j].into();
 
-            // Merkle root: bind on the row where is_root_check == 1.
+            // Merkle root: public[0..DIGEST_WIDTH], bound on is_root_check row.
             let root = public[j].into();
             builder.assert_zero(local.is_root_check.into() * (post.dup() - root));
 
-            // Nullifier: bind on is_nullifier row.
-            let nullifier = public[4 + j].into();
+            // Nullifier: public[DIGEST_WIDTH..2*DIGEST_WIDTH], bound on is_nullifier row.
+            let nullifier = public[DIGEST_WIDTH + j].into();
             builder.assert_zero(local.is_nullifier.into() * (post.dup() - nullifier));
 
-            // Scope hash: bind on is_scope row.
-            let scope_hash = public[12 + j].into();
+            // Scope hash: public[3*DIGEST_WIDTH..4*DIGEST_WIDTH], bound on is_scope row.
+            let scope_hash = public[3 * DIGEST_WIDTH + j].into();
             builder.assert_zero(local.is_scope.into() * (post - scope_hash));
         }
 
@@ -677,7 +690,7 @@ pub struct PqSemaphoreWitness {
     pub path_digests: [[Val; DIGEST_WIDTH]; TREE_DEPTH],
 }
 
-/// Hash `(input || 0^12)` for a Merkle leaf.
+/// Hash `(input || 0^(WIDTH - DIGEST_WIDTH))` for a Merkle leaf.
 #[must_use]
 pub fn hash_leaf(input: [Val; DIGEST_WIDTH]) -> [Val; DIGEST_WIDTH] {
     let mut state = [Val::ZERO; WIDTH];
@@ -766,14 +779,15 @@ pub fn build_witness(
     }
 }
 
-/// Pack a witness into the 16-element public-input array.
+/// Pack a witness into the `NUM_PUBLIC_INPUTS`-element public-input array.
 #[must_use]
 pub fn pack_public_inputs(witness: &PqSemaphoreWitness) -> [Val; NUM_PUBLIC_INPUTS] {
     let mut out = [Val::ZERO; NUM_PUBLIC_INPUTS];
-    out[0..4].copy_from_slice(&witness.merkle_root);
-    out[4..8].copy_from_slice(&witness.nullifier);
-    out[8..12].copy_from_slice(&witness.signal_hash);
-    out[12..16].copy_from_slice(&witness.scope_hash);
+    let d = DIGEST_WIDTH;
+    out[0..d].copy_from_slice(&witness.merkle_root);
+    out[d..2 * d].copy_from_slice(&witness.nullifier);
+    out[2 * d..3 * d].copy_from_slice(&witness.signal_hash);
+    out[3 * d..4 * d].copy_from_slice(&witness.scope_hash);
     out
 }
 
