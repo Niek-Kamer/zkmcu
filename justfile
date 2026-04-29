@@ -348,6 +348,8 @@ docs:
                                                          {{out}}/2026-04-26-stark-prover-bb-results.pdf
     typst compile --root . research/reports/2026-04-29-pq-semaphore-scoping.typ \
                                                          {{out}}/2026-04-29-pq-semaphore-scoping.pdf
+    typst compile --root . research/reports/2026-04-29-pq-semaphore-results.typ \
+                                                         {{out}}/2026-04-29-pq-semaphore-results.pdf
 
 # Rebuild a single doc on change. `just docs-watch research/reports/…`.
 docs-watch path:
