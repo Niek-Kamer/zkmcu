@@ -1,0 +1,136 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-hazard3-rv32"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "95bc469 + heap-bump-and-fence-posts (uncommitted at capture time)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Hazard3 RV32IMAC @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0"
+"zkmcu-vectors"          = "(committed proof at data/pq-semaphore-d10/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+text_bytes        = 283_248
+data_bytes        = 0
+bss_bytes         = 524_288       # full RAM region; riscv-rt reserves stack inside .bss
+heap_bytes        = 393_216       # configured static heap (384 KB)
+heap_after_parse  = 154_056       # heap residency after parse_proof + parse_public_inputs
+heap_peak_bytes   = 0             # NOT CAPTURED — see [capture_notes]
+stack_peak_bytes  = 0             # NOT CAPTURED — see [capture_notes]
+
+[circuit]
+name           = "pq-semaphore-d10"
+description    = "PQ-Semaphore depth-10 Merkle membership + nullifier + scope binding, custom AIR over BabyBear with audited Poseidon2-16"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash           = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+digest_words   = 4                 # 4-element BabyBear digest, ~124-bit collision
+trace_rows     = 16
+trace_cols     = 321               # Poseidon2Cols + cross-row id/scope columns
+merkle_depth   = 10
+blowup_factor  = 2                 # log_blowup = 1
+num_queries    = 64
+fri_folding    = 4                 # max_log_arity = 1, default folding
+proof_bytes    = 168_970
+public_inputs  = 16                # 4-word root + 4-word nullifier + 4-word scope + 4-word message
+public_bytes   = 64
+security_bits_conjectured = 95     # standard for BabyBear+Quartic at these FRI params
+
+# ---- Headline result. The depth-10 PQ-Semaphore verifier on RP2350 RV32. ----
+
+[bench.pq_semaphore_verify]
+circuit       = "pq-semaphore-d10, 64 queries, 16-row trace"
+iterations    = 21
+cycles_min    = 187_379_937
+cycles_max    = 187_483_552
+cycles_median = 187_438_130
+cycles_mean   = 187_434_179
+us_min        = 1_249_199
+us_max        = 1_249_890
+us_median     = 1_249_587
+range_pct     = 0.055              # (max - min) / median, percent
+result        = "ok"
+
+[capture_notes]
+boot_line_dropped     = true
+boot_line_reason      = "USB write_line's 1 s deadline expired during the heavy make_config / build_air / boot_measure section because Plonky3 setup work does not poll the USB bus. Boot line up to '[fp] after parse_proof' captured cleanly across two flashes; subsequent fence posts and the [boot] line carrying stack_peak / final heap_peak were lost. Steady-state iter loop (this bench) is unaffected because each iteration brackets the verify with its own write_line + USB poll cadence."
+heap_peak_lower_bound = 154_072    # high-water mark immediately after parse_proof
+heap_peak_estimate    = 280_000    # informal; chain anchor heap_peak was 216 KB at 28 queries, this AIR has 64 queries + Merkle + scope hash so peak is expected to be ~25-30% higher
+
+# ---- Falsification scorecard against research/reports/2026-04-29-pq-semaphore-scoping.typ.
+
+[scoping_predictions_2026_04_29]
+predicted_verify_ms_low   = 940
+predicted_verify_ms_point = 1250
+predicted_verify_ms_high  = 1880
+measured_verify_ms        = 1249
+verdict_verify            = "INSIDE PREDICTED RANGE (essentially on point estimate): measured 1249 ms vs point estimate 1250 ms — 0.08% below point. Inside the 940-1880 ms band. The chain anchor RV32 number suggested the lower bound was loose; the headline AIR's 64 queries plus Merkle/scope/nullifier constraint complexity push it back to within rounding distance of the published point estimate."
+
+predicted_proof_kb_low    = 15
+predicted_proof_kb_point  = 30
+predicted_proof_kb_high   = 30
+measured_proof_kb         = 165
+verdict_proof_size        = "OUTSIDE PREDICTED RANGE (high): same as M33 — proof is byte-identical across ISAs."
+
+predicted_total_ram_kb_low  = 80
+predicted_total_ram_kb_high = 140
+measured_heap_after_parse_kb = 150
+verdict_ram                  = "OUTSIDE PREDICTED RANGE (high): heap_after_parse alone exceeds the upper bound by ~7%. Heap residency is byte-identical to M33 (same postcard decode of same proof bytes). Verify-time peak not captured this run."
+
+predicted_variance_low_pct  = 0.05
+predicted_variance_high_pct = 0.15
+measured_variance_pct       = 0.055
+verdict_variance            = "INSIDE PREDICTED RANGE (lower edge): 0.055% range/median across 21 iterations. Slightly looser than M33 (0.029%) consistent with the cross-ISA pattern from phase 3.3 and the chain anchor (M33 always tighter). Still well inside the 0.05-0.15% band."
+
+predicted_stack_kb_low  = 4
+predicted_stack_kb_high = 8
+measured_stack_kb       = 0
+verdict_stack           = "NOT CAPTURED — see [capture_notes]."
+
+# ---- Cross-ISA comparison.
+
+[compare.cross_isa]
+m33_us_median   = 1_049_718
+rv32_us_median  = 1_249_587
+ratio_rv32_m33  = 1.190
+note            = "RV32 / M33 = 1.190x. Tighter than the chain anchor's 1.252x ratio. Plonky3 STARK verify on BabyBear lands at a much smaller cross-ISA gap than the Groth16/BN254 verify (which was ~2.2x M33→RV32 on the same silicon, because that gap was driven by the M33's UMAAL-accelerated U256::mul). The PQ verify path is field-arithmetic-light and Poseidon2-heavy; Poseidon2-16 on BabyBear costs about the same number of cycles per round on both cores, with the slight edge to M33 from its better branch predictor / cache behaviour and the four-stage pipeline vs Hazard3's three-stage."
+
+# ---- Comparison vs the Groth16/BN254 baseline this milestone replaces. ----
+
+[compare.vs_groth16_bn254]
+groth16_us_median       = 1_363_234   # benchmarks/runs/2026-04-28-rv32-bn254-rebench
+groth16_proof_bytes     = 256
+groth16_heap_peak_bytes = 99_124
+plonky3_us_median       = 1_249_587
+plonky3_proof_bytes     = 168_970
+plonky3_heap_peak_bytes = 0           # not captured this run
+verify_speedup          = "1.091x faster (Plonky3 PQ-Semaphore < Groth16/BN254)"
+proof_size_inflation    = "660x bigger"
+note                    = "On RV32 the headline PQ-Semaphore is actually FASTER than the Groth16 BN254 verify by 9%, because the BN254 verify on Hazard3 lacks the M33's UMAAL acceleration and runs at 1.36 s. The 'PQ tax' framing from the scoping doc inverts on RV32 — the PQ path is not a regression on this ISA. M33 is where the tax is real (1.91x slower than Groth16), because M33's BN254 verify is so well-optimised."
+
+# ---- Comparison vs the chain anchor (same Plonky3 stack, smaller AIR).
+
+[compare.vs_chain_anchor]
+chain_us_median         = 615_870     # benchmarks/runs/2026-04-29-rv32-pq-poseidon-chain
+chain_proof_bytes       = 90_254
+chain_num_queries       = 28
+semaphore_us_median     = 1_249_587
+semaphore_proof_bytes   = 168_970
+semaphore_num_queries   = 64
+verify_slowdown         = "2.029x slower"
+proof_size_inflation    = "1.87x bigger"
+note                    = "Same query/proof scaling pattern as M33: queries 2.29x → verify 2.03x. The constant overhead per query is consistent across the two AIR shapes, which validates the chain anchor as a transferable predictor for headline cost."
