@@ -166,7 +166,10 @@ pub const ROW_NULLIFIER: usize = 11;
 /// Scope-binding row.
 pub const ROW_SCOPE: usize = 12;
 
-type Val = BabyBear;
+/// Base field type alias. `Val = BabyBear`. Public because
+/// `parse_public_inputs` returns `[Val; NUM_PUBLIC_INPUTS]`, so any
+/// caller naming that return type needs the alias.
+pub type Val = BabyBear;
 type Challenge = BinomialExtensionField<Val, 4>;
 type Perm = Poseidon2BabyBear<16>;
 type FieldHash = PaddingFreeSponge<Perm, 16, 8, 8>;
