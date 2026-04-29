@@ -58,3 +58,16 @@ fn parse_proof_rejects_trailing_bytes() {
     bytes.push(0xff);
     assert!(parse_proof(&bytes).is_err());
 }
+
+/// Load the committed proof bytes from `crates/zkmcu-vectors/data/` and
+/// verify them through the public API. This is the third independent
+/// verification of the same bytes — the host generator self-verifies
+/// before writing, this test re-verifies on load, the firmware will
+/// re-verify on-MCU. Any committed `proof.bin` that fails this test is
+/// a regen-vectors regression that must not land.
+#[test]
+fn committed_vector_verifies() {
+    static COMMITTED_PROOF: &[u8] =
+        include_bytes!("../../zkmcu-vectors/data/p3-poseidon2-chain-bb/proof.bin");
+    parse_and_verify(COMMITTED_PROOF).expect("committed vector verifies");
+}

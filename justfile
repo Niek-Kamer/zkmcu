@@ -224,6 +224,7 @@ ci-all: ci-host ci-firmware-m33 ci-firmware-rv32 ci-docs
 regen-vectors:
     cargo run -p zkmcu-host-gen --release
     cargo run -p zkmcu-host-gen --release -- poseidon
+    cargo run -p zkmcu-host-gen --release -- pq-poseidon-chain
 
 # Phase-1 measurement: constraint counts + proving key sizes for Poseidon Merkle.
 measure-poseidon:

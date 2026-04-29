@@ -21,6 +21,7 @@ pub(crate) mod bn254;
 mod circuits;
 mod measure_poseidon;
 mod poseidon;
+mod pq_poseidon_chain;
 mod semaphore;
 mod stark;
 mod stark_babybear;
@@ -89,7 +90,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || has_arg("umaal_kat")
         || has_arg("poseidon")
         || has_arg("measure-poseidon")
-        || has_arg("measure_poseidon");
+        || has_arg("measure_poseidon")
+        || has_arg("pq-poseidon-chain")
+        || has_arg("pq_poseidon_chain");
 
     if !any_explicit || has_arg("bn254") {
         bn254::run(&out_root)?;
@@ -116,6 +119,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if has_arg("measure-poseidon") || has_arg("measure_poseidon") {
         measure_poseidon::run()?;
+    }
+    if has_arg("pq-poseidon-chain") || has_arg("pq_poseidon_chain") {
+        pq_poseidon_chain::run(&out_root)?;
     }
 
     Ok(())

@@ -2877,6 +2877,7 @@ dependencies = [
  "ark-std",
  "bls12_381",
  "group",
+ "p3-uni-stark",
  "pairing",
  "rand 0.8.6",
  "rand_chacha 0.3.1",
@@ -2886,6 +2887,7 @@ dependencies = [
  "winterfell",
  "zkmcu-babybear",
  "zkmcu-poseidon-circuit",
+ "zkmcu-verifier-plonky3",
  "zkmcu-verifier-stark",
 ]
 

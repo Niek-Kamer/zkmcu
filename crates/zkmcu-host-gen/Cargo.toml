@@ -57,3 +57,10 @@ serde_json = "1.0"
 winterfell = { workspace = true, features = ["std"] }
 zkmcu-babybear = { path = "../zkmcu-babybear" }
 zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }
+
+# Plonky3 host-side prover for the PQ-Semaphore arc. The `pq-poseidon-chain`
+# subcommand uses this crate's audited `make_config` / `build_air` /
+# `encode_proof` so verifier and prover share a single source of truth on
+# field, hash, FRI parameters, and round constants.
+zkmcu-verifier-plonky3 = { path = "../zkmcu-verifier-plonky3" }
+p3-uni-stark = { path = "../../vendor/Plonky3/uni-stark" }
