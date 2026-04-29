@@ -1,0 +1,103 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "post-95bit-headline + phase-A-grinding (uncommitted at capture time)"
+phase      = "Phase A — grinding to 128-bit conjectured (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0"
+"zkmcu-vectors"          = "(committed proof at data/pq-semaphore-d10/, regenerated for grind32)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216       # configured static heap (384 KB)
+heap_after_parse  = 154_056       # heap residency after parse_proof + parse_public_inputs
+heap_peak_bytes   = 298_324       # captured in this run via [boot] line
+stack_peak_bytes  = 2_844         # captured in this run via [boot] line
+
+[circuit]
+name           = "pq-semaphore-d10"
+description    = "PQ-Semaphore depth-10 Merkle membership + nullifier + scope binding, custom AIR over BabyBear with audited Poseidon2-16, FRI grinding 16+16 bits"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash           = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+digest_words   = 4                 # 4-element BabyBear digest, ~124-bit collision
+trace_rows     = 16
+trace_cols     = 321               # Poseidon2Cols + cross-row id/scope columns
+merkle_depth   = 10
+blowup_factor  = 2                 # log_blowup = 1
+num_queries    = 64
+fri_folding    = 4                 # max_log_arity = 1, default folding
+commit_pow_bits = 16               # Phase A: was 0
+query_pow_bits  = 16               # Phase A: was 0
+proof_bytes    = 168_803           # was 168_970 at grind=0; query-set shift made postcard varint encoding shorter
+public_inputs  = 16
+public_bytes   = 64
+security_bits_conjectured = 127    # 95 (BabyBear+Quartic 64 queries log_blowup=1) + 32 (grinding) = 127
+
+# ---- Headline result. Phase-A grinding, depth-10 PQ-Semaphore on Cortex-M33. ----
+
+[bench.pq_semaphore_verify]
+circuit       = "pq-semaphore-d10, 64 queries, 16+16 grinding bits, 16-row trace"
+iterations    = 23
+cycles_min    = 157_630_854
+cycles_max    = 157_698_362
+cycles_median = 157_663_285
+cycles_mean   = 157_664_228
+us_min        = 1_050_872
+us_max        = 1_051_322
+us_median     = 1_051_088
+us_mean       = 1_051_094
+range_pct     = 0.043              # (max - min) / median, percent
+result        = "ok"
+
+# ---- Phase-A predictions (from bindings/.claude/plans/2026-04-29-security-128bit.md § Phase A). ----
+
+[predictions_phase_a]
+predicted_us_low      = 1_050_000
+predicted_us_high     = 1_058_000
+measured_us_median    = 1_051_088
+verdict_verify_time   = "INSIDE PREDICTED BAND (low end): +1.37 ms (+0.13%) over the grind=0 baseline of 1049.72 ms. The plan budgeted +0–8 ms; landed at the bottom of the band, consistent with grinding adding only one extra hash + compare per FRI commit phase."
+
+predicted_proof_bytes_low  = 168_970
+predicted_proof_bytes_high = 169_050
+measured_proof_bytes       = 168_803
+verdict_proof_size         = "OUTSIDE BAND (slightly low): -167 bytes vs the grind=0 baseline. Plan expected only nonce overhead (< 100 B added). The grinded transcript samples a different query set, and those Merkle openings happened to encode in fewer postcard varint bytes overall — net effect dominates the small nonce additions. No correctness concern."
+
+predicted_security_bits_delta = 32
+measured_security_bits        = 127
+verdict_security              = "AS PREDICTED: 95 + 32 = 127 conjectured bits."
+
+predicted_variance_max_pct = 0.10
+measured_variance_pct      = 0.043
+verdict_variance           = "INSIDE BAND: 0.043% range/median across 23 iterations. Slightly higher than the 0.029% grind=0 baseline — grinding adds one PoW witness per phase whose verify time depends on nonce-sized arithmetic, marginal noise."
+
+# ---- Comparison vs the Phase 4.0 PQ-Semaphore headline (grind=0). ----
+
+[compare.vs_grind0_baseline]
+baseline_run            = "benchmarks/runs/2026-04-29-m33-pq-semaphore"
+baseline_us_median      = 1_049_718
+baseline_proof_bytes    = 168_970
+baseline_security_bits  = 95
+grind32_us_median       = 1_051_088
+grind32_proof_bytes     = 168_803
+grind32_security_bits   = 127
+verify_delta_pct        = "+0.13% (+1.37 ms)"
+proof_size_delta_bytes  = -167
+security_delta_bits     = +32
+note                    = "Grinding 16+16 bits is essentially free at the verifier: the prover does ~2^32 hashes once, the verifier does one extra hash per FRI commit phase. ~1.4 ms / 1050 ms = 0.13% slowdown for +32 conjectured bits is the headline yield-per-line."
