@@ -1,0 +1,129 @@
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf proof=pq-semaphore-d10 mode=reject patterns=7 iters=16
+
+[pattern] honest_verify start
+
+[honest_verify 1] cycles=169612576 us=1130750 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 2] cycles=169608029 us=1130720 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 3] cycles=169579067 us=1130527 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 4] cycles=169590401 us=1130602 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 5] cycles=169565474 us=1130436 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 6] cycles=169600382 us=1130669 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 7] cycles=169597430 us=1130649 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 8] cycles=169630616 us=1130870 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 9] cycles=169576920 us=1130512 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 10] cycles=169544171 us=1130294 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 11] cycles=169602092 us=1130680 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 12] cycles=169575140 us=1130500 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 13] cycles=169584297 us=1130561 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 14] cycles=169623176 us=1130821 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 15] cycles=169576520 us=1130510 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[honest_verify 16] cycles=169577662 us=1130517 ms=1130 heap_base=0 heap_peak=329079 ok=true
+[pattern] reject_M0_header_byte start
+
+[reject_M0_header_byte 1] cycles=1282886 us=8552 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 2] cycles=1278453 us=8523 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 3] cycles=1280231 us=8534 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 4] cycles=1280352 us=8535 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 5] cycles=1278006 us=8520 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 6] cycles=1278473 us=8523 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 7] cycles=1278889 us=8525 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 8] cycles=1279271 us=8528 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 9] cycles=1278271 us=8521 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 10] cycles=1278811 us=8525 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 11] cycles=1279682 us=8531 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 12] cycles=1281254 us=8541 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 13] cycles=1275653 us=8504 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 14] cycles=1279617 us=8530 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 15] cycles=1279549 us=8530 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[reject_M0_header_byte 16] cycles=1279609 us=8530 ms=8 heap_base=0 heap_peak=172703 ok=true_rejected
+[pattern] reject_M1_trace_commit_digest start
+
+[reject_M1_trace_commit_digest 1] cycles=1287650 us=8584 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 2] cycles=1285931 us=8572 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 3] cycles=1286915 us=8579 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 4] cycles=1286562 us=8577 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 5] cycles=1287668 us=8584 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 6] cycles=1289145 us=8594 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 7] cycles=1285712 us=8571 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 8] cycles=1287568 us=8583 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 9] cycles=1287663 us=8584 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 10] cycles=1284945 us=8566 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 11] cycles=1288480 us=8589 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 12] cycles=1286851 us=8579 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 13] cycles=1287632 us=8584 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 14] cycles=1286936 us=8579 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 15] cycles=1285574 us=8570 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[reject_M1_trace_commit_digest 16] cycles=1285184 us=8567 ms=8 heap_base=0 heap_peak=172767 ok=true_rejected
+[pattern] reject_M2_mid_fri start
+
+[reject_M2_mid_fri 1] cycles=1971073 us=13140 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 2] cycles=1971471 us=13143 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 3] cycles=1971157 us=13141 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 4] cycles=1969383 us=13129 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 5] cycles=1969694 us=13131 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 6] cycles=1969717 us=13131 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 7] cycles=1969282 us=13128 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 8] cycles=1970624 us=13137 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 9] cycles=1971011 us=13140 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 10] cycles=1972277 us=13148 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 11] cycles=1972066 us=13147 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 12] cycles=1969101 us=13127 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 13] cycles=1970165 us=13134 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 14] cycles=1971502 us=13143 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 15] cycles=1970628 us=13137 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[reject_M2_mid_fri 16] cycles=1970846 us=13138 ms=13 heap_base=0 heap_peak=183311 ok=true_rejected
+[pattern] reject_M3_query_opening start
+
+[reject_M3_query_opening 1] cycles=6616975 us=44113 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 2] cycles=6616114 us=44107 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 3] cycles=6616198 us=44107 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 4] cycles=6613425 us=44089 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 5] cycles=6617722 us=44118 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 6] cycles=6613334 us=44088 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 7] cycles=6616787 us=44111 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 8] cycles=6618003 us=44120 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 9] cycles=6615009 us=44100 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 10] cycles=6619247 us=44128 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 11] cycles=6617011 us=44113 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 12] cycles=6614942 us=44099 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 13] cycles=6616123 us=44107 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 14] cycles=6615142 us=44100 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 15] cycles=6613845 us=44092 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[reject_M3_query_opening 16] cycles=6614466 us=44096 ms=44 heap_base=0 heap_peak=329127 ok=true_rejected
+[pattern] reject_M4_final_layer start
+
+[reject_M4_final_layer 1] cycles=6613053 us=44087 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 2] cycles=6613649 us=44090 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 3] cycles=6613536 us=44090 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 4] cycles=6613391 us=44089 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 5] cycles=6614011 us=44093 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 6] cycles=6611085 us=44073 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 7] cycles=6612663 us=44084 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 8] cycles=6615358 us=44102 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 9] cycles=6612299 us=44081 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 10] cycles=6613635 us=44090 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 11] cycles=6612812 us=44085 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 12] cycles=6613187 us=44087 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 13] cycles=6614933 us=44099 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 14] cycles=6615324 us=44102 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 15] cycles=6615120 us=44100 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M4_final_layer 16] cycles=6611957 us=44079 ms=44 heap_base=0 heap_peak=329079 ok=true_rejected
+[pattern] reject_M5_public_byte start
+
+[reject_M5_public_byte 1] cycles=19031784 us=126878 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 2] cycles=19029073 us=126860 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 3] cycles=19021737 us=126811 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 4] cycles=19027609 us=126850 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 5] cycles=19031810 us=126878 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 6] cycles=19036170 us=126907 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 7] cycles=19024209 us=126828 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 8] cycles=19031883 us=126879 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 9] cycles=19025488 us=126836 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 10] cycles=19030148 us=126867 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 11] cycles=19031558 us=126877 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 12] cycles=19032353 us=126882 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 13] cycles=19035122 us=126900 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 14] cycles=19032329 us=126882 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 15] cycles=19026352 us=126842 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[reject_M5_public_byte 16] cycles=19027615 us=126850 ms=126 heap_base=0 heap_peak=329079 ok=true_rejected
+[done] all patterns complete

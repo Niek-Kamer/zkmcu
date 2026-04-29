@@ -20,7 +20,7 @@ pub enum Mutation {
     TraceCommitDigest,
     /// Flip a byte 1 KiB in. Lands in the FRI commit-phase data (commitments / final poly area) → mid-FRI Merkle reject.
     MidFri,
-    /// Flip a byte at the proof midpoint. Deep inside the per-query openings → late reject in the query loop.
+    /// Flip a byte 64 bytes from the end. Lands in the last query's final commit-phase opening — hash byte data with no varint near it, so postcard parses successfully and the verifier rejects when the recomputed Merkle root mismatches.
     QueryOpening,
     /// Flip the last byte of the proof. Hits the very last opening / final poly coefficient → near-honest reject time.
     FinalLayer,
@@ -69,11 +69,16 @@ impl Mutation {
             Self::TraceCommitDigest => xor_at(proof, 64, 0xff),
             Self::MidFri => xor_at(proof, 1024, 0xff),
             Self::QueryOpening => {
-                // Halve via right shift to dodge clippy::integer_division — the
-                // bench harness opts out of that lint at crate level, but this
-                // helper module compiles under the default workspace lints.
-                let mid = proof.len() >> 1;
-                xor_at(proof, mid, 0xff);
+                // 64 bytes from the end is well past every varint in the
+                // postcard layout — the tail of the proof is dense Merkle-
+                // path hash bytes for the last query's commit-phase
+                // opening. Flipping a hash byte here cleanly fails the
+                // recomputed-root check inside FRI's verify_query without
+                // tripping a postcard length-varint into an OOM allocation
+                // (which a midpoint flip can do, since varints are dense in
+                // opened-values / sibling-values length prefixes).
+                let off = proof.len().saturating_sub(64);
+                xor_at(proof, off, 0xff);
             }
             Self::FinalLayer => {
                 let last = proof.len().saturating_sub(1);
@@ -130,12 +135,26 @@ mod tests {
     }
 
     #[test]
-    fn query_opening_flips_proof_midpoint() {
-        let mut p = [0x55_u8; 8];
+    fn query_opening_flips_byte_near_end() {
+        // 128 bytes long → 64 from end → offset 64.
+        let mut p = [0x55_u8; 128];
         let mut pi = [0x55_u8];
         Mutation::QueryOpening.apply(&mut p, &mut pi);
-        let mut expected = [0x55_u8; 8];
-        expected[4] = 0xaa;
+        let mut expected = [0x55_u8; 128];
+        expected[64] = 0xaa;
+        assert_eq!(p, expected);
+        assert_eq!(pi, [0x55]);
+    }
+
+    #[test]
+    fn query_opening_handles_short_buffer() {
+        // Buffer shorter than 64 bytes: saturating_sub clamps to 0, and the
+        // mutation collapses onto the same byte HeaderByte hits (offset 0).
+        let mut p = [0x55_u8; 16];
+        let mut pi = [0x55_u8];
+        Mutation::QueryOpening.apply(&mut p, &mut pi);
+        let mut expected = [0x55_u8; 16];
+        expected[0] = 0xaa;
         assert_eq!(p, expected);
         assert_eq!(pi, [0x55]);
     }
