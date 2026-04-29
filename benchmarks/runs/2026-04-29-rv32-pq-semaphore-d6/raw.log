@@ -1,0 +1,49 @@
+zkmcu boot: heap=384K sys=150MHz core=hazard3 alloc=tlsf proof=pq-semaphore-d10
+
+[fp] before parse_proof heap_cur=0 heap_peak=0
+
+[fp] after parse_proof heap_cur=156360 heap_peak=156376
+
+[fp] a[6] pq_semaphore_verify: cycles=190437081 us=1269580 ms=1269 ok=true
+[7] pq_semaphore_verify start
+
+[7] pq_semaphore_verify: cycles=190411247 us=1269408 ms=1269 ok=true
+[8] pq_semaphore_verify start
+
+[8] pq_semaphore_verify: cycles=190459443 us=1269729 ms=1269 ok=true
+[9] pq_semaphore_verify start
+
+[9] pq_semaphore_verify: cycles=190442681 us=1269617 ms=1269 ok=true
+[10] pq_semaphore_verify start
+
+[10] pq_semaphore_verify: cycles=190459108 us=1269727 ms=1269 ok=true
+[11] pq_semaphore_verify start
+
+[11] pq_semaphore_verify: cycles=190475742 us=1269838 ms=1269 ok=true
+[12] pq_semaphore_verify start
+
+[12] pq_semaphore_verify: cycles=190447213 us=1269648 ms=1269 ok=true
+[13] pq_semaphore_verify start
+
+[13] pq_semaphore_verify: cycles=190463392 us=1269755 ms=1269 ok=true
+[14] pq_semaphore_verify start
+
+[14] pq_semaphore_verify: cycles=190415588 us=1269437 ms=1269 ok=true
+[15] pq_semaphore_verify start
+
+[15] pq_semaphore_verify: cycles=190448575 us=1269657 ms=1269 ok=true
+[16] pq_semaphore_verify start
+
+[16] pq_semaphore_verify: cycles=190472751 us=1269818 ms=1269 ok=true
+[17] pq_semaphore_verify start
+
+[17] pq_semaphore_verify: cycles=190428408 us=1269522 ms=1269 ok=true
+[18] pq_semaphore_verify start
+
+[18] pq_semaphore_verify: cycles=190497076 us=1269980 ms=1269 ok=true
+[19] pq_semaphore_verify start
+
+[19] pq_semaphore_verify: cycles=190474855 us=1269832 ms=1269 ok=true
+[20] pq_semaphore_verify start
+
+[20] pq_semaphore_verify: cycles=190485222 us=1269901 ms=1269 ok=true
