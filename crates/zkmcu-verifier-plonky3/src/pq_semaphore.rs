@@ -186,12 +186,13 @@ pub type Config = StarkConfig<Pcs, Challenge, Challenger>;
 /// Concrete proof type for this AIR.
 pub type Proof = p3_uni_stark::Proof<Config>;
 
-// FRI parameters. 64 queries is the canonical 95-bit security count
-// for `BabyBear × Quartic × log_blowup=1`, matching the design doc.
+// FRI parameters. 64 queries is the canonical 95-bit count for
+// `BabyBear × Quartic × log_blowup=1`; the 16+16 grinding bits stack
+// to ~127 conjectured (Phase A of the 128-bit plan).
 const LOG_BLOWUP: usize = 1;
 const NUM_QUERIES: usize = 64;
-const COMMIT_POW_BITS: usize = 0;
-const QUERY_POW_BITS: usize = 0;
+const COMMIT_POW_BITS: usize = 16;
+const QUERY_POW_BITS: usize = 16;
 const LOG_FINAL_POLY_LEN: usize = 0;
 const MAX_LOG_ARITY: usize = 1;
 
@@ -511,7 +512,7 @@ impl<AB: AirBuilder<F = Val>> Air<AB> for PqSemaphoreAir {
 }
 
 // ============================================================================
-// Build a `Config` (audited Poseidon2 perm; 64 queries; 95-bit FRI).
+// Build a `Config` (audited Poseidon2 perm; 64 queries; 95-bit FRI + 32 grinding).
 // ============================================================================
 
 /// Build a fresh `Config` from the audited Poseidon2-`BabyBear` permutation.
