@@ -51,3 +51,8 @@ postcard         = { version = "1.1", default-features = false, features = ["all
 # side is host-only and lives behind dev-dep flags. The runtime verifier
 # crate above does not depend on prove.
 rand             = { version = "0.10", default-features = false, features = ["std_rng"] }
+# `tests/pq_semaphore_reject.rs` exercises the adversarial mutation
+# patterns from `zkmcu_vectors::mutations` end-to-end through the
+# verifier so we know each pattern actually rejects before flashing the
+# pattern set to firmware.
+zkmcu-vectors    = { path = "../zkmcu-vectors" }

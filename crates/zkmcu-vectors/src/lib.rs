@@ -4,6 +4,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+pub mod mutations;
+
 use zkmcu_verifier::{parse_proof, parse_public, parse_vk, Error, Fr, Proof, VerifyingKey};
 
 /// A single test vector: a VK, a proof valid under it, and the public inputs it binds to.
