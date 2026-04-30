@@ -1,295 +1,264 @@
 # zkmcu
 
-Yeah so I've been building `no_std` Rust ZK verifiers and a STARK prover for microcontrollers. Three proof systems: Groth16 on BN254 (EIP-197 wire format, `substrate-bn`), Groth16 on BLS12-381 (EIP-2537 wire format, zkcrypto `bls12_381`), and winterfell STARK on BabyBear+Quartic.
+Yeah so I've been building `no_std` Rust ZK verifiers and provers for microcontrollers. The current focus is **post-quantum Semaphore-style identity proofs on a $7 hardware token**.
 
-The prover is the part I'm most excited about. 48 ms prove at 123-bit conjectured security, 78 KB heap on a Cortex-M33 @ 150 MHz, no OS. As far as I can find nobody has run a STARK prover on bare-metal embedded before — FibRace (the standard bench harness) needs 3 GB of RAM. We're doing it in 78 KB on a $7 chip.
+Latest result: a Plonky3 STARK verifier with **dual-hash (Poseidon2 ∥ Blake3) FRI composition** runs in 1.6 s on a Cortex-M33 RP2350 with 384 KB heap. The two FRI proofs over the same statement compose: a forged proof has to fool both an algebraic hash (Poseidon2-`BabyBear`-16, audited round constants) and a generic hash (Blake3 1.8) simultaneously. Cryptanalytic surprise on either hash family does not collapse the verifier.
 
-First target is the Raspberry Pi Pico 2 W. RP2350 is a fun chip because it has **both** an ARM Cortex-M33 and a RISC-V Hazard3 core on the same die at the same clock, wich makes the cross-ISA comparison pretty drama-free. One Rust source tree, two ISAs, same binary build pipeline.
+I did not find prior published work on either:
+- a measured `no_std` Plonky3 STARK verifier running on a Cortex-M-class MCU, or
+- dual-hash (Poseidon2 ∥ Blake3) FRI verification with hash-tower soundness composition.
 
-Docs site: [zkmcu.dev](https://zkmcu.dev).
+Prior-art search at `research/notebook/2026-04-30-prior-art-stark-side.md`. If I missed something, please open an issue.
 
-## Headline
+Docs site: [zkmcu.dev](https://zkmcu.dev). Reproduction: [`./reproduce.sh`](./reproduce.sh) on a dev machine + a Pico 2 W in BOOTSEL.
 
-Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32. Every iteration `ok=true`. No hand-tuning, stock upstream crypto crates.
+---
 
-| prove + verify | Cortex-M33 | Hazard3 RV32 | heap peak | proof size |
-|---|---:|---:|---:|---:|
-| **STARK threshold-check N=64** (BabyBear+Quartic, 123-bit) | **48 ms + 50 ms** | not yet | **78 KB** | 11.9 KB |
-| **STARK Fibonacci N=256** (BabyBear+Quartic, 21-bit) | **148 ms + 33 ms** | 215 ms + 42 ms | 248 KB | 8.9 KB |
+## Headline (Phase E.1, 2026-04-30)
 
-| verify only | Cortex-M33 | Hazard3 RV32 | RV32 / M33 | proof size |
-|---|---:|---:|---:|---:|
-| STARK Fibonacci-1024 (Goldilocks, 95-bit) | **75 ms** | 112 ms | 1.51× | 30.9 KB |
-| **Groth16 / BN254, real Semaphore v4** (4 pub inputs) | **1,176 ms** | 1,564 ms | 1.33× | 256 B |
-| Groth16 / BN254, 1 public input | 962 ms | 1,341 ms | 1.39× | 256 B |
-| Groth16 / BLS12-381, 1 public input | 2,015 ms | 5,151 ms | 2.56× | 512 B |
+Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32. 20 iterations per bench, range_pct < 0.1 %, every iteration `ok=true`.
 
-STARK verify is **15-27x faster than Groth16** on the same silicon. The tradeoff is proof size: Groth16 is 256 B, STARK is 12-31 KB depending on parameters. If you're on LoRa or NFC pick Groth16, if you're on anything with actual bandwidth pick STARK.
-
-All three verifier families fit under **128 KB SRAM** during verify (~97-100 KB total on M33), wich is the tier of most hardware-wallet silicon: `nRF52832`, `STM32F405`, Ledger ST33, Infineon SLE78. I cant find anyone else who has all three under 128 KB in `no_std` Rust. Full prior-art analysis in `research/prior-art/main.typ`.
-
-## STARK prover on bare metal
-
-Yeah so this is the part I'm most excited about right now.
-
-48 ms prove, 50 ms verify, 78 KB heap peak on a Cortex-M33 @ 150 MHz. No OS, 512 KB total SRAM, `heap_after = 10 bytes` every iteration. Consistent over 2000+ iterations on device.
-
-And its not Fibonacci — the threshold-check circuit proves `value < threshold` for a sensor reading. Bit-decomposes `diff = threshold - value - 1` over 32 rows, boundary assertion at row 32 proves no underflow, therefore `value < threshold`. You cant fake a valid proof for a false claim without breaking the hash function. An actual IoT attestation use case, not a hello world.
-
-FibRace needs 3 GB of RAM to run the prover. We're doing it in 78 KB. Thats roughly 50,000x less memory on a $7 chip.
-
-| | Cortex-M33 |
-|-|---:|
-| prove (threshold-check N=64) | **48 ms** |
-| verify | **50 ms** |
-| heap peak | **78 KB** |
-| proof size | 11.9 KB |
-| security (conjectured) | **123 bit** |
-| heap after verify | 10 bytes |
-
-BabyBear+Quartic, 64 FRI queries. The prove time is basically insensitive to query count — going from 11 to 64 queries added 1.2% prove overhead and 14 KB heap while jumping from 21-bit to 123-bit security. Full page: [zkmcu.dev/stark-prover](https://zkmcu.dev/stark-prover/).
-
-## STARK verify in 75 ms
-
-Honestly the thing I'm most happy with on the verify side. `zkmcu-verifier-stark` is a `no_std` wrapper around winterfell 0.13 that gives the same `verify_bytes` shaped API as the Groth16 crates. First on-silicon measurement 2026-04-23, production-grade config locked in 2026-04-24:
-
-- Fibonacci AIR at `N = 1024`
-- `FieldExtension::Quadratic` over Goldilocks, **95-bit conjectured STARK security**
-- `MinConjecturedSecurity(95)` enforced so a weaker proof gets rejected even if the crypto checks out
-- Blake3-256 hash, binary Merkle tree vector commitment
-- `embedded-alloc::TlsfHeap` as the global allocator (see determinism section for why this matters)
-
-| | Cortex-M33 | Hazard3 RV32 |
-|-|---:|---:|
-| Median verify | **75 ms** | 112 ms |
-| Variance | **0.081 %** | 0.110 % |
-| Peak heap | 93.5 KB | ~93 KB |
-| Peak stack | 5.6 KB | 5.5 KB |
-| **Total RAM** | **~100 KB** | ~100 KB |
-
-The stack peak surprised me. Groth16 paths run 15-20 KB of stack, STARK only uses 5.6 KB. Winterfell routes basically everything through the heap instead of stack frames, wich sounds worse but actually isn't.
-
-## Deterministic timing is the underrated feature
-
-Ok so here's the thing that took me 4 iterations to figure out and it's the best methodology finding in the project IMO. The STARK verify path makes **~400 `Vec` allocations internally** for FRI state, auth-path parsing, composition poly scratch. With the stock `LlffHeap` (linked-list first-fit) allocator, each iteration mutates the free list slightly differently than the last one, and that free-list evolution shows up as timing variance around 0.25-0.46 %.
-
-For reference, the Groth16 verifiers on the same silicon measure ~0.03-0.07 % variance. They barely allocate during verify. So STARK was 5-10x noisier than what the silicon can actually resolve, wich is bad for any side-channel-adjacent use case.
-
-Tried three allocators, measured all three:
-
-| Allocator | M33 median | M33 variance | M33 heap peak | 128 KB tier? |
-|---|---:|---:|---:|:---:|
-| LlffHeap (linked-list first-fit) | 69.7 ms | ~0.13 % IQR | 93.5 KB | ✓ |
-| **TlsfHeap (O(1) two-level segregated fit)** | **74.7 ms** | **0.081 %** | **93.5 KB** | **✓** |
-| BumpAlloc (watermark-reset, benchmark only) | 67.9 ms | 0.080 % | 314 KB | ✗ |
-
-TlsfHeap is the production pick. You pay ~5 ms of median verify time over LlffHeap (closer to 20 ms on RV32, Hazard3 pays more for the bitmap walks) and get silicon-baseline variance while staying on the 128 KB tier. For hardware-wallet firmware where verify runs at human action speed thats indistinguishable.
-
-The bump allocator (`zkmcu-bump-alloc`) is a custom ~200-line `no_std` `GlobalAlloc` I wrote for the experiment: atomic CAS bump pointer, no-op dealloc, in-place realloc when the resized allocation is on top of the bump, watermark save/restore. Use it as a measurement tool (confirms the crypto itself is deterministic, variance isnt the crypto's fault) or as a standalone thing for any benchmark loop that wants byte-identical allocator state per iteration. Not a production allocator, memory peak is 3x LlffHeap's.
-
-Full story: [zkmcu.dev/determinism](https://zkmcu.dev/determinism/) and `research/reports/2026-04-24-stark-allocator-matrix.typ`.
-
-### The cross-ISA twist
-
-Bonus finding that surprised me: **the allocator choice can swing the Cortex-M33-vs-Hazard3 ratio by 30 %**.
-
-| STARK config | RV32 / M33 |
-|---|---:|
-| BumpAlloc (allocator overhead stripped) | **1.21×** ← pure crypto ratio |
-| LlffHeap | 1.33× |
-| TlsfHeap | 1.51× |
-
-BumpAlloc is branch-free on the happy path, so it gives the honest "pure Blake3 + Goldilocks Fp2 arithmetic" cross-ISA ratio: 1.21x. LlffHeap's free-list walk costs Hazard3 more per op (weaker branch prediction on pointer chases), TlsfHeap's bitmap walks cost Hazard3 even more. An "M33 vs Hazard3" STARK benchmark using a stock allocator is partly measuring the allocator, not the workload. Ofcourse that goes in the limitations section of every cross-ISA report in this project going forward.
-
-## Real-world circuit: Semaphore
-
-Synthetic `x^2 = y` circuits are fine for bench infrastructure but nobody actually uses them. So I took a real [Semaphore](https://semaphore.pse.dev/) v4.14.2 Groth16 proof (Merkle tree depth 10, 4 public inputs: merkle root, nullifier, hashed message, hashed scope), generated by snarkjs under the production trusted setup, and verified it through `zkmcu-verifier` on the same hardware:
-
-| circuit | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
-|---|---:|---:|---:|
-| **Semaphore v4.14.2 depth-10 verify** | **1,176 ms** | 1,564 ms | 1.33× |
-
-Thats the *same* VK + proof bytes the Ethereum Semaphore verifier precompile accepts, running unmodified on a $7 MCU. Variance 0.030 % on both cores, tightest of any measurement in the project. Prediction written down ahead of time was 1,160 ms M33 / 1,620 ms RV32, measured 1,176 / 1,564 (Δ +1.4 % / -3.5 %). Full setup: `research/reports/2026-04-22-semaphore-baseline.typ` and [zkmcu.dev/semaphore](https://zkmcu.dev/semaphore/).
-
-Heads up for anyone designing embedded-ZK circuits: on BN254 Cortex-M33, each extra *big-scalar* public input (merkle root, nullifier, hash output) costs **~71 ms** on top of the 962 ms single-pub-input baseline. Small-integer public inputs cost ~3 ms, so a 24x gap from `substrate-bn`'s sliding-window NAF short-circuiting on low-Hamming-weight scalars. Plan for the big-scalar regime, its what real circuits hit.
-
-## Per-op breakdown, BN254 (EIP-197)
-
-| op | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
-|---|---:|---:|---:|
-| G1 scalar mul (typical) | **62 ms** | 65 ms | 1.05× |
-| G2 scalar mul (typical) | **207 ms** | 283 ms | 1.37× |
-| pairing | **535 ms** | 707 ms | 1.32× |
-| **Groth16 verify** (1 pub input) | **962 ms** | 1,341 ms | 1.39× |
-
-## Per-op breakdown, BLS12-381 (EIP-2537)
-
-| op | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
-|---|---:|---:|---:|
-| G1 scalar mul | **847 ms** | 1,427 ms | 1.69× |
-| G2 scalar mul | **523 ms** | 1,003 ms | 1.92× |
-| pairing | **607 ms** | 1,975 ms | 3.26× |
-| **Groth16 verify** (1 pub input) | **2,015 ms** | 5,151 ms | 2.56× |
-
-These are baselines, not optimized numbers. The M33 has DSP intrinsics (`SMLAL`, `UMAAL`) for Montgomery reduction that neither `substrate-bn` nor `bls12_381` use out of the box, and Hazard3 has `Zbb`/`Zba`/`Zbc` bit-manip extensions sitting unused. BN254 on M33 is the one I actually optimized, next section.
-
-## UMAAL asm on Cortex-M33 (BN254)
-
-So LLVM's M-profile instruction selector emits zero UMAAL instructions for `substrate-bn`'s `u128`-based schoolbook multiply even with `target-cpu=cortex-m33`. That annoyed me enough to write hand-rolled ARMv8-M assembly for the `mul_reduce` Montgomery multiply primitive.
-
-128 UMAAL inner steps per `mul_reduce`, operand rows kept register-resident in r4-r11, placed in SRAM at boot so the hottest function sidesteps the RP2350's 16 KB XIP instruction cache entirely. `.text` footprint of the replacement is 50 % of LLVM's original. Lives in a fork at `vendor/bn` behind a `cortex-m33-asm` Cargo feature; host builds and all 34 upstream tests use the Rust path unchanged.
-
-| op | BN254, stock | BN254, UMAAL asm | **Δ** |
-|---|---:|---:|---:|
-| **Groth16 verify** (1 pub input) | 962 ms | **641 ms** | **-33 %** |
-| **Groth16 verify** (Semaphore depth-10) | 1,176 ms | **761 ms** | **-35 %** |
-| BN254 pairing | 535 ms | **350 ms** | **-35 %** |
-| G1 scalar mul (typical) | 62 ms | **33 ms** | **-47 %** |
-| G2 scalar mul (typical) | 207 ms | **150 ms** | **-28 %** |
-
-RV32 and BLS12-381 are still at their baselines. UMAAL is ARM-specific; the analogous lever for Hazard3 is the `Zbc` carry-less-mul extension wich hasnt been tried yet. Full story from the 988 ms crates.io baseline through the four layered optimizations: `research/reports/2026-04-23-umaal-sram-groth16.typ`.
-
-## Memory
-
-Directly measured on-device via stack painting + a tracking heap wrapper. All three verifier families on Cortex-M33:
-
-| | BN254 Groth16 | BLS12 Groth16 | STARK (TlsfHeap) |
+| | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
 |-|---:|---:|---:|
-| peak stack during verify | 15.6 KB | 19.4 KB | **5.6 KB** |
-| peak heap during verify  | 81.3 KB | 79.4 KB | 93.5 KB |
-| heap arena configured     | 96 KB | 256 KB | 256 KB |
-| **total RAM during verify** | **~97 KB** | **~99 KB** | **~100 KB** |
+| **PQ-Semaphore d=10, dual-hash verify** | **1,611 ms** | **2,042 ms** | 1.27× |
+| heap peak (drop-between pattern) | 304 KB | 304 KB | — |
+| stack peak | 11.2 KB | 11.0 KB | — |
+| combined proof size (P2 + B3) | 337 KB | same | — |
+| security (per leg) | 127 conj. FRI + 186-bit hash floor | same | — |
+| dual-hash composition | yes | yes | — |
 
-All three fit the 128 KB hardware-wallet tier. BLS12-381 on zkcrypto uses *less* heap than BN254 on substrate-bn (79 KB vs 81 KB) because zkcrypto keeps Miller-loop line coefficients in stack-allocated `G2Prepared` where substrate-bn heap-allocates an Fq12 polynomial workspace. STARK's 5.6 KB stack is ~3x smaller than either Groth16 path because winterfell routes its verify state through the heap, not the stack.
+Bench artifacts: `benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual/`.
 
-## Why
+The 1.6 s number is **full pipeline** (parse + verify both FRI legs from raw bytes). The Phase E.1 entry point parses + verifies the Poseidon2 leg, drops it, then parses + verifies the Blake3 leg, so peak heap is `max(p2_peak, b3_peak)` not the sum. 384 KB heap was sufficient; no Phase D 480 KB workaround needed. Stack peak captured cleanly.
 
-The thing that annoyed me into building this is that every existing "ZK on embedded" project I could find either runs under Linux on something like a Pi Zero, or it's a paper with no code. `ZPiE` (2021) is the closest published thing and it needs a full OS. For actual hardware-wallet-class devices (128 KB SRAM, no MMU, no Linux), there was nothing. So yeah I wrote it.
+## Phase A-E methodology
 
-BLS12-381 got added to prove the approach generalizes across curves and ecosystems (BN254 for Ethereum-era circuits, BLS12-381 for Zcash / sync-committee / Filecoin). STARK got added because Groth16 verify is slow (1-2 seconds) and I wanted to see if a STARK-based alternative could fit the same SRAM tier at production security. It can.
+Each phase had falsifiable predictions written *before* the on-silicon bench, committed alongside `result.toml`. Four out of five phases landed outside their predicted bands. The plan, predictions, and per-phase measurements are at `bindings/.claude/plans/2026-04-29-security-128bit.md` plus the `benchmarks/runs/` directories.
 
-And then I figured if we can verify on bare metal, we might as well try to prove on bare metal too. Turns out that also works and nobody had apparently tried it before. So yeah thats where we are.
+| Phase | Change | M33 verify (ms) | Δ vs Phase B | Predicted band | Verdict |
+|---|---|---:|---:|---|---|
+| 4.0 (baseline) | BabyBear × Quartic, d=4, no grinding | 1049.72 | — | — | 95 conj. FRI |
+| **A** | + 16+16 grinding bits | 1051.09 | -1.4 % | +0–8 ms | **inside band** (127 conj.) |
+| **B** | + DIGEST_WIDTH 4→6 | 1065.84 | (baseline) | +12-22 % | **far below band** (1.40 %) |
+| **C** | + two-stage early exit | 1130.58 | +6.1 % | reject paths < 900 ms | **far below band** (max reject 127 ms) |
+| **D** (alt) | Goldilocks × Quadratic, d=4 | 1995.66 | +87.2 % | 600–680 ms band | **HYPOTHESIS REJECTED** |
+| **E.1** | Phase B + Blake3 sibling FRI | 1611.39 | +51.2 % | 2200–2500 ms band | **far below band** (dual-hash composition) |
 
-## Cross-ISA story, three families
+Phase D is the lead methodology bullet. We predicted Goldilocks × Quadratic to be 66 % faster than `BabyBear` × Quartic on M33 by inheriting the Phase 3.3 fib1024 finding. fib1024 is arithmetic-bound. PQ-Semaphore verify is hash-bound (64 FRI queries × ~10 Merkle hops × Poseidon2 permutations dominate the cycle budget). Phase 3.3's win did not transfer; the GL config landed +87 % slower on M33 and +112 % slower on RV32. We document the negative result rather than hide it. This is the kind of thing on-device measurement teaches you that whiteboard analysis doesn't.
 
-Same source, same silicon, different ISA. Cortex-M33 wins overall on every proof system, but the ratio moves a lot:
+## Cross-ISA story
 
-| Family | RV32 / M33 | What's driving the gap |
-|---|---:|---|
-| STARK Fibonacci-1024 (TlsfHeap) | 1.51× | TLSF bitmap walks mispredict more on Hazard3 |
-| STARK Fibonacci-1024 (BumpAlloc) | **1.21×** | **pure crypto, no allocator noise** |
-| BN254 Groth16 | 1.33× | G2 scalar mul + pairing tower |
-| BLS12-381 Groth16 | 2.56× | UMAAL wins big at 12-word Fp where it didn't at 8 |
+Same die, same clock. RP2350 ships both an ARMv8-M Cortex-M33 and a RISC-V Hazard3 core in one silicon piece, wich makes the cross-ISA comparison drama-free. One Rust source tree, two target triples, same firmware loop.
 
-Earlier baseline (pre `substrate-bn` dep-bump) had Hazard3 ~35 % *faster* on BN254 G1 scalar mul, but that went away after upstream optimization helped ARM codegen more than RISC-V. Cross-ISA conclusions on `no_std` crypto are allocator-sensitive and library-version-sensitive. Reproducing any number here requires pinning both. Full writeup of the BLS12 case in `research/reports/2026-04-22-bls12-381-results.typ`.
+| Phase | Cortex-M33 (ms) | Hazard3 RV32 (ms) | RV32 / M33 |
+|---|---:|---:|---:|
+| A (BB grind only) | 1051.09 | 1255.98 | 1.195 |
+| B (BB d=6 + grind) | 1065.84 | 1269.73 | 1.191 |
+| C (BB full pipeline) | 1130.58 | 1302.64 | 1.152 |
+| D (GL × Quadratic) | 1995.66 | 2700.84 | 1.354 |
+| **E.1 (dual P2 ∥ B3)** | **1611.39** | **2041.78** | **1.267** |
+
+Phase E.1 widens cross-ISA from 1.19× to 1.27×. The Phase B Poseidon2 leg keeps its 1.19× tax (BabyBear field arithmetic feels the same on both ISAs, with UMAAL helping M33 and Hazard3 single-cycle ALU paths matching). The widening comes from the **Blake3 leg**: Hazard3 lacks single-instruction barrel rotate and emulates `x.rotate_right(n)` as `srl ; sll ; or` (3 instructions vs 1 on M33). Blake3's ARX inner loop has 8 rotates per round × 7 rounds × ~64 queries × ~10 Merkle hops, so the per-rotate cost compounds.
+
+Per-leg estimate (dual minus Phase B baseline):
+- P2 leg: ~1066 ms M33 / ~1270 ms RV32, ratio ~1.19×
+- B3 leg: ~545 ms M33 / ~772 ms RV32, ratio ~1.42×
+
+Worth flagging: **Blake3 is roughly half the cost of Poseidon2 on Cortex-M33 in the verifier role.** That inverts the usual "Poseidon2 is the embedded-friendly hash" intuition wich is correct on the prover side and wrong on the verifier side. Cortex-M33 has a 1-cycle barrel rotate so ARX schedules unroll cleanly; Poseidon2-`BabyBear` has to compute a width-16 algebraic permutation per Merkle node.
+
+## Comparison with related work
+
+The "MCU column is empty" observation is itself part of the contribution. None of the major STARK ecosystems (RISC Zero, Succinct SP1, Plonky3 upstream, Aztec, Powdr) publish embedded verify numbers; their published numbers are server-class only. SP1 explicitly excludes verify time from its benchmark methodology.
+
+| Work | Year | Verifier on | Hardware | Verify scope | Verify time | PQ? |
+|---|---|---|---|---|---:|---|
+| Winterfell | ongoing | server | Intel i9-9980KH @ 2.4 GHz, 8c | Rescue 2^20 96-bit | 2–6 ms | yes |
+| zkDilithium (ePrint 2023/414) | 2023 | server | (Winterfell defaults) | PQ anon-cred STARK | server-class | yes |
+| RISC Zero zkVM | ongoing | server | r6a.16xlarge / 64 vCPU | zkVM verify | not published | yes |
+| Succinct SP1 | ongoing | server | r6a.16xlarge / GPU | zkVM verify | excluded | yes |
+| Plonky3 upstream | ongoing | server | x86 + AVX2/AVX-512 | various | not published | yes |
+| MDPI 2024 cross-platform | 2024 | Raspberry Pi (model unspec) | ARM Cortex-A | zk-STARK (shape unspec) | 245 ms | yes |
+| **this work, Phase E.1** | **2026** | **RP2350 M33 (single-core, 150 MHz, no SIMD)** | **Cortex-M33** | **PQ-Semaphore d=10, 127 conj. + dual-hash** | **1611 ms** | **yes** |
+| **this work, Phase E.1** | **2026** | **RP2350 Hazard3 (single-core, 150 MHz, no SIMD)** | **RV32IMAC** | **same as above** | **2042 ms** | **yes** |
+
+Server-class STARK verifiers run in milliseconds on AVX-equipped hardware costing $1000+. Our 1.6 s on a $7 microcontroller is in the same order of magnitude as a Pi-class Linux board running a much smaller STARK, and within 300-800× of a laptop-class i9 running a comparable Winterfell proof. The win is **not** raw verify speed — it is that the verifier fits in the power, BOM, and silicon budget of a hardware token at all, with no host or radio link assumed.
+
+## Security notes (audit boundary)
+
+Inherited from upstream / in-tree audit:
+- Plonky3 core (`p3-uni-stark`, `p3-fri`, `p3-merkle-tree`, `p3-symmetric`, etc.) — see `vendor/Plonky3/audits/`.
+- Poseidon2-`BabyBear`-16 round constants — independently audited via `crates/zkmcu-poseidon-audit` (in-tree audit crate, regenerates the constants from spec and bit-compares against Plonky3's `BABYBEAR_POSEIDON2_RC_16_*` arrays).
+- Blake3 1.8 — independent upstream audits, mature widely-deployed crate.
+
+NOT audited (the things a third-party reviewer should look at next):
+- The custom PQ-Semaphore AIR (`crates/zkmcu-verifier-plonky3/src/pq_semaphore.rs`). The audited Poseidon2 constraint surface is preserved byte-for-byte; the cross-row witness-column constraints (id_col / scope_col continuity, sibling/prev_digest binding, conditional Merkle swap) are new logic, hand-checked but not externally audited.
+- The postcard wire format and proof parsing.
+- The Blake3-flavoured StarkConfig wiring (`pq_semaphore_blake3.rs`, `pq_semaphore_dual.rs`).
+- The firmware (allocator integration, USB CDC-ACM transport, panic-halt, bench harness).
+
+Side channels: timing analysis in-progress via `crates/bench-rp2350-m33-timing-oracle`. Power, fault, EM not analyzed. Pico 2 W has no secure element, no tamper detection. An attacker with ~30 minutes of physical access to a powered device can dump SRAM via SWD or BOOTSEL and recover any keys or witness material in RAM. **Honest label: convenience-grade self-custody on open hardware, not Ledger-grade tamper resistance.** The dual-hash STARK soundness composition does not change the physical-tamper picture.
+
+Full security analysis at `research/notebook/2026-04-30-security-claim-table.md`.
+
+---
+
+## Earlier work in this workspace
+
+The repo also contains earlier ZK-on-MCU work that landed before the PQ-Semaphore arc. These are not the headline of the current writeup but they are real measurements with their own bench artifacts. Each gets its own writeup at some point.
+
+### Groth16 / BN254 verifier (the SNARK baseline that PQ-Semaphore replaces)
+
+`zkmcu-verifier` is a `no_std` Groth16 verifier in EIP-197 wire format using `substrate-bn`. Stock crates.io baseline lands at 988 ms on Cortex-M33; the same verify with hand-rolled ARMv8-M UMAAL Montgomery multiply asm in `vendor/bn` (forked, behind a `cortex-m33-asm` feature flag) lands at **641 ms**. The asm path is differentially tested via a three-implementation chain (`mul_reduce` asm vs `mul_reduce_u32_ref` portable u32 SOS on-device, `mul_reduce_rust` u128 Montgomery vs `mul_reduce_u32_ref` host-side cargo test); the selftest is a separate firmware flash, the headline 641 ms bench does not re-run it at boot.
+
+A real Semaphore v4.14.2 depth-10 Groth16 proof generated by snarkjs verifies through `zkmcu-verifier` in 761 ms (M33, with UMAAL asm). Same VK + proof bytes the Ethereum Semaphore precompile accepts, running unmodified on a $7 MCU. This is the SNARK baseline against wich the PQ-Semaphore Phase A-E numbers compete.
+
+Reports: `research/reports/2026-04-22-semaphore-baseline.typ`, `research/reports/2026-04-23-umaal-sram-groth16.typ`.
+
+### Groth16 / BLS12-381 verifier (sibling baseline, EIP-2537)
+
+`zkmcu-verifier-bls12` proves the approach generalizes across curves. 2,015 ms M33 / 5,151 ms RV32. Cross-ISA gap is wider than BN254 (2.56× vs 1.39×) because the 12-word Fp Montgomery multiply benefits more from UMAAL than BN254's 8-word Fp does, and `bls12_381` doesn't use UMAAL. Report: `research/reports/2026-04-22-bls12-381-results.typ`.
+
+### Winterfell STARK threshold-check prover
+
+`zkmcu-verifier-stark` is the Winterfell sibling to the Plonky3 verifier. It also includes a host-driven prover that runs `no_std` on the firmware: 48 ms prove + 50 ms verify, 78 KB heap, on a real `value < threshold` AIR for IoT sensor attestation. Report: `research/reports/2026-04-24-stark-quadratic-results.typ`. Separate writeup planned, framed at the embedded sensor / industrial attestation audience rather than the ZK identity audience.
+
+### Allocator-determinism methodology finding
+
+In the course of measuring the STARK verifier we found the stock `LlffHeap` (linked-list first-fit) allocator was responsible for most of the timing variance (5-10× silicon noise floor). Switching to `embedded-alloc::TlsfHeap` recovered silicon-baseline variance at the cost of ~5 ms median verify. We also wrote a custom watermark-reset bump allocator (`zkmcu-bump-alloc`) as a measurement tool; it confirms the crypto itself is deterministic and that allocator choice can swing the M33-vs-Hazard3 ratio by 30 %. Report: `research/reports/2026-04-24-stark-allocator-matrix.typ`.
+
+This finding has implications for any cross-ISA `no_std` crypto benchmark: allocator-sensitive workloads measure the allocator, not the workload, unless you report which one you used.
+
+---
 
 ## Repository layout
 
 ```
 bindings/
-├── crates/         Rust source (library + host tool + firmware crates + bump alloc)
+├── crates/         Rust source (verifiers + provers + audit + firmware crates)
 ├── benchmarks/     raw + structured benchmark data, one dir per run
 ├── research/       Typst sources → PDFs (whitepaper, prior-art, reports, notebook)
-├── web/            public site (Astro + Starlight) deployed at zkmcu.dev
+├── vendor/         third-party path deps (Plonky3, substrate-bn fork, winterfell)
+├── reproduce.sh    one-shot dev-machine reproduction script
 └── justfile        top-level build tasks
 ```
 
-### Crates
+Web tree at `../web/` (sibling repo, separate deploy at zkmcu.dev).
+
+### Crates (current focus first, earlier work below)
 
 | crate | what | target |
-|-------|------|--------|
+|---|---|---|
+| `zkmcu-verifier-plonky3` | `no_std` Plonky3 STARK verifier (PQ-Semaphore custom AIR + Goldilocks alt + Blake3 sibling + dual entry point) | any |
+| `zkmcu-poseidon-audit` | in-tree audit of Poseidon2-`BabyBear` and Poseidon2-Goldilocks round constants | host |
+| `bench-rp2350-m33-pq-semaphore-dual` | Phase E.1 dual-hash bench, Cortex-M33 | `thumbv8m.main-none-eabihf` |
+| `bench-rp2350-rv32-pq-semaphore-dual` | Phase E.1 dual-hash bench, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
+| `bench-rp2350-{m33,rv32}-pq-semaphore` | Phase B BabyBear-d6 baseline benches | both ISAs |
+| `bench-rp2350-{m33,rv32}-pq-semaphore-gl` | Phase D Goldilocks × Quadratic alt-config benches | both ISAs |
+| `bench-rp2350-{m33,rv32}-pq-semaphore-reject` | Phase C two-stage early-exit benches | both ISAs |
 | `zkmcu-verifier` | `no_std` Groth16 / BN254 verifier (EIP-197) | any |
 | `zkmcu-verifier-bls12` | `no_std` Groth16 / BLS12-381 verifier (EIP-2537) | any |
-| `zkmcu-verifier-stark` | `no_std` winterfell STARK verifier + AIRs | any |
-| `zkmcu-vectors` | `no_std` test-vector loader, all three systems | any |
-| `zkmcu-bump-alloc` | `no_std` bump `GlobalAlloc` with watermark reset | any |
-| `zkmcu-host-gen` | CLI, generates Groth16 (arkworks) and STARK (winterfell) proofs | host (`std`) |
-| `bench-rp2350-m33` | firmware, BN254, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-m33-bls12` | firmware, BLS12-381, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-m33-stark` | firmware, STARK verify, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-m33-stark-prover-bb` | firmware, STARK prove+verify Fibonacci, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-m33-stark-prover-threshold` | firmware, STARK prove+verify threshold-check, Cortex-M33 | `thumbv8m.main-none-eabihf` |
-| `bench-rp2350-rv32` | firmware, BN254, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
-| `bench-rp2350-rv32-bls12` | firmware, BLS12-381, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
-| `bench-rp2350-rv32-stark` | firmware, STARK verify, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
-| `bench-rp2350-rv32-stark-prover-bb` | firmware, STARK prove+verify Fibonacci, Hazard3 RV32 | `riscv32imac-unknown-none-elf` |
+| `zkmcu-verifier-stark` | `no_std` Winterfell STARK verifier + AIRs (Phase 3.x) | any |
+| `zkmcu-vectors` | `no_std` test-vector loader, all proof systems | any |
+| `zkmcu-bump-alloc` | `no_std` bump `GlobalAlloc` with watermark reset (measurement tool, not production) | any |
+| `zkmcu-host-gen` | CLI, generates Groth16 (arkworks) + STARK (Winterfell + Plonky3) test vectors | host (`std`) |
+| `bench-rp2350-m33`, `bench-rp2350-rv32` | BN254 firmware, both ISAs | both |
+| `bench-rp2350-{m33,rv32}-bls12` | BLS12-381 firmware, both ISAs | both |
+| `bench-rp2350-{m33,rv32}-stark`, `*-stark-prover-*` | Winterfell firmware (Phase 3.x) | both |
+| `bench-rp2350-m33-bn-asm-test` | UMAAL asm differential-test firmware | M33 |
+| `bench-rp2350-m33-timing-oracle` | timing-side-channel analysis bench (in progress) | M33 |
+| `bench-core` | shared firmware infrastructure (USB, allocator, cycle counter) | both |
 
 ## Build
 
 ```bash
-just build                 # host crates
-just test                  # arkworks ↔ substrate-bn + arkworks ↔ bls12_381 + host-side STARK
-just regen-vectors         # regenerate crates/zkmcu-vectors/data/**
-just build-m33             # BN254 firmware (Cortex-M33)
-just build-m33-bls12       # BLS12-381 firmware (Cortex-M33)
-just build-m33-stark       # STARK firmware (Cortex-M33)
-just build-rv32            # BN254 firmware (Hazard3 RV32)
-just build-rv32-bls12      # BLS12-381 firmware (Hazard3 RV32)
-just build-rv32-stark      # STARK firmware (Hazard3 RV32)
-just docs                  # Typst → research/out/*.pdf
-just check-full            # fmt + clippy + tests + all six firmware builds
+just check                  # fmt + clippy + host tests on every crate
+just regen-vectors          # regenerate crates/zkmcu-vectors/data/**
+just build-m33-pq-semaphore-dual    # Phase E.1 firmware (Cortex-M33)
+just build-rv32-pq-semaphore-dual   # Phase E.1 firmware (Hazard3 RV32)
+just docs                   # Typst → research/out/*.pdf
+just check-full             # check + every firmware build
 ```
+
+Or just run [`./reproduce.sh`](./reproduce.sh) which does check + regen + build of both Phase E.1 firmware images and prints the exact picotool + `cat /dev/ttyACM0` block to run on your flashing host.
 
 ## Flashing
 
-The Pico is connected over USB to a Raspberry Pi 5 I use as a flashing host, so the workflow is two hops. Put the Pico in BOOTSEL, then:
+The Pico is connected over USB to a flashing host (a Raspberry Pi 5 in our setup). Put the Pico in BOOTSEL manually, then:
 
 ```bash
 # dev machine:
-scp target/thumbv8m.main-none-eabihf/release/bench-rp2350-m33-stark pi:/tmp/bench.elf
+scp target/thumbv8m.main-none-eabihf/release/bench-rp2350-m33-pq-semaphore-dual pi:/tmp/bench.elf
 
-# on the Pi:
+# on the flashing host:
 picotool load -v -x -t elf /tmp/bench.elf
 cat /dev/ttyACM0
 ```
 
-`stty` on the CDC device can hang while a long crypto call is in flight, avoid it. Use `dd if=/dev/ttyACM0 bs=1 count=N` if you want a bounded capture.
+`stty` on the CDC device can hang while a long crypto call is in flight, avoid it. Use `dd if=/dev/ttyACM0 bs=1 count=N` for a bounded capture.
 
 ## Wire formats
 
-Three wire formats, not interchangeable. Full writeup at [zkmcu.dev/wire-format](https://zkmcu.dev/wire-format/), quick reference here.
+Three wire formats live in this repo, not interchangeable. Quick reference:
 
-**EIP-197** (BN254, 256 B proof):
+**Plonky3 STARK proof** (PQ-Semaphore d=10 dual): postcard-encoded `Proof<StarkConfig>`. Phase E.1 ships two proofs (172.9 KB Poseidon2 leg + 163.8 KB Blake3 leg) plus 96 B public inputs (24 × 4-byte `BabyBear` elements: merkle_root, nullifier, signal_hash, scope_hash). Verifier-side `MAX_PROOF_SIZE` = 320 KB length cap.
+
+**EIP-197** (BN254 Groth16, 256 B proof):
 
 | type | size | encoding |
-|------|------|----------|
+|---|---|---|
 | `Fq` | 32 B | big-endian, < BN254 base modulus |
 | `Fr` | 32 B | big-endian, < BN254 scalar modulus (strict) |
 | `G1` | 64 B | `x ‖ y`, identity = all-zeros |
 | `G2` | 128 B | `x.c1 ‖ x.c0 ‖ y.c1 ‖ y.c0` |
 
-**EIP-2537** (BLS12-381, 512 B proof):
+**EIP-2537** (BLS12-381 Groth16, 512 B proof):
 
 | type | size | encoding |
-|------|------|----------|
+|---|---|---|
 | `Fp` | 64 B | 16 zero-pad + 48 big-endian, < BLS12-381 base modulus |
 | `Fr` | 32 B | big-endian, < BLS12-381 scalar modulus (strict) |
 | `G1` | 128 B | `x ‖ y`, identity = all-zeros |
 | `G2` | 256 B | `x.c0 ‖ x.c1 ‖ y.c0 ‖ y.c1` |
 
-**Winterfell 0.13 `Proof::to_bytes`** (STARK, variable size): trace root + constraint root + FRI layer commitments + query proofs + OOD evals + remainder polynomial. No VK, the AIR definition is the verifier-side invariant. Proof size depends on AIR + trace length + blowup + query count + extension field.
-
-**Containers** (Groth16, same shape for both curves):
-
-- VK: `α(G1) ‖ β(G2) ‖ γ(G2) ‖ δ(G2) ‖ num_ic(u32 LE) ‖ ic[num_ic](G1)`
-- Public inputs: `count(u32 LE) ‖ input[count](Fr)`
-
-Heads up: the Fp2 byte order is `(c1, c0)` on EIP-197 and `(c0, c1)` on EIP-2537. If you're porting between `zkmcu-verifier` and `zkmcu-verifier-bls12`, check the Fp2 order first, thats the most common place things silently break. Strict canonical encoding is enforced on `Fr` for both curves.
+Heads up: the Fp2 byte order is `(c1, c0)` on EIP-197 and `(c0, c1)` on EIP-2537. If you're porting between `zkmcu-verifier` and `zkmcu-verifier-bls12`, check the Fp2 order first, thats the most common place things silently break.
 
 ## Documents
 
-Typst sources under `research/`, build with `just docs`, output in `research/out/` (gitignored):
+Typst sources under `research/`, build with `just docs`, output in `research/out/` (gitignored). The canonical writeup for the current PQ-Semaphore A-E arc is in flight; the in-tree predecessors:
 
-- `whitepaper.pdf`: canonical technical paper
-- `prior-art.pdf`: living survey of what else exists in embedded ZK
-- `2026-04-22-bls12-381-results.pdf`: BLS12-381 measurements vs frozen predictions (2 of 3 criteria fired)
-- `2026-04-22-semaphore-baseline.pdf`: real-world Semaphore Groth16 proof on a Pico 2 W
-- `2026-04-23-umaal-sram-groth16.pdf`: hand-written UMAAL Montgomery multiply in SRAM, 988 → 641 ms
-- `2026-04-23-stark-prediction.pdf` + `stark-results.pdf`: phase 3.1, first STARK on-silicon numbers
-- `2026-04-24-stark-quadratic-prediction.pdf` + `stark-quadratic-results.pdf`: phase 3.2, 95-bit STARK verify
-- `2026-04-24-stark-allocator-matrix.pdf`: phase 3.2.z, allocator comparison, production config picked
+- `whitepaper.pdf` — canonical technical paper (multi-track)
+- `prior-art.pdf` — prior-art survey (Groth16 side; STARK side at `research/notebook/2026-04-30-prior-art-stark-side.md`)
+- `2026-04-22-bls12-381-results.pdf` — BLS12-381 measurements vs frozen predictions
+- `2026-04-22-semaphore-baseline.pdf` — real-world Semaphore v4 Groth16 proof on Pico 2 W
+- `2026-04-23-umaal-sram-groth16.pdf` — hand-written UMAAL Montgomery multiply, 988 → 641 ms
+- `2026-04-24-stark-allocator-matrix.pdf` — allocator comparison, production config picked
 
-Phase 3 paper trail lives under `research/notebook/`, `research/reports/`, and `benchmarks/runs/`.
+Phase A-E paper trail lives under `research/notebook/2026-04-{29,30}-*` and `benchmarks/runs/2026-04-{29,30}-*`.
+
+## What this is NOT
+
+- NOT a hardware wallet. No secure element, no tamper resistance, no key custody. Convenience-grade self-custody on open hardware.
+- NOT a prover (yet). The Plonky3 PQ-Semaphore prover is host-side `std`, runs on a laptop. The on-device 48 ms prover work is Winterfell + a different AIR + different security parameters; that's a separate writeup at some point.
+- NOT a deployable Semaphore replacement. The custom AIR has not been externally audited; integration with the Semaphore Protocol's identity commitment scheme is future work.
+- NOT a claim that Poseidon2 is broken. Both legs of the dual-hash composition are individually trusted; the dual structure is defence in depth, not a vote of no-confidence in either hash.
+
+## Citation
+
+If this work is useful to your research, please cite:
+
+```
+@misc{kamer2026pqsemaphore,
+  author = {Niek Kamer},
+  title  = {Post-quantum Semaphore on a \$7 microcontroller in 1.6 seconds:
+            a benchmark of Plonky3 STARK verification with dual-hash composition
+            on Cortex-M33 and Hazard3 RV32},
+  year   = {2026},
+  url    = {https://zkmcu.dev/research/2026-04-30-pq-semaphore-128bit/},
+  note   = {Source: \url{https://github.com/Niek-Kamer/zkmcu}}
+}
+```
+
+ePrint URL added once the report is filed.
 
 ## License
 
