@@ -1,0 +1,99 @@
+[meta]
+date       = "2026-04-30"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "phase-E-dual-hash (uncommitted at capture time)"
+phase      = "Phase E.1 — stacked dual-hash (Poseidon2-BabyBear + Blake3) verify (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-blake3"              = "0.5.1 (vendor/Plonky3, path dep)"
+"blake3"                 = "1.8 (no_std)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (added pq_semaphore_blake3 + pq_semaphore_dual modules)"
+"zkmcu-vectors"          = "0.1.0 (committed proofs at data/pq-semaphore-d10-dual/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216       # configured static heap (384 KB)
+heap_peak         = 304_180       # peak across both verify legs (drop-between pattern)
+stack_peak_bytes  = 11_196        # 64 KB sentinel paint succeeded — ample stack with 384 KB heap
+
+[circuit]
+name           = "pq-semaphore-d10-dual"
+description    = "PQ-Semaphore depth-10 STARK over BabyBear × Quartic, audited Poseidon2-BabyBear-16 + Blake3, FRI grinding 16+16, AIR digest=6 (Phase B-equivalent), proven twice and verified twice — hash-tower soundness composition"
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash_p2        = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+hash_b3        = "Blake3 (32-byte digest), p3-blake3 wrapper of blake3 1.8"
+digest_words   = 6                 # AIR digest unchanged across legs (same Phase B AIR)
+trace_rows     = 16
+merkle_depth   = 10
+blowup_factor  = 2
+num_queries    = 64
+fri_folding    = 4
+commit_pow_bits = 16
+query_pow_bits  = 16
+proof_p2_bytes = 172_977            # Phase B-equivalent, +0.21% vs 2026-04-29 d6 (172_607); seeds differ
+proof_b3_bytes = 163_824            # 32-byte Blake3 digests pack tighter than 6×4-byte BabyBear digests
+public_inputs  = 24                 # shared between legs
+public_bytes   = 96                 # shared between legs
+security_bits_conjectured_fri      = 127   # per leg, FRI grinding side
+security_bits_hash_collision       = 186   # per leg, AIR digest side (6 × 31-bit BabyBear)
+security_bits_combined_lower_bound = 127   # min across legs; surviving one of the two hashes still gives 127
+security_note                      = "Soundness compounds: a forged proof must verify under BOTH the algebraic Poseidon2-BabyBear FRI and the generic Blake3 FRI. A cryptanalytic break of one hash does not collapse the verifier."
+
+# ---- Headline result. Phase-E.1 dual-hash, depth-10 PQ-Semaphore on Cortex-M33. ----
+
+[bench.pq_semaphore_dual_verify]
+circuit       = "pq-semaphore-d10-dual, full-pipeline (parse_and_verify both legs, drop between)"
+iterations    = 20
+cycles_min    = 241_680_693
+cycles_max    = 241_771_797
+cycles_median = 241_708_178      # mean of 10th and 11th sorted samples
+us_min        = 1_611_204
+us_max        = 1_611_811
+us_median     = 1_611_387
+range_pct     = 0.038
+result        = "ok"
+
+# ---- Phase-E predictions (from bindings/.claude/plans/2026-04-29-security-128bit.md § Phase E). ----
+
+[predictions_phase_e]
+predicted_us_low     = 2_200_000
+predicted_us_high    = 2_500_000
+phase_b_baseline_us  = 1_065_839     # benchmarks/runs/2026-04-29-m33-pq-semaphore-d6
+verdict              = "BELOW PREDICTED BAND (good): measured 1611.39 ms M33 — predicted 2200-2500 ms. Plan assumed 'dual ≈ 2 × Phase B = 2200 ms+' under the implicit model that Blake3 verify cost matches Poseidon2 verify cost. It does not. The Blake3 leg costs ~545 ms on M33 vs the Poseidon2 leg's 1066 ms — Blake3's ARX inner loop runs at native byte throughput on Cortex-M33 (single-cycle rotates, no field multiply), while Poseidon2-BabyBear has to compute a width-16 algebraic permutation (S-box x^7, MDS, 13 partial + 8 full rounds) for every Merkle node and FRI absorption. The hash-bound ratio P2:B3 ≈ 2:1 on this CPU."
+
+predicted_proof_size_kb_low  = 350
+predicted_proof_size_kb_high = 420
+measured_proof_size_total_b  = 336_801    # 172_977 + 163_824
+verdict_proof_size           = "AT PREDICTED LOW EDGE: 336.8 KB total (172.9 KB P2 + 163.8 KB B3). Plan predicted 350-420 KB. Blake3 leg is slightly smaller per-byte than Poseidon2 leg because 32-byte Blake3 digests pack tighter than 6 × 4-byte BabyBear digest tuples in the FRI MMCS Merkle paths."
+
+predicted_heap_after_parse_kb_low  = 280
+predicted_heap_after_parse_kb_high = 340
+measured_heap_peak                  = 304_180
+verdict_heap                        = "INSIDE BAND: 304 KB peak (~297 KB), well within 384 KB heap budget. Drop-between pattern keeps peak at max(p2_peak, b3_peak) instead of sum, so we did not need to bump heap to 480 KB like Phase D."
+
+predicted_combined_security = 128
+measured_combined_security  = 127
+verdict_security            = "1 BIT BELOW PRED: combined min(127, 127) = 127 conjectured bits per leg. Plan said '128 each, with cryptanalytic backup'; the FRI side runs at 127 conjectured bits per leg (the same number Phase A landed). The 1-bit gap to 128 is a property of FRI grinding not the dual-hash composition. The dual structure delivers the orthogonal property: cryptanalytic surprise on either hash does not collapse soundness."
+
+[result_summary]
+status                  = "Phase E.1 landed, hypothesis EXCEEDED — dual verify is faster than predicted thanks to Blake3's byte-level efficiency on M33"
+m33_dual_ms_median      = 1_611.387
+m33_vs_phase_b_pct      = 51.18      # (1611.387 - 1065.839) / 1065.839
+blake3_leg_ms_estimate  = 545.5      # dual_ms - phase_b_ms; ignores parse cost being charged to dual
+takeaway                = "BabyBear × Quartic + Phase B digest=6 + Phase A grinding + Blake3 sibling proof gives the headline 'true PQ' verifier: ~1.6 s on M33, 384 KB heap, hash-tower soundness composition. Dual FRI proofs are cheap because Blake3 is cheaper than Poseidon2 on this CPU shape, not the other way around."
