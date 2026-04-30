@@ -1,0 +1,118 @@
+[meta]
+date       = "2026-04-30"
+target     = "rp2350-hazard3 (RISC-V rv32imac)"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "phase-E-dual-hash (uncommitted at capture time)"
+phase      = "Phase E.1 — stacked dual-hash (Poseidon2-BabyBear + Blake3) verify (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Hazard3 RV32IMAC @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-blake3"              = "0.5.1 (vendor/Plonky3, path dep)"
+"blake3"                 = "1.8 (no_std)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (added pq_semaphore_blake3 + pq_semaphore_dual modules)"
+"zkmcu-vectors"          = "0.1.0 (committed proofs at data/pq-semaphore-d10-dual/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216
+heap_peak         = 304_180       # identical to M33 sibling — allocator state is target-independent
+stack_peak_bytes  = 11_000        # 64 KB sentinel paint succeeded
+
+[circuit]
+name           = "pq-semaphore-d10-dual"
+description    = "Same proof bytes as the M33 sibling. Only the firmware target (riscv32imac-unknown-none-elf) changes."
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash_p2        = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+hash_b3        = "Blake3 (32-byte digest), p3-blake3 wrapper of blake3 1.8"
+digest_words   = 6
+trace_rows     = 16
+merkle_depth   = 10
+blowup_factor  = 2
+num_queries    = 64
+fri_folding    = 4
+commit_pow_bits = 16
+query_pow_bits  = 16
+proof_p2_bytes = 172_977
+proof_b3_bytes = 163_824
+public_inputs  = 24
+public_bytes   = 96
+security_bits_conjectured_fri      = 127
+security_bits_hash_collision       = 186
+security_bits_combined_lower_bound = 127
+
+[bench_shape]
+description = """
+Identical loop to the M33 dual sibling. Same proof bytes, same iter count.
+Only the firmware target (riscv32imac-unknown-none-elf) changes.
+"""
+iterations = 20
+
+[bench.pq_semaphore_dual_verify]
+circuit       = "pq-semaphore-d10-dual, verify both legs in sequence (drop p2 before parsing b3)"
+iterations    = 20
+cycles_min    = 306_163_748
+cycles_max    = 306_413_105
+cycles_median = 306_266_255      # mean of 10th and 11th sorted samples
+us_min        = 2_041_091
+us_max        = 2_042_754
+us_median     = 2_041_775
+range_pct     = 0.081
+result        = "ok"
+
+[compare.cross_isa]
+m33_run                  = "benchmarks/runs/2026-04-30-m33-pq-semaphore-dual"
+m33_us                   = 1_611_387
+rv32_us                  = 2_041_775
+ratio                    = 1.267
+note = """
+Cross-ISA ratio 1.267 — wider than the BabyBear-only Phase B (1.191×) and
+than the Phase C honest_verify full pipeline (1.152×), narrower than the
+Phase D Goldilocks × Quadratic config (1.354×).
+
+The widening over Phase B comes from the Blake3 leg, not the Poseidon2 leg.
+The Phase B verifier is BabyBear field-arithmetic-bound; UMAAL + Hazard3
+single-cycle ALU paths are similar enough to give 1.19× cross-ISA. Blake3
+inside a STARK verifier hammers the ARX (add, rotate, xor) inner loop
+~64 queries × ~10 Merkle hops × ~7 Blake3 hashes per node deep — and
+Cortex-M33 has 1-cycle barrel-shift / rotate-by-immediate while Hazard3
+has to emulate rotates as `srl ; sll ; or`, paying 3 instructions per
+rotate. That extra rotate cost compounds across millions of Blake3
+operations, widening the cross-ISA gap on the b3 leg from 1.19× to ~1.42×.
+
+Per-leg estimates (subtracting Phase B baselines from dual cost; ignores
+parse-step overhead which is shared):
+  - p2 leg: M33 ~1066 ms, RV32 ~1270 ms, ratio ~1.19× (matches Phase B)
+  - b3 leg: M33  ~545 ms, RV32  ~772 ms, ratio ~1.42×
+
+For the portability story: BabyBear-d6-only (Phase B) gives ~1.19× cross-
+ISA and is the right pick when Blake3-class cryptanalytic backup is not
+required. The dual config gives stronger soundness (defence in depth)
+but pays a wider 1.27× cross-ISA gap.
+"""
+
+[predictions_phase_e]
+predicted_rv32_us_low     = 2_700_000
+predicted_rv32_us_high    = 3_000_000
+phase_b_baseline_us       = 1_269_727     # benchmarks/runs/2026-04-29-rv32-pq-semaphore-d6
+verdict                   = "BELOW PREDICTED BAND (good): measured 2041.78 ms RV32 — predicted 2700-3000 ms. Same root cause as the M33 sibling: Blake3 verify is materially cheaper than Poseidon2 verify per query. The cross-ISA gap on the Blake3 leg (~1.42×) is wider than expected because Hazard3 lacks a single-instruction rotate, but the absolute Blake3 cost is still well under the implicit '~Phase B per leg' model the plan used."
+
+[result_summary]
+status                    = "Phase E.1 landed, faster than predicted on both ISAs"
+rv32_dual_ms_median       = 2_041.775
+rv32_vs_phase_b_pct       = 60.81       # (2041.78 - 1269.73) / 1269.73
+blake3_leg_ms_estimate    = 772.0       # rv32 dual - rv32 phase-b
+takeaway                  = "Dual-hash verify on Hazard3 is +60.8% over BabyBear-d6 single-leg — wider than the +51.2% on Cortex-M33 because the Blake3 leg pays a 1.42× Hazard3 tax (no fused rotate). Still well under the predicted 2700-3000 ms band. Cross-ISA portability widens 1.19× → 1.27× when the Blake3 sibling is required."
