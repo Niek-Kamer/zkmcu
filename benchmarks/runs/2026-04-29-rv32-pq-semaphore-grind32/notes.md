@@ -2,7 +2,7 @@
 
 **What changed:** `COMMIT_POW_BITS` and `QUERY_POW_BITS` both 0 → 16 in `crates/zkmcu-verifier-plonky3/src/pq_semaphore.rs`. Same source change as the M33 pair-run; same regenerated vector.
 
-**Why:** Phase A of `bindings/.claude/plans/2026-04-29-security-128bit.md`. +32 conjectured bits, near-free at the verifier.
+**Why:** Phase A of `research/notebook/2026-04-29-security-128bit-plan.md`. +32 conjectured bits, near-free at the verifier.
 
 **Headline:**
 - 1255.981 ms median, 19 iterations, all ok.
@@ -18,6 +18,6 @@
 - Variance < 0.10%: ✅ 0.040%.
 - result = ok for ≥ 16 iterations: ✅ 19/19.
 
-**Plan link:** `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase A.
+**Plan link:** `research/notebook/2026-04-29-security-128bit-plan.md` § Phase A.
 
 **Pair file:** `benchmarks/runs/2026-04-29-m33-pq-semaphore-grind32/`.

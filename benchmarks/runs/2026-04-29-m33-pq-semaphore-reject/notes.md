@@ -127,7 +127,7 @@ PCS verify's per-round setup before the first PoW check fails.
 
 ## Links
 
-- Plan section: `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase C
+- Plan section: `research/notebook/2026-04-29-security-128bit-plan.md` § Phase C
 - Honest-only Phase B baseline: `benchmarks/runs/2026-04-29-m33-pq-semaphore-d6/`
 - Mutation harness: `crates/zkmcu-vectors/src/mutations.rs`
 - Host-side validation test: `crates/zkmcu-verifier-plonky3/tests/pq_semaphore_reject.rs`

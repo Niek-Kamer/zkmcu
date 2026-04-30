@@ -69,7 +69,7 @@ us_median     = 1_611_387
 range_pct     = 0.038
 result        = "ok"
 
-# ---- Phase-E predictions (from bindings/.claude/plans/2026-04-29-security-128bit.md § Phase E). ----
+# ---- Phase-E predictions (from research/notebook/2026-04-29-security-128bit-plan.md § Phase E). ----
 
 [predictions_phase_e]
 predicted_us_low     = 2_200_000

@@ -46,6 +46,6 @@ trace by ~11 columns (~3.4%), not multiplies Poseidon2 work.
 
 ## Links
 
-- Plan section: `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase B
+- Plan section: `research/notebook/2026-04-29-security-128bit-plan.md` § Phase B
 - M33 sibling run: `benchmarks/runs/2026-04-29-m33-pq-semaphore-d6/`
 - Phase-A RV32 baseline: `benchmarks/runs/2026-04-29-rv32-pq-semaphore-grind32/`

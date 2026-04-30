@@ -2,7 +2,7 @@
 
 **What changed:** `COMMIT_POW_BITS` and `QUERY_POW_BITS` both bumped from 0 → 16 in `crates/zkmcu-verifier-plonky3/src/pq_semaphore.rs`. Vectors regenerated; firmware recompiled.
 
-**Why:** Phase A of `bindings/.claude/plans/2026-04-29-security-128bit.md`. Grinding stacks 32 bits of conjectured security (16 commit + 16 query) on top of the 95 from `BabyBear×Quartic + 64 queries + log_blowup=1`. Total: ~127 conjectured bits. Almost free at the verifier (one extra hash + compare per FRI commit phase).
+**Why:** Phase A of `research/notebook/2026-04-29-security-128bit-plan.md`. Grinding stacks 32 bits of conjectured security (16 commit + 16 query) on top of the 95 from `BabyBear×Quartic + 64 queries + log_blowup=1`. Total: ~127 conjectured bits. Almost free at the verifier (one extra hash + compare per FRI commit phase).
 
 **Headline:**
 - 1051.088 ms median, 23 iterations, all ok.
@@ -19,6 +19,6 @@
 - Variance < 0.10%: ✅ 0.043%.
 - result = ok for ≥ 16 iterations: ✅ 23/23.
 
-**Plan link:** `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase A.
+**Plan link:** `research/notebook/2026-04-29-security-128bit-plan.md` § Phase A.
 
 **Pair file:** `benchmarks/runs/2026-04-29-rv32-pq-semaphore-grind32/` (same change, RV32 silicon).

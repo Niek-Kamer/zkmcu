@@ -33,7 +33,7 @@ The 1.6 s number is **full pipeline** (parse + verify both FRI legs from raw byt
 
 ## Phase A-E methodology
 
-Each phase had falsifiable predictions written *before* the on-silicon bench, committed alongside `result.toml`. Four out of five phases landed outside their predicted bands. The plan, predictions, and per-phase measurements are at `bindings/.claude/plans/2026-04-29-security-128bit.md` plus the `benchmarks/runs/` directories.
+Each phase had falsifiable predictions written *before* the on-silicon bench, committed alongside `result.toml`. Four out of five phases landed outside their predicted bands. The plan, predictions, and per-phase measurements are at `research/notebook/2026-04-29-security-128bit-plan.md` plus the `benchmarks/runs/` directories.
 
 | Phase | Change | M33 verify (ms) | Δ vs Phase B | Predicted band | Verdict |
 |---|---|---:|---:|---|---|

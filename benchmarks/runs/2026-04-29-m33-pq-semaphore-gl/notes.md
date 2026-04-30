@@ -95,7 +95,7 @@ Reader picks. Don't kill the BabyBear path.
 
 ## Links
 
-- Plan section: `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase D
+- Plan section: `research/notebook/2026-04-29-security-128bit-plan.md` § Phase D
 - RV32 sibling: `benchmarks/runs/2026-04-29-rv32-pq-semaphore-gl/`
 - Phase B BB-d6 baseline (M33): `benchmarks/runs/2026-04-29-m33-pq-semaphore-d6/`
 - Verifier module: `crates/zkmcu-verifier-plonky3/src/pq_semaphore_goldilocks.rs`

@@ -1,7 +1,7 @@
 # Phase B — digest 4 → 6 on Cortex-M33
 
 Phase B of the 128-bit security plan
-(`.claude/plans/2026-04-29-security-128bit.md`): widen the application
+(`research/notebook/2026-04-29-security-128bit-plan.md`): widen the application
 Semaphore Merkle digest from 4 BabyBear elements (124-bit digest space)
 to 6 (186-bit). Goal: remove the hash-collision floor as the soundness
 bottleneck. FRI-side stays at 127 conjectured bits from Phase A.
@@ -65,7 +65,7 @@ of those columns, not external Merkle paths.
 
 ## Links
 
-- Plan section: `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase B
+- Plan section: `research/notebook/2026-04-29-security-128bit-plan.md` § Phase B
 - Phase-A baseline: `benchmarks/runs/2026-04-29-m33-pq-semaphore-grind32/`
 - Vectors regenerated: `crates/zkmcu-vectors/data/pq-semaphore-d10/`
   (proof.bin 172_607 B, public.bin 96 B)

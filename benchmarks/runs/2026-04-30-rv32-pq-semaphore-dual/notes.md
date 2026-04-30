@@ -70,7 +70,7 @@ None. All success criteria from the plan met:
 
 ## Links
 
-- Plan section: `bindings/.claude/plans/2026-04-29-security-128bit.md` § Phase E
+- Plan section: `research/notebook/2026-04-29-security-128bit-plan.md` § Phase E
 - M33 sibling: `benchmarks/runs/2026-04-30-m33-pq-semaphore-dual/`
 - Phase B P2 baseline (RV32): `benchmarks/runs/2026-04-29-rv32-pq-semaphore-d6/`
 - Verifier modules: `crates/zkmcu-verifier-plonky3/src/pq_semaphore_blake3.rs`, `crates/zkmcu-verifier-plonky3/src/pq_semaphore_dual.rs`
