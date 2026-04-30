@@ -65,6 +65,7 @@ zkmcu-verifier-stark = { path = "../zkmcu-verifier-stark" }
 zkmcu-verifier-plonky3 = { path = "../zkmcu-verifier-plonky3" }
 p3-uni-stark = { path = "../../vendor/Plonky3/uni-stark" }
 p3-baby-bear = { path = "../../vendor/Plonky3/baby-bear" }
+p3-goldilocks = { path = "../../vendor/Plonky3/goldilocks" }
 p3-poseidon2 = { path = "../../vendor/Plonky3/poseidon2" }
 p3-poseidon2-air = { path = "../../vendor/Plonky3/poseidon2-air" }
 p3-field = { path = "../../vendor/Plonky3/field" }

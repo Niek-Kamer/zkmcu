@@ -62,6 +62,7 @@ extern crate alloc;
 
 pub mod poseidon2_chain;
 pub mod pq_semaphore;
+pub mod pq_semaphore_goldilocks;
 
 // Re-export the Plonky3 surface downstream consumers need. Anchors the
 // public API to this crate so callers don't need a direct dep on
@@ -72,14 +73,17 @@ pub use p3_uni_stark::{verify, Proof, StarkGenericConfig, VerificationError};
 /// Upper bound on the byte length accepted by the AIR-specific
 /// `parse_proof_<name>` functions added in later phases.
 ///
-/// PQ-Semaphore proof size at 64 FRI queries / 16 rows / ~324 cols is
-/// ~ 175 KB; 256 KB leaves comfortable headroom while capping the
-/// attack surface for adversary-controlled length prefixes inside the
-/// serde decoder. The poseidon2-chain anchor AIR (28 queries, 64 rows)
-/// fits in ~ 88 KB, well within this cap.
+/// PQ-Semaphore-BabyBear proof size at 64 FRI queries / 16 rows / d=6
+/// is ~ 172 KB. The Goldilocks × Quadratic sibling pays double the per-
+/// element bytes (8 vs 4) and lands at ~ 271 KB, so the cap was bumped
+/// from 256 → 320 KB to fit. This is a length-prefix attack-surface
+/// cap, not a heap budget — firmware passes the static flash slice
+/// directly to `parse_proof` so the bytes never hit the heap. The
+/// poseidon2-chain anchor AIR (28 queries, 64 rows) fits in ~ 88 KB,
+/// well within this cap.
 ///
 /// [`zkmcu-verifier-stark`]: https://crates.io/crates/zkmcu-verifier-stark
-pub const MAX_PROOF_SIZE: usize = 256 * 1024;
+pub const MAX_PROOF_SIZE: usize = 320 * 1024;
 
 /// Unified error type spanning parse and verify failures.
 ///

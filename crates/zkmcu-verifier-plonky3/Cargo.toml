@@ -30,6 +30,7 @@ workspace = true
 # audit coverage and required a re-audit.
 p3-uni-stark     = { path = "../../vendor/Plonky3/uni-stark" }
 p3-baby-bear     = { path = "../../vendor/Plonky3/baby-bear" }
+p3-goldilocks    = { path = "../../vendor/Plonky3/goldilocks" }
 p3-poseidon2-air = { path = "../../vendor/Plonky3/poseidon2-air" }
 p3-poseidon2     = { path = "../../vendor/Plonky3/poseidon2" }
 p3-air           = { path = "../../vendor/Plonky3/air" }
