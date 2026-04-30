@@ -62,6 +62,8 @@ extern crate alloc;
 
 pub mod poseidon2_chain;
 pub mod pq_semaphore;
+pub mod pq_semaphore_blake3;
+pub mod pq_semaphore_dual;
 pub mod pq_semaphore_goldilocks;
 
 // Re-export the Plonky3 surface downstream consumers need. Anchors the

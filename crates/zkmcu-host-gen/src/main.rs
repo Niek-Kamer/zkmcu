@@ -23,6 +23,7 @@ mod measure_poseidon;
 mod poseidon;
 mod pq_poseidon_chain;
 mod pq_semaphore;
+mod pq_semaphore_dual;
 mod pq_semaphore_gl;
 mod semaphore;
 mod stark;
@@ -98,7 +99,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || has_arg("pq-semaphore")
         || has_arg("pq_semaphore")
         || has_arg("pq-semaphore-gl")
-        || has_arg("pq_semaphore_gl");
+        || has_arg("pq_semaphore_gl")
+        || has_arg("pq-semaphore-dual")
+        || has_arg("pq_semaphore_dual");
 
     if !any_explicit || has_arg("bn254") {
         bn254::run(&out_root)?;
@@ -134,6 +137,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if has_arg("pq-semaphore-gl") || has_arg("pq_semaphore_gl") {
         pq_semaphore_gl::run(&out_root)?;
+    }
+    if has_arg("pq-semaphore-dual") || has_arg("pq_semaphore_dual") {
+        pq_semaphore_dual::run(&out_root)?;
     }
 
     Ok(())

@@ -97,6 +97,14 @@ build-m33-pq-semaphore-gl:
 build-rv32-pq-semaphore-gl:
     cd crates/bench-rp2350-rv32-pq-semaphore-gl && cargo build --release
 
+# Build the PQ-Semaphore stacked dual-hash (Poseidon2 + Blake3) benchmark for the Pico 2 W (Cortex-M33, phase E.1).
+build-m33-pq-semaphore-dual:
+    cd crates/bench-rp2350-m33-pq-semaphore-dual && cargo build --release
+
+# Build the PQ-Semaphore stacked dual-hash (Poseidon2 + Blake3) benchmark for the Pico 2 W (Hazard3 RV32, phase E.1).
+build-rv32-pq-semaphore-dual:
+    cd crates/bench-rp2350-rv32-pq-semaphore-dual && cargo build --release
+
 # Run every native test (cross-check: arkworks <-> substrate-bn).
 test:
     cargo test --release
@@ -152,7 +160,7 @@ fmt:
 
 # Clippy at -D warnings. Host crates first (default-members), then each firmware
 # crate separately against its own target.
-lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-pq-poseidon-chain lint-m33-pq-semaphore lint-m33-pq-semaphore-reject lint-m33-pq-semaphore-gl lint-m33-bn-asm-test lint-m33-timing-oracle lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb lint-rv32-pq-poseidon-chain lint-rv32-pq-semaphore lint-rv32-pq-semaphore-reject lint-rv32-pq-semaphore-gl
+lint: lint-host lint-m33 lint-m33-bls12 lint-m33-stark lint-m33-stark-bb lint-m33-stark-prover lint-m33-stark-prover-bb lint-m33-pq-poseidon-chain lint-m33-pq-semaphore lint-m33-pq-semaphore-reject lint-m33-pq-semaphore-gl lint-m33-pq-semaphore-dual lint-m33-bn-asm-test lint-m33-timing-oracle lint-rv32 lint-rv32-bls12 lint-rv32-stark lint-rv32-stark-bb lint-rv32-stark-prover lint-rv32-stark-prover-bb lint-rv32-pq-poseidon-chain lint-rv32-pq-semaphore lint-rv32-pq-semaphore-reject lint-rv32-pq-semaphore-gl lint-rv32-pq-semaphore-dual
 
 lint-host:
     cargo clippy --all-targets --release -- -D warnings
@@ -222,6 +230,12 @@ lint-m33-pq-semaphore-gl:
 
 lint-rv32-pq-semaphore-gl:
     cd crates/bench-rp2350-rv32-pq-semaphore-gl && cargo clippy --release -- -D warnings
+
+lint-m33-pq-semaphore-dual:
+    cd crates/bench-rp2350-m33-pq-semaphore-dual && cargo clippy --release -- -D warnings
+
+lint-rv32-pq-semaphore-dual:
+    cd crates/bench-rp2350-rv32-pq-semaphore-dual && cargo clippy --release -- -D warnings
 
 # Everything that must pass before a commit.
 check: fmt-check lint test
