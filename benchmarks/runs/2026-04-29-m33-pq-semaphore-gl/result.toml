@@ -1,0 +1,109 @@
+[meta]
+date       = "2026-04-29"
+target     = "rp2350-m33 (Cortex-M33)"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "phase-D-goldilocks (uncommitted at capture time)"
+phase      = "Phase D — Goldilocks × Quadratic alternate config (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-goldilocks"          = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 RCs)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (added pq_semaphore_goldilocks module)"
+"zkmcu-vectors"          = "0.1.0 (committed proof at data/pq-semaphore-d10-gl/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 491_520    # 480 KB heap (bumped from 384 KB Phase B)
+heap_peak         = 415_312    # peak during honest verify
+heap_after_parse  = 245_992    # post-parse_proof, pre-verify
+stack_peak_bytes  = 0          # not captured (boot_measure path skipped — see notes.md)
+
+[circuit]
+name           = "pq-semaphore-d10-gl"
+description    = "PQ-Semaphore depth-10 STARK over Goldilocks × Quadratic, audited Poseidon2-Goldilocks-16, FRI grinding 16+16, AIR digest=4, internal MMCS digest=4"
+field          = "Goldilocks (2^64 - 2^32 + 1, 64-bit)"
+extension      = "Quadratic (BinomialExtensionField<Goldilocks, 2>)"
+hash           = "Poseidon2-Goldilocks-16, audited GOLDILOCKS_POSEIDON2_RC_16_*"
+air_digest_words = 4
+mmcs_digest_words = 4
+trace_rows     = 16
+merkle_depth   = 10
+blowup_factor  = 2
+num_queries    = 64
+fri_folding    = 4
+commit_pow_bits = 16
+query_pow_bits  = 16
+proof_bytes    = 271_120
+public_bytes   = 128
+security_bits_native_field = 128
+security_bits_conjectured_fri = 127
+security_bits_hash_collision = 128
+
+[bench_shape]
+description = """
+Honest-verify hot loop, 20 captured iters. parse_proof + parse_public_inputs +
+make_config + build_air run once at boot from the static flash slice; the
+timed window covers verify_with_config only. Heap peak captured live via
+HEAP.peak() on every iteration (TLSF tracking allocator).
+
+Stack peak NOT captured: the 480 KB heap leaves only ~32 KB for stack
+above .bss, but bench_core::measure_stack_peak paints a 64 KB sentinel
+window below SP. That paint runs off the stack into the heap allocator
+state and panic_halt fires on the first verify allocation. The Phase C
+reject benches accepted the same trade-off.
+"""
+iterations = 20
+
+[bench.pq_semaphore_gl_verify]
+circuit       = "pq-semaphore-d10-gl, verify_with_config (verify only, parse + make_config + build_air done at boot)"
+iterations    = 20
+cycles_min    = 299_312_489
+cycles_max    = 299_397_378
+cycles_median = 299_349_212
+us_min        = 1_995_416
+us_max        = 1_995_982
+us_median     = 1_995_661
+range_pct     = 0.028
+result        = "ok"
+
+[predictions_phase_d]
+predicted_m33_us_low      =   600_000
+predicted_m33_us_high     =   680_000
+phase_b_baseline_us       = 1_065_839     # benchmarks/runs/2026-04-29-m33-pq-semaphore-d6
+verdict                   = "HYPOTHESIS REJECTED. Predicted 600-680 ms M33; measured 1995.66 ms — +87% over Phase B BabyBear-d6 baseline, far outside the predicted band. The Phase 3.3 'Goldilocks 66% faster' number that motivated this prediction was on a fib1024 STARK (arithmetic-bound). PQ-Semaphore verify is hash-bound: 64 FRI queries × ~10 Merkle hops × Poseidon2-Goldilocks-16 permutations dominate. Two compounding effects: (1) Goldilocks elements are 64-bit, so on a 32-bit Cortex-M33 every mul, add, sub is multi-precision — substrate-bn-style UMAAL helps but doesn't catch up; (2) Poseidon2-Goldilocks-16 has 22 partial rounds vs 13 for BabyBear (1.7× more), and the x^7 S-box is more work per element."
+
+[result_summary]
+status                    = "Phase D landed, hypothesis rejected — useful negative result"
+m33_verify_ms_median      = 1995.66
+m33_vs_babybear_d6_ratio  = 1.872       # 1995.66 / 1065.84
+proof_size_bytes          = 271_120
+proof_vs_babybear_d6_ratio = 1.571       # 271_120 / 172_607
+heap_peak_bytes           = 415_312
+heap_vs_babybear_d6_ratio = 1.262        # 415_312 / 329_079
+takeaway = """
+For embedded verify on 32-bit ARM/RV32, BabyBear × Quartic remains the
+right field. Goldilocks × Quadratic delivers 128-bit native field
+security but pays ~1.87× verify cost on M33 because PQ-Semaphore is
+hash-bound. The 2x2 table in the eventual paper now reads:
+
+  - BabyBear × Quartic  + d6 grinding:  1066 ms M33,  127 conj, portable (1.19× cross-ISA)
+  - Goldilocks × Quadr  + grinding:     1996 ms M33,  127 conj + 128 native field, less portable (1.35× cross-ISA)
+
+For applications that want native-field 128-bit at any cost, Goldilocks
+is reachable. For applications that just want '128-bit class', BabyBear-d6
+is materially cheaper. Plan's expectation that Goldilocks would simply
+inherit Phase 3.3's 66% speedup did not survive contact with a hash-
+heavy verify shape.
+"""

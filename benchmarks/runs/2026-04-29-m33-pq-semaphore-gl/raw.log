@@ -1,0 +1,23 @@
+zkmcu boot: heap=480K sys=150MHz core=cortex-m33 alloc=tlsf proof=pq-semaphore-d10-gl
+[fp] before parse_proof heap_cur=0 heap_peak=0
+[fp] after parse_proof heap_cur=245976 heap_peak=245992
+[1] pq_semaphore_gl_verify: cycles=299322535 us=1995483 ms=1995 heap_peak=415312 ok=true
+[2] pq_semaphore_gl_verify: cycles=299371849 us=1995812 ms=1995 heap_peak=415312 ok=true
+[3] pq_semaphore_gl_verify: cycles=299329968 us=1995533 ms=1995 heap_peak=415312 ok=true
+[4] pq_semaphore_gl_verify: cycles=299344130 us=1995627 ms=1995 heap_peak=415312 ok=true
+[5] pq_semaphore_gl_verify: cycles=299344637 us=1995630 ms=1995 heap_peak=415312 ok=true
+[6] pq_semaphore_gl_verify: cycles=299397378 us=1995982 ms=1995 heap_peak=415312 ok=true
+[7] pq_semaphore_gl_verify: cycles=299321084 us=1995473 ms=1995 heap_peak=415312 ok=true
+[8] pq_semaphore_gl_verify: cycles=299385589 us=1995903 ms=1995 heap_peak=415312 ok=true
+[9] pq_semaphore_gl_verify: cycles=299369499 us=1995796 ms=1995 heap_peak=415312 ok=true
+[10] pq_semaphore_gl_verify: cycles=299380740 us=1995871 ms=1995 heap_peak=415312 ok=true
+[11] pq_semaphore_gl_verify: cycles=299345954 us=1995639 ms=1995 heap_peak=415312 ok=true
+[12] pq_semaphore_gl_verify: cycles=299382366 us=1995882 ms=1995 heap_peak=415312 ok=true
+[13] pq_semaphore_gl_verify: cycles=299326866 us=1995512 ms=1995 heap_peak=415312 ok=true
+[14] pq_semaphore_gl_verify: cycles=299312489 us=1995416 ms=1995 heap_peak=415312 ok=true
+[15] pq_semaphore_gl_verify: cycles=299352470 us=1995683 ms=1995 heap_peak=415312 ok=true
+[16] pq_semaphore_gl_verify: cycles=299369264 us=1995795 ms=1995 heap_peak=415312 ok=true
+[17] pq_semaphore_gl_verify: cycles=299385364 us=1995902 ms=1995 heap_peak=415312 ok=true
+[18] pq_semaphore_gl_verify: cycles=299329017 us=1995526 ms=1995 heap_peak=415312 ok=true
+[19] pq_semaphore_gl_verify: cycles=299381853 us=1995879 ms=1995 heap_peak=415312 ok=true
+[20] pq_semaphore_gl_verify: cycles=299326635 us=1995510 ms=1995 heap_peak=415312 ok=true
