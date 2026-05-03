@@ -1,0 +1,191 @@
+[meta]
+date       = "2026-05-03"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = ""    # uncommitted at capture time; first run after the two-stage CT API landed
+phase      = "Phase H — constant-time dual-hash verifier reject characterisation (first M33 run)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "ARM Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-blake3"              = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (two-stage CT API added this session)"
+"zkmcu-vectors"          = "0.1.0 (mutations module + committed proof at data/pq-semaphore-d10-dual/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216    # configured static heap (384 KB)
+heap_base         = 156_360    # parsed-p2 + public_parsed alive when measure_cycles starts
+heap_peak         = 304_180    # peak inside the timed window (parsed_p2 + p2_inner, then parsed_b3 + b3_inner; identical across all 7 patterns)
+stack_peak_bytes  = 0          # not captured — boot_measure path is incompatible with the 384 KB heap layout, see findings/2026-05-03-ct-reject-debugging.md
+
+[circuit]
+name           = "pq-semaphore-d10-dual"
+description    = "Dual-hash PQ-Semaphore depth-10 STARK: identical AIR run twice, once over BabyBear with Poseidon2-16 and once over BabyBear with Blake3, sharing the same public-input blob. Both legs must accept for the verify to accept."
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash_p2_leg    = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+hash_b3_leg    = "Blake3 (p3-blake3 0.5.1)"
+digest_words   = 6
+trace_rows     = 16
+trace_cols     = 332
+merkle_depth   = 10
+blowup_factor  = 2
+num_queries    = 64
+fri_folding    = 4
+commit_pow_bits = 16
+query_pow_bits  = 16
+proof_p2_bytes = 172_977
+proof_b3_bytes = 163_824
+public_bytes   = 96
+security_bits_conjectured = 127
+
+[bench_shape]
+description = """
+Constant-time reject benchmark for the dual-hash verifier. Each iteration:
+
+  1. (untimed) copy proof_p2 + public bytes into a heap Vec, apply the
+     mutation, parse to owned Proof + Public via the new two-stage CT
+     entry points (parse_{p2,public}_constant_time), drop the raw bytes.
+  2. (timed by DWT::cycle_count via bench_core::measure_cycles)
+       a. verify_p2_leg_constant_time(&parsed_p2, &public)
+       b. drop(parsed_p2)
+       c. parse_b3_constant_time(static DUAL_PROOF_B3) — b3 leg's bytes
+          are static ROM, no Vec needed
+       d. verify_b3_leg_constant_time(&parsed_b3, &public)
+       e. combine: public_ok & p2_ok & r1 & b3_ok & r2  (bitwise AND, no
+          short-circuit)
+
+The two-stage shape is what makes ct-reject fit on M33 at all: the raw
+proof_p2 bytes (169 KB Vec) are dropped before measure_cycles starts,
+so heap during the timed window peaks at the verifier's working set
+(~304 KB) instead of 169 KB + 304 KB = OOM. See
+findings/2026-05-03-ct-reject-debugging.md for the bisection that
+established this.
+"""
+mutations = [
+  "honest_verify",
+  "M0_header_byte (proof_p2[0] ^= 0xff)",
+  "M1_trace_commit_digest (proof_p2[64] ^= 0xff)",
+  "M2_mid_fri (proof_p2[1024] ^= 0xff)",
+  "M3_query_opening (proof_p2[len-64] ^= 0xff)",
+  "M4_final_layer (proof_p2[len-1] ^= 0xff)",
+  "M5_public_byte (public[0] ^= 0x01)"
+]
+iterations_per_pattern = 16
+b3_leg_input = "static DUAL_PROOF_B3 (unmutated, every iteration)"
+
+# ============================================================================
+# Per-pattern timings.
+#
+# All times are wall-clock for the full two-leg verify (p2 + b3), measured
+# DWT cycles / 150 MHz. n=16 per pattern.
+#
+# Headline finding: M0–M4 all reject within 0.05 % of honest_verify. M5
+# rejects ~9.5x faster — clear macro-CT violation. See
+# findings/2026-05-03-ct-verifier-m5-public-input-leak.md for the leak's
+# mechanism and remediation options.
+# ============================================================================
+
+[bench.honest_verify]
+description   = "Unmutated dual-leg verify. Both legs accept."
+iterations    = 16
+cycles_min    = 238_978_077
+cycles_max    = 239_113_764
+cycles_median = 239_041_736
+us_min        = 1_593_187
+us_max        = 1_594_091
+us_median     = 1_593_611
+range_pct     = 0.0568
+result        = "ok"
+
+[bench.reject_M0_header_byte]
+description   = "Flip first proof_p2 byte. parse_proof rejects on the corrupted postcard varint header before any verifier work — but the CT entry point swaps in the static fallback proof and runs verify on it, so wall-clock matches honest within ε."
+iterations    = 16
+cycles_min    = 238_987_144
+cycles_max    = 239_061_704
+cycles_median = 239_033_238
+us_min        = 1_593_247
+us_max        = 1_593_744
+us_median     = 1_593_554
+range_pct     = 0.0312
+ratio_to_honest = 0.99996
+result        = "rejected"
+
+[bench.reject_M1_trace_commit_digest]
+description   = "Flip a byte 64 bytes into proof_p2 (lands inside the trace commitment digest). Postcard parses; verify rejects when Merkle batch verify recomputes a mismatched root."
+iterations    = 16
+cycles_min    = 238_972_857
+cycles_max    = 239_093_834
+cycles_median = 239_051_688
+us_min        = 1_593_152
+us_max        = 1_593_958
+us_median     = 1_593_677
+range_pct     = 0.0506
+ratio_to_honest = 1.00004
+result        = "rejected"
+
+[bench.reject_M2_mid_fri]
+description   = "Flip a byte 1024 bytes into proof_p2 (mid-FRI commitment data). Mid-FRI Merkle reject."
+iterations    = 16
+cycles_min    = 238_999_214
+cycles_max    = 239_113_542
+cycles_median = 239_027_442
+us_min        = 1_593_328
+us_max        = 1_594_090
+us_median     = 1_593_516
+range_pct     = 0.0478
+ratio_to_honest = 0.99994
+result        = "rejected"
+
+[bench.reject_M3_query_opening]
+description   = "Flip a byte 64 from the end of proof_p2 (last query's commit-phase opening hash). Recomputed Merkle root mismatches inside FRI's verify_query."
+iterations    = 16
+cycles_min    = 238_973_900
+cycles_max    = 239_082_874
+cycles_median = 239_016_727
+us_min        = 1_593_159
+us_max        = 1_593_885
+us_median     = 1_593_444
+range_pct     = 0.0456
+ratio_to_honest = 0.99990
+result        = "rejected"
+
+[bench.reject_M4_final_layer]
+description   = "Flip the last proof_p2 byte (final-poly coefficient area). Near-honest reject time."
+iterations    = 16
+cycles_min    = 238_991_599
+cycles_max    = 239_098_578
+cycles_median = 239_035_284
+us_min        = 1_593_277
+us_max        = 1_593_990
+us_median     = 1_593_568
+range_pct     = 0.0448
+ratio_to_honest = 0.99997
+result        = "rejected"
+
+[bench.reject_M5_public_byte]
+description   = "Flip the low bit of public[0]. Element stays canonical (< p) so parse_public_inputs accepts; the corrupted public input desyncs the challenger transcript on the very first commitment replay, and verify_with_config returns Err inside FRI commit phase before any FRI / query / final-poly work runs. THIS BREAKS MACRO-CT — wall-clock drops 9.46x vs honest. See findings/2026-05-03-ct-verifier-m5-public-input-leak.md."
+iterations    = 16
+cycles_min    = 25_231_070
+cycles_max    = 25_275_641
+cycles_median = 25_257_507
+us_min        = 168_207
+us_max        = 168_504
+us_median     = 168_383
+range_pct     = 0.1765
+ratio_to_honest = 0.10565
+ct_status     = "VIOLATION — 9.46x speedup vs honest baseline"
+result        = "rejected"
