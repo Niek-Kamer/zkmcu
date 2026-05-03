@@ -44,7 +44,7 @@ use p3_field::extension::BinomialExtensionField;
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
-use p3_uni_stark::{verify, StarkConfig};
+use p3_uni_stark::{verify, verify_run_to_completion, StarkConfig};
 
 use crate::pq_semaphore::{build_air, PqSemaphoreAir, NUM_PUBLIC_INPUTS};
 use crate::Error;
@@ -141,6 +141,20 @@ pub fn verify_with_config(
     air: &PqSemaphoreAir,
 ) -> Result<(), Error> {
     verify(config, air, proof, &public[..]).map_err(|_| Error::VerificationFailed)
+}
+
+/// Constant-time variant of [`verify_with_config`]: see [`crate::pq_semaphore::verify_with_config_rtc`].
+///
+/// # Errors
+///
+/// Returns [`Error::VerificationFailed`] if Plonky3 rejects the proof.
+pub fn verify_with_config_rtc(
+    proof: &Proof,
+    public: &[Val; NUM_PUBLIC_INPUTS],
+    config: &Config,
+    air: &PqSemaphoreAir,
+) -> Result<(), Error> {
+    verify_run_to_completion(config, air, proof, &public[..]).map_err(|_| Error::VerificationFailed)
 }
 
 /// Parse + verify a Blake3-flavoured proof from raw bytes.

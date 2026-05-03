@@ -158,20 +158,27 @@ pub fn parse_public_constant_time(bytes: &[u8]) -> (Public, bool) {
 
 /// Verify the Poseidon2 leg against a pre-parsed proof + public. Always
 /// runs to completion; returns `true` iff the leg accepts.
+///
+/// Dispatches to [`pq_semaphore::verify_with_config_rtc`], which closes the
+/// M5-class public-input timing oracle that the upstream
+/// `p3-uni-stark::verify` exposes via early-return on Merkle / `PoW` /
+/// `FinalPoly` failures inside FRI.
 #[must_use]
 pub fn verify_p2_leg_constant_time(proof: &pq_semaphore::Proof, public: &Public) -> bool {
     let config = pq_semaphore::make_config();
     let air = pq_semaphore::build_air();
-    pq_semaphore::verify_with_config(proof, public, &config, &air).is_ok()
+    pq_semaphore::verify_with_config_rtc(proof, public, &config, &air).is_ok()
 }
 
 /// Verify the Blake3 leg against a pre-parsed proof + public. Always
 /// runs to completion; returns `true` iff the leg accepts.
+///
+/// Dispatches to [`pq_semaphore_blake3::verify_with_config_rtc`].
 #[must_use]
 pub fn verify_b3_leg_constant_time(proof: &pq_semaphore_blake3::Proof, public: &Public) -> bool {
     let config = pq_semaphore_blake3::make_config();
     let air = pq_semaphore_blake3::build_blake3_air();
-    pq_semaphore_blake3::verify_with_config(proof, public, &config, &air).is_ok()
+    pq_semaphore_blake3::verify_with_config_rtc(proof, public, &config, &air).is_ok()
 }
 
 /// Constant-time dual-hash verify: returns `true` iff both legs accept.

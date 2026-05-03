@@ -1,0 +1,137 @@
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf proof=pq-semaphore-d10-dual mode=ct-reject patterns=7 iters=16
+
+[pattern] honest_verify start
+
+[honest_verify 1] cycles=238535999 us=...partial-line-cut-off...
+[honest_verify 6] cycles=238576146 us=1590507 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 7] cycles=238574804 us=1590498 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 8] cycles=238538469 us=1590256 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 9] cycles=238550715 us=1590338 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 10] cycles=238544751 us=1590298 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 11] cycles=238495826 us=1589972 ms=1589 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 12] cycles=238546176 us=1590307 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 13] cycles=238510423 us=1590069 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 14] cycles=238588621 us=1590590 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 15] cycles=238528283 us=1590188 ms=1590 heap_base=156360 heap_peak=304180 ok=true
+[honest_verify 16] cycles=238479230 us=1589861 ms=1589 heap_base=156360 heap_peak=304180 ok=true
+
+# Note: iters 2-5 of honest_verify scrolled past before the user attached
+# `cat /dev/ttyACM0`; iter 1 is partial. The remaining 11 honest samples
+# are sufficient for the median; precision is not the goal here, the goal
+# is that M5 ≈ honest within ε.
+
+[pattern] reject_M0_header_byte start
+
+[reject_M0_header_byte 1] cycles=238525217 us=1590168 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 2] cycles=238507487 us=1590049 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 3] cycles=238556987 us=1590379 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 4] cycles=238461749 us=1589744 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 5] cycles=238548146 us=1590320 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 6] cycles=238564076 us=1590427 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 7] cycles=238534309 us=1590228 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 8] cycles=238563423 us=1590422 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 9] cycles=238536074 us=1590240 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 10] cycles=238518812 us=1590125 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 11] cycles=238550653 us=1590337 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 12] cycles=238507980 us=1590053 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 13] cycles=238525751 us=1590171 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 14] cycles=238563611 us=1590424 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 15] cycles=238540835 us=1590272 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M0_header_byte 16] cycles=238514420 us=1590096 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[pattern] reject_M1_trace_commit_digest start
+
+[reject_M1_trace_commit_digest 1] cycles=238502683 us=1590017 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 2] cycles=238551623 us=1590344 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 3] cycles=238565998 us=1590439 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 4] cycles=238520099 us=1590133 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 5] cycles=238520960 us=1590139 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 6] cycles=238567527 us=1590450 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 7] cycles=238542103 us=1590280 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 8] cycles=238564345 us=1590428 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 9] cycles=238552511 us=1590350 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 10] cycles=238508660 us=1590057 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 11] cycles=238488124 us=1589920 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 12] cycles=238535544 us=1590236 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 13] cycles=238527434 us=1590182 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 14] cycles=238497918 us=1589986 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 15] cycles=238538185 us=1590254 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M1_trace_commit_digest 16] cycles=238575800 us=1590505 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[pattern] reject_M2_mid_fri start
+
+[reject_M2_mid_fri 1] cycles=238546340 us=1590308 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 2] cycles=238497276 us=1589981 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 3] cycles=238519372 us=1590129 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 4] cycles=238494824 us=1589965 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 5] cycles=238533834 us=1590225 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 6] cycles=238582845 us=1590552 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 7] cycles=238526093 us=1590173 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 8] cycles=238515213 us=1590101 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 9] cycles=238515358 us=1590102 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 10] cycles=238555220 us=1590368 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 11] cycles=238549989 us=1590333 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 12] cycles=238566467 us=1590443 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 13] cycles=238583992 us=1590559 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 14] cycles=238518467 us=1590123 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 15] cycles=238534607 us=1590230 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M2_mid_fri 16] cycles=238474090 us=1589827 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[pattern] reject_M3_query_opening start
+
+[reject_M3_query_opening 1] cycles=238536394 us=1590242 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 2] cycles=238496076 us=1589973 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 3] cycles=238585502 us=1590570 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 4] cycles=238576746 us=1590511 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 5] cycles=238521421 us=1590142 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 6] cycles=238512858 us=1590085 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 7] cycles=238498382 us=1589989 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 8] cycles=238550631 us=1590337 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 9] cycles=238537523 us=1590250 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 10] cycles=238517194 us=1590114 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 11] cycles=238500488 us=1590003 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 12] cycles=238553508 us=1590356 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 13] cycles=238525390 us=1590169 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 14] cycles=238492083 us=1589947 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 15] cycles=238539947 us=1590266 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M3_query_opening 16] cycles=238546305 us=1590308 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[pattern] reject_M4_final_layer start
+
+[reject_M4_final_layer 1] cycles=238520554 us=1590137 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 2] cycles=238585865 us=1590572 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 3] cycles=238496988 us=1589979 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 4] cycles=238549417 us=1590329 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 5] cycles=238539983 us=1590266 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 6] cycles=238559420 us=1590396 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 7] cycles=238561486 us=1590409 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 8] cycles=238498946 us=1589992 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 9] cycles=238495791 us=1589971 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 10] cycles=238504942 us=1590032 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 11] cycles=238526952 us=1590179 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 12] cycles=238523045 us=1590153 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 13] cycles=238514628 us=1590097 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 14] cycles=238529338 us=1590195 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 15] cycles=238516378 us=1590109 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M4_final_layer 16] cycles=238533062 us=1590220 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[pattern] reject_M5_public_byte start
+
+[reject_M5_public_byte 1] cycles=238506830 us=1590045 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 2] cycles=238484274 us=1589895 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 3] cycles=238521877 us=1590145 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 4] cycles=238486625 us=1589910 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 5] cycles=238544982 us=1590299 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 6] cycles=238481148 us=1589874 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 7] cycles=238490589 us=1589937 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 8] cycles=238490505 us=1589936 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 9] cycles=238458699 us=1589724 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 10] cycles=238494206 us=1589961 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 11] cycles=238537075 us=1590247 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 12] cycles=238498321 us=1589988 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 13] cycles=238487781 us=1589918 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 14] cycles=238511982 us=1590079 ms=1590 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 15] cycles=238451882 us=1589679 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+[reject_M5_public_byte 16] cycles=238469245 us=1589794 ms=1589 heap_base=156360 heap_peak=304180 ok=true_rejected
+
+[done] all patterns complete

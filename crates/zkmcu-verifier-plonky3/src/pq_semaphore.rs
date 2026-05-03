@@ -127,7 +127,7 @@ use p3_merkle_tree::MerkleTreeMmcs;
 use p3_poseidon2::GenericPoseidon2LinearLayers;
 use p3_poseidon2_air::{FullRound, PartialRound, Poseidon2Cols, RoundConstants, SBox};
 use p3_symmetric::{PaddingFreeSponge, Permutation, TruncatedPermutation};
-use p3_uni_stark::{verify, StarkConfig};
+use p3_uni_stark::{verify, verify_run_to_completion, StarkConfig};
 
 use crate::Error;
 
@@ -628,6 +628,24 @@ pub fn verify_with_config(
     air: &PqSemaphoreAir,
 ) -> Result<(), Error> {
     verify(config, air, proof, &public[..]).map_err(|_| Error::VerificationFailed)
+}
+
+/// Constant-time variant of [`verify_with_config`]: dispatches to
+/// `p3_uni_stark::verify_run_to_completion`, which runs every internal
+/// FRI / constraint check to completion and ANDs the results. Total
+/// cycle count is independent of where (or whether) a failure occurs,
+/// closing the M5-class public-input timing oracle.
+///
+/// # Errors
+///
+/// Returns [`Error::VerificationFailed`] if Plonky3 rejects the proof.
+pub fn verify_with_config_rtc(
+    proof: &Proof,
+    public: &[Val; NUM_PUBLIC_INPUTS],
+    config: &Config,
+    air: &PqSemaphoreAir,
+) -> Result<(), Error> {
+    verify_run_to_completion(config, air, proof, &public[..]).map_err(|_| Error::VerificationFailed)
 }
 
 /// Verify a proof from raw bytes + public-inputs bytes, building config / air

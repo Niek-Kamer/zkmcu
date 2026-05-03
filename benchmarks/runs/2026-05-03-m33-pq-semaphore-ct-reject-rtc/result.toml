@@ -1,0 +1,135 @@
+[meta]
+date       = "2026-05-03"
+target     = "rp2350-cortex-m33"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = ""    # uncommitted at capture time; first run after the option-C RTC verifier landed
+phase      = "Phase H — constant-time dual-hash verifier reject characterisation, RTC variant (option C)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "ARM Cortex-M33 @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep, RTC patch this session)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-blake3"              = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep, RTC patch this session)"
+"p3-commit"              = "0.5.1 (vendor/Plonky3, path dep, Pcs::verify_run_to_completion added this session)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (verify_with_config_rtc + dual-CT switch this session)"
+"zkmcu-vectors"          = "0.1.0"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216
+heap_base         = 156_360
+heap_peak         = 304_180
+stack_peak_bytes  = 0          # not captured
+
+[circuit]
+name           = "pq-semaphore-d10-dual"
+description    = "Dual-hash PQ-Semaphore depth-10 STARK verified twice, once with Poseidon2-BabyBear-16 and once with Blake3, sharing the same public-input blob. Both legs must accept. CT path now dispatches via verify_run_to_completion on both legs."
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash_p2_leg    = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+hash_b3_leg    = "Blake3 (p3-blake3 0.5.1)"
+
+[bench.honest_verify]
+description   = "Honest dual-hash verify on the committed canonical proof. Baseline for ratio_to_honest. Iters 2-5 of this run scrolled past before serial capture; honest stats below derived from iters 1, 6-16 (n=12 cycles, n=11 us)."
+iterations    = 12
+cycles_min    = 238_479_230
+cycles_max    = 238_588_621
+cycles_median = 238_541_610
+us_min        = 1_589_861
+us_max        = 1_590_590
+us_median     = 1_590_298
+range_pct     = 0.0458
+ratio_to_honest = 1.00000
+result        = "accepted"
+
+[bench.reject_M0_header_byte]
+description   = "Flip a byte ~120 from start of proof_p2 (header / configuration area)."
+iterations    = 16
+cycles_min    = 238_461_749
+cycles_max    = 238_564_076
+cycles_median = 238_535_192
+us_min        = 1_589_744
+us_max        = 1_590_427
+us_median     = 1_590_234
+range_pct     = 0.0429
+ratio_to_honest = 0.99996
+result        = "rejected"
+
+[bench.reject_M1_trace_commit_digest]
+description   = "Flip a byte 256 from start of proof_p2 (trace commitment digest area)."
+iterations    = 16
+cycles_min    = 238_488_124
+cycles_max    = 238_575_800
+cycles_median = 238_543_824
+us_min        = 1_589_920
+us_max        = 1_590_505
+us_median     = 1_590_245
+range_pct     = 0.0368
+ratio_to_honest = 0.99997
+result        = "rejected"
+
+[bench.reject_M2_mid_fri]
+description   = "Flip a byte mid-FRI (commit-phase round 2 commitment)."
+iterations    = 16
+cycles_min    = 238_474_090
+cycles_max    = 238_583_992
+cycles_median = 238_534_220
+us_min        = 1_589_827
+us_max        = 1_590_559
+us_median     = 1_590_199
+range_pct     = 0.0460
+ratio_to_honest = 0.99994
+result        = "rejected"
+
+[bench.reject_M3_query_opening]
+description   = "Flip a byte 64 from the end of proof_p2 (last query's commit-phase opening hash). Recomputed Merkle root mismatches inside FRI's verify_query."
+iterations    = 16
+cycles_min    = 238_492_083
+cycles_max    = 238_585_502
+cycles_median = 238_536_958
+us_min        = 1_589_947
+us_max        = 1_590_570
+us_median     = 1_590_205
+range_pct     = 0.0392
+ratio_to_honest = 0.99994
+result        = "rejected"
+
+[bench.reject_M4_final_layer]
+description   = "Flip the last proof_p2 byte (final-poly coefficient area)."
+iterations    = 16
+cycles_min    = 238_495_791
+cycles_max    = 238_585_865
+cycles_median = 238_528_145
+us_min        = 1_589_971
+us_max        = 1_590_572
+us_median     = 1_590_166
+range_pct     = 0.0378
+ratio_to_honest = 0.99992
+result        = "rejected"
+
+[bench.reject_M5_public_byte]
+description   = "Flip the low bit of public[0]. Element stays canonical (< p) so parse_public_inputs accepts; the corrupted public input desyncs the challenger transcript on the very first commitment replay. With the option-C RTC verifier landed, the verifier no longer early-returns — every commit-phase Merkle check, every PoW witness, every FRI fold, the OOD constraint check, and the final-poly Horner check all run to completion and AND into the final result. Wall-clock now lands at 0.99977 of the honest baseline (was 0.10565 before the fix). M5 timing oracle CLOSED."
+iterations    = 16
+cycles_min    = 238_451_882
+cycles_max    = 238_544_982
+cycles_median = 238_490_547
+us_min        = 1_589_679
+us_max        = 1_590_299
+us_median     = 1_589_937
+range_pct     = 0.0390
+ratio_to_honest = 0.99977
+ct_status     = "OK — within 0.023% of honest, statistically tied with M0-M4"
+result        = "rejected"
+prior_ratio   = 0.10565    # 2026-05-03-m33-pq-semaphore-ct-reject (pre-fix); 9.46x speedup
+fix_reference = "research/postmortems/2026-05-03-rtc-verify-closing-m5.typ"
