@@ -19,6 +19,7 @@ libfuzzer-sys = "0.4"
 zkmcu-verifier = { path = "../crates/zkmcu-verifier" }
 zkmcu-verifier-bls12 = { path = "../crates/zkmcu-verifier-bls12" }
 zkmcu-verifier-stark = { path = "../crates/zkmcu-verifier-stark" }
+zkmcu-verifier-plonky3 = { path = "../crates/zkmcu-verifier-plonky3" }
 
 # Required indirectly by path dep resolution (babybear is a zkmcu-verifier-stark dep).
 zkmcu-babybear = { path = "../crates/zkmcu-babybear" }
@@ -75,6 +76,34 @@ bench = false
 [[bin]]
 name = "stark_parse_proof"
 path = "fuzz_targets/stark_parse_proof.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pq_semaphore_parse_proof_p2"
+path = "fuzz_targets/pq_semaphore_parse_proof_p2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pq_semaphore_parse_proof_b3"
+path = "fuzz_targets/pq_semaphore_parse_proof_b3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pq_semaphore_parse_public"
+path = "fuzz_targets/pq_semaphore_parse_public.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pq_semaphore_dual_parse_and_verify"
+path = "fuzz_targets/pq_semaphore_dual_parse_and_verify.rs"
 test = false
 doc = false
 bench = false

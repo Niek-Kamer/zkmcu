@@ -338,6 +338,24 @@ fuzz-smoke SECS="10":
     just fuzz bls12_parse_proof {{SECS}}
     just fuzz bls12_parse_public {{SECS}}
     just fuzz stark_parse_proof {{SECS}}
+    just fuzz pq_semaphore_parse_proof_p2 {{SECS}}
+    just fuzz pq_semaphore_parse_proof_b3 {{SECS}}
+    just fuzz pq_semaphore_parse_public {{SECS}}
+    just fuzz pq_semaphore_dual_parse_and_verify {{SECS}}
+
+# Phase G campaign: longer per-target run on the four PQ-Semaphore parser
+# targets. Defaults to 1 hour each (4 hours total). Use a smaller SECS for
+# a quick "did anything regress" pass.
+fuzz-pq-campaign SECS="3600":
+    just fuzz pq_semaphore_parse_proof_p2 {{SECS}}
+    just fuzz pq_semaphore_parse_proof_b3 {{SECS}}
+    just fuzz pq_semaphore_parse_public {{SECS}}
+    just fuzz pq_semaphore_dual_parse_and_verify {{SECS}}
+
+# Regenerate Phase G fuzz seed corpora from the committed dual-leg vectors.
+# Idempotent — re-run after `just regen-vectors` bumps `pq-semaphore-d10-dual`.
+fuzz-seeds-pq:
+    python3 fuzz/scripts/regen_pq_semaphore_seeds.py
 
 # List fuzz targets defined in fuzz/Cargo.toml.
 fuzz-list:

@@ -13,3 +13,12 @@ web/out/
 # Local agent scratch
 CLAUDE.md
 research/blog-drafts/
+
+# Fuzzer working data — corpora regenerate from committed vectors
+# (`just fuzz-seeds-pq`) and grow without bound during runs. Tracked
+# subdirs (fuzz/Cargo.toml, fuzz/fuzz_targets/, fuzz/scripts/) hold the
+# things needed to reproduce; fuzz/seeds/ + fuzz/runs/ are derived.
+fuzz/seeds/
+fuzz/runs/
+fuzz/corpus/
+fuzz/artifacts/
