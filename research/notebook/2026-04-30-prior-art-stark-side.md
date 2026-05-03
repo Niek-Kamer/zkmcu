@@ -147,7 +147,7 @@ comparison rows:
 | zkDilithium (ePrint 2023/414) | 2023 | server | (winterfell defaults) | (winterfell) | yes (PQ creds) | server |
 | RISC Zero zkVM | ongoing | server | BabyBear | Poseidon2 | yes | r6a.16xlarge |
 | Succinct SP1 | ongoing | server | BabyBear | Poseidon2 | yes | r6a.16xlarge |
-| **this work, Phase A-E** | **2026** | **RP2350 Cortex-M33 / Hazard3 RV32** | **BabyBear × Quartic** | **Poseidon2-BB-16 + Blake3 (dual)** | **yes (127 conj. + dual-hash)** | **MCU, both ISAs** |
+| **this work, Phase A-F** | **2026** | **RP2350 Cortex-M33 / Hazard3 RV32** | **BabyBear × Quartic** | **Poseidon2-BB-16 + Blake3 (dual)** | **yes (128 conj. + dual-hash)** | **MCU, both ISAs** |
 
 The bottom row is the only one in the MCU column. That's the gap.
 

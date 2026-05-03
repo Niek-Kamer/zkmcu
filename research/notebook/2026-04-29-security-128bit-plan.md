@@ -2,7 +2,7 @@
 
 **Created:** 2026-04-29
 **Original status:** drafted, not started.
-**Status as of 2026-04-30:** Phases A, B, C, D, E.1 landed (results + verdicts in § "Status board" at the bottom).
+**Status as of 2026-04-30:** Phases A, B, C, D, E.1, F landed (results + verdicts in § "Status board" at the bottom).
 
 This plan was written *before* any of the Phase A-E benches ran on silicon. It is committed unchanged from its drafting moment except for the status board at the bottom and minor typo fixes. The point of leaving it on disk is so that anyone can git-blame the predicted bands and see they were not back-fitted to the result. The README's methodology bullet ("falsifiable predictions written before bench, four out of five phases landed outside their predicted bands") rests on this file existing in the tree from 2026-04-29 onward.
 
@@ -507,6 +507,43 @@ Phase E — stacked dual-hash              : landed 2026-04-30 (HYPOTHESIS EXCEE
                                               but E.1 already meets the 2.5 s M33 ceiling
                                               with ~890 ms of headroom.
                                            runs: benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual/
+Phase F — tighten dual to literal 128    : landed 2026-04-30 (HYPOTHESIS ON TARGET)
+                                           one-line constant change, both legs:
+                                              QUERY_POW_BITS 16 → 17 in
+                                              crates/zkmcu-verifier-plonky3/src/pq_semaphore.rs:205
+                                              and pq_semaphore_blake3.rs:70
+                                           M33  1611.439 ms (+0.003% vs Phase E.1, within noise)
+                                           RV32 2041.085 ms (-0.034% vs Phase E.1, within noise)
+                                           proof_p2 172_977 B + proof_b3 163_824 B
+                                              = 336_801 B total — IDENTICAL to Phase E.1
+                                              (PoW nonce is fixed-width in Plonky3's
+                                               serialised proof; difficulty change
+                                               costs 0 wire bytes)
+                                           heap_peak 304_180 B / stack 11_196 M33 / 11_000
+                                              RV32 — IDENTICAL to Phase E.1 (FRI PoW
+                                              state is ephemeral, not heap-resident)
+                                           cross-ISA ratio 1.267 (preserved)
+                                           plan asked for 128 conjectured; landed 128
+                                              conjectured per leg, dual-hash composition
+                                              unchanged. min(128, 128) = 128.
+                                           verifier-side cost of +1 grinding bit was below
+                                              measurement noise on both microarchitectures
+                                              — confirms Phase A's '+1 grinding bit ≈ +1
+                                              conjectured bit at near-zero verifier cost'
+                                              generalises to the dual-hash variant
+                                           security framing (for paper/site):
+                                              "128-bit conjectured classical, post-quantum
+                                              by construction (no algebraic hardness
+                                              assumption, ROM/QROM-only)"
+                                              — same language Plonky3/Risc0/Starkware use;
+                                              the Grover-tight number is half of the
+                                              classical bit count (orthogonal property)
+                                           takeaway: PQ-Semaphore at 128 conjectured bits
+                                              per leg, ~1.6 s M33 / ~2.0 s RV32, 384 KB
+                                              heap, 337 KB total proof, 1.27× cross-ISA,
+                                              dual-hash defence-in-depth. This is the
+                                              production-bar headline.
+                                           runs: benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual-q17/
 ```
 
 Status board above was updated in place as each phase landed; everything else in this file is the original 2026-04-29 draft.

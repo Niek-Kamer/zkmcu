@@ -1,0 +1,71 @@
+zkmcu boot: heap=384K sys=150MHz core=cortex-m33 alloc=tlsf proof=pq-semaphore-d10-dual
+
+[fp] boot_measure entered heap_cur=0 heap_peak=0
+
+[boot] vec=pq-semaphore-d10-dual stack=11196 heap_base=0 heap_peak=304180 cycles=241665352 us=1611102 ms=1611 ok=true
+[1] pq_semaphore_dual_verify start
+
+[1] pq_semaphore_dual_verify: cycles=241688421 us=1611256 ms=1611 heap_peak=304180 ok=true
+[2] pq_semaphore_dual_verify start
+
+[2] pq_semaphore_dual_verify: cycles=241712679 us=1611417 ms=1611 heap_peak=304180 ok=true
+[3] pq_semaphore_dual_verify start
+
+[3] pq_semaphore_dual_verify: cycles=241744912 us=1611632 ms=1611 heap_peak=304180 ok=true
+[4] pq_semaphore_dual_verify start
+
+[4] pq_semaphore_dual_verify: cycles=241698329 us=1611322 ms=1611 heap_peak=304180 ok=true
+[5] pq_semaphore_dual_verify start
+
+[5] pq_semaphore_dual_verify: cycles=241745512 us=1611636 ms=1611 heap_peak=304180 ok=true
+[6] pq_semaphore_dual_verify start
+
+[6] pq_semaphore_dual_verify: cycles=241725654 us=1611504 ms=1611 heap_peak=304180 ok=true
+[7] pq_semaphore_dual_verify start
+
+[7] pq_semaphore_dual_verify: cycles=241685501 us=1611236 ms=1611 heap_peak=304180 ok=true
+[8] pq_semaphore_dual_verify start
+
+[8] pq_semaphore_dual_verify: cycles=241742723 us=1611618 ms=1611 heap_peak=304180 ok=true
+[9] pq_semaphore_dual_verify start
+
+[9] pq_semaphore_dual_verify: cycles=241703097 us=1611353 ms=1611 heap_peak=304180 ok=true
+[10] pq_semaphore_dual_verify start
+
+[10] pq_semaphore_dual_verify: cycles=241777586 us=1611850 ms=1611 heap_peak=304180 ok=true
+[11] pq_semaphore_dual_verify start
+
+[11] pq_semaphore_dual_verify: cycles=241736681 us=1611577 ms=1611 heap_peak=304180 ok=true
+[12] pq_semaphore_dual_verify start
+
+[12] pq_semaphore_dual_verify: cycles=241647838 us=1610985 ms=1610 heap_peak=304180 ok=true
+[13] pq_semaphore_dual_verify start
+
+[13] pq_semaphore_dual_verify: cycles=241710679 us=1611404 ms=1611 heap_peak=304180 ok=true
+[14] pq_semaphore_dual_verify start
+
+[14] pq_semaphore_dual_verify: cycles=241726553 us=1611510 ms=1611 heap_peak=304180 ok=true
+[15] pq_semaphore_dual_verify start
+
+[15] pq_semaphore_dual_verify: cycles=241738376 us=1611589 ms=1611 heap_peak=304180 ok=true
+[16] pq_semaphore_dual_verify start
+
+[16] pq_semaphore_dual_verify: cycles=241682959 us=1611219 ms=1611 heap_peak=304180 ok=true
+[17] pq_semaphore_dual_verify start
+
+[17] pq_semaphore_dual_verify: cycles=241693013 us=1611286 ms=1611 heap_peak=304180 ok=true
+[18] pq_semaphore_dual_verify start
+
+[18] pq_semaphore_dual_verify: cycles=241770678 us=1611804 ms=1611 heap_peak=304180 ok=true
+[19] pq_semaphore_dual_verify start
+
+[19] pq_semaphore_dual_verify: cycles=241719167 us=1611461 ms=1611 heap_peak=304180 ok=true
+[20] pq_semaphore_dual_verify start
+
+[20] pq_semaphore_dual_verify: cycles=241636184 us=1610907 ms=1610 heap_peak=304180 ok=true
+[21] pq_semaphore_dual_verify start
+
+[21] pq_semaphore_dual_verify: cycles=241660094 us=1611067 ms=1611 heap_peak=304180 ok=true
+[22] pq_semaphore_dual_verify start
+
+[22] pq_semaphore_dual_verify: cycles=241733137 us=1611554 ms=1611 heap_peak=304180 ok=true

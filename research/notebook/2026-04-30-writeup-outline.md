@@ -1,9 +1,22 @@
-# Writeup outline — PQ-Semaphore A-E headline
+# Writeup outline — PQ-Semaphore A-F headline
 
-**Status:** outline v1, 2026-04-30. Skeleton for the technical post that
+**Status:** outline v1.1, 2026-04-30. Skeleton for the technical post that
 goes simultaneously to (a) blog / Substack, (b) IACR ePrint as a report,
 (c) cross-post to HN / lobste.rs / r/cryptography / r/embedded /
 Plonky3 GitHub Discussions / Ethereum Magicians.
+
+> **Phase F update (2026-04-30, end of day):** the body of this outline
+> still references Phase E.1 numbers and 127 conj. FRI bits as the
+> headline. Phase F bumped `QUERY_POW_BITS` 16 → 17 in both legs, lifting
+> per-leg conjectured FRI security from 127 to **128** at zero verifier
+> cost (M33 1611.4 ms, RV32 2041.1 ms; Δ vs E.1 = ±0.03 %, within noise).
+> Bench artifacts at `benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual-q17/`.
+> When this outline is converted to the long-form post, the headline
+> should lead with "**128-bit conjectured per leg, post-quantum by
+> construction**" and add a Phase F sub-section after E.1. Phase A's
+> "grinding to 127-bit conjectured FRI" stays as written — that was the
+> historical state at Phase A; Phase F's relationship to it is "+1 PoW bit
+> on top, model held".
 
 **Length target:** 4500-5500 words for the long form (ePrint PDF +
 canonical blog post). 1500 words for the punchy version (HN /

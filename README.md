@@ -14,20 +14,22 @@ Docs site: [zkmcu.dev](https://zkmcu.dev). Reproduction: [`./reproduce.sh`](./re
 
 ---
 
-## Headline (Phase E.1, 2026-04-30)
+## Headline (Phase F, 2026-04-30)
 
 Pico 2 W at 150 MHz, measured on-device with `DWT::cycle_count` on M33 and `mcycle` on RV32. 20 iterations per bench, range_pct < 0.1 %, every iteration `ok=true`.
 
 | | Cortex-M33 | Hazard3 RV32 | RV32 / M33 |
 |-|---:|---:|---:|
-| **PQ-Semaphore d=10, dual-hash verify** | **1,611 ms** | **2,042 ms** | 1.27× |
+| **PQ-Semaphore d=10, dual-hash verify** | **1,611 ms** | **2,041 ms** | 1.27× |
 | heap peak (drop-between pattern) | 304 KB | 304 KB | — |
 | stack peak | 11.2 KB | 11.0 KB | — |
 | combined proof size (P2 + B3) | 337 KB | same | — |
-| security (per leg) | 127 conj. FRI + 186-bit hash floor | same | — |
+| security (per leg) | 128 conj. FRI + 186-bit hash floor | same | — |
 | dual-hash composition | yes | yes | — |
 
-Bench artifacts: `benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual/`.
+128 conjectured *classical* bits per leg, post-quantum by construction (no algebraic hardness assumption, ROM/QROM-only). Phase F lifted the FRI bit count from 127 to 128 by bumping `QUERY_POW_BITS` 16 → 17 in both legs; the verifier-side cost was below measurement noise on both ISAs (Δ ≈ ±0.03 % vs Phase E.1).
+
+Bench artifacts: `benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual-q17/` (Phase F headline) and `…-pq-semaphore-dual/` (Phase E.1 baseline preserved alongside).
 
 The 1.6 s number is **full pipeline** (parse + verify both FRI legs from raw bytes). The Phase E.1 entry point parses + verifies the Poseidon2 leg, drops it, then parses + verifies the Blake3 leg, so peak heap is `max(p2_peak, b3_peak)` not the sum. 384 KB heap was sufficient; no Phase D 480 KB workaround needed. Stack peak captured cleanly.
 
@@ -39,6 +41,7 @@ Each phase had falsifiable predictions written *before* the on-silicon bench, co
 |---|---|---:|---:|---|---|
 | 4.0 (baseline) | BabyBear × Quartic, d=4, no grinding | 1049.72 | — | — | 95 conj. FRI |
 | **A** | + 16+16 grinding bits | 1051.09 | -1.4 % | +0–8 ms | **inside band** (127 conj.) |
+| **F** | + 16+17 grinding bits (Phase E.1 + 1 PoW bit) | 1611.44 | +0.003 % vs E.1 | ≤ +1 % | **at floor** (128 conj.) |
 | **B** | + DIGEST_WIDTH 4→6 | 1065.84 | (baseline) | +12-22 % | **far below band** (1.40 %) |
 | **C** | + two-stage early exit | 1130.58 | +6.1 % | reject paths < 900 ms | **far below band** (max reject 127 ms) |
 | **D** (alt) | Goldilocks × Quadratic, d=4 | 1995.66 | +87.2 % | 600–680 ms band | **HYPOTHESIS REJECTED** |
@@ -78,8 +81,8 @@ The "MCU column is empty" observation is itself part of the contribution. None o
 | Succinct SP1 | ongoing | server | r6a.16xlarge / GPU | zkVM verify | excluded | yes |
 | Plonky3 upstream | ongoing | server | x86 + AVX2/AVX-512 | various | not published | yes |
 | MDPI 2024 cross-platform | 2024 | Raspberry Pi (model unspec) | ARM Cortex-A | zk-STARK (shape unspec) | 245 ms | yes |
-| **this work, Phase E.1** | **2026** | **RP2350 M33 (single-core, 150 MHz, no SIMD)** | **Cortex-M33** | **PQ-Semaphore d=10, 127 conj. + dual-hash** | **1611 ms** | **yes** |
-| **this work, Phase E.1** | **2026** | **RP2350 Hazard3 (single-core, 150 MHz, no SIMD)** | **RV32IMAC** | **same as above** | **2042 ms** | **yes** |
+| **this work, Phase F** | **2026** | **RP2350 M33 (single-core, 150 MHz, no SIMD)** | **Cortex-M33** | **PQ-Semaphore d=10, 128 conj. + dual-hash** | **1611 ms** | **yes** |
+| **this work, Phase F** | **2026** | **RP2350 Hazard3 (single-core, 150 MHz, no SIMD)** | **RV32IMAC** | **same as above** | **2041 ms** | **yes** |
 
 Server-class STARK verifiers run in milliseconds on AVX-equipped hardware costing $1000+. Our 1.6 s on a $7 microcontroller is in the same order of magnitude as a Pi-class Linux board running a much smaller STARK, and within 300-800× of a laptop-class i9 running a comparable Winterfell proof. The win is **not** raw verify speed — it is that the verifier fits in the power, BOM, and silicon budget of a hardware token at all, with no host or radio link assumed.
 

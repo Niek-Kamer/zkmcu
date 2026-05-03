@@ -1,0 +1,110 @@
+[meta]
+date       = "2026-04-30"
+target     = "rp2350-hazard3 (RISC-V rv32imac)"
+toolchain  = "rustc 1.94.1"
+profile    = "release, lto=fat, opt-level=s, codegen-units=1, panic=abort"
+commit     = "phase-F-128bit (uncommitted at capture time)"
+phase      = "Phase F — tighten dual-hash to 128 conjectured bits/leg (security-128bit plan)"
+
+[hardware]
+board       = "Raspberry Pi Pico 2 W"
+cpu         = "Hazard3 RV32IMAC @ 150 MHz"
+clock_hz    = 150_000_000
+sram_bytes  = 524_288
+flash_bytes = 4_194_304
+
+[libraries]
+"p3-uni-stark"           = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-baby-bear"           = "0.5.1 (vendor/Plonky3, path dep, audited Poseidon2 constants)"
+"p3-blake3"              = "0.5.1 (vendor/Plonky3, path dep)"
+"blake3"                 = "1.8 (no_std)"
+"p3-poseidon2-air"       = "0.5.1 (vendor/Plonky3, path dep)"
+"p3-fri"                 = "0.5.1 (vendor/Plonky3, path dep)"
+"postcard"               = "1.1.3 (no_std, alloc feature)"
+"zkmcu-verifier-plonky3" = "0.1.0 (Phase F: QUERY_POW_BITS 16→17 in pq_semaphore + pq_semaphore_blake3)"
+"zkmcu-vectors"          = "0.1.0 (regenerated proofs at data/pq-semaphore-d10-dual/)"
+"bench-core"             = "0.1.0"
+"rp235x-hal"             = "0.4.0"
+
+[footprint]
+heap_bytes        = 393_216
+heap_peak         = 304_180       # identical to M33 Phase F sibling and to Phase E.1 — allocator state is target-independent
+stack_peak_bytes  = 11_000        # 64 KB sentinel paint succeeded (read from boot line before serial cat truncated)
+
+[circuit]
+name           = "pq-semaphore-d10-dual"
+description    = "Same proof bytes as the M33 sibling. Only the firmware target (riscv32imac-unknown-none-elf) changes. Phase F: query-PoW 16→17 to lift conjectured FRI security 127 → 128."
+field          = "BabyBear (15 * 2^27 + 1, 31-bit)"
+extension      = "Quartic (BinomialExtensionField<BabyBear, 4>)"
+hash_p2        = "Poseidon2-BabyBear-16, audited BABYBEAR_POSEIDON2_RC_16_*"
+hash_b3        = "Blake3 (32-byte digest), p3-blake3 wrapper of blake3 1.8"
+digest_words   = 6
+trace_rows     = 16
+merkle_depth   = 10
+blowup_factor  = 2
+num_queries    = 64
+fri_folding    = 4
+commit_pow_bits = 16
+query_pow_bits  = 17                 # was 16 (Phase E.1) — Phase F bump for the 128th bit
+proof_p2_bytes = 172_977
+proof_b3_bytes = 163_824
+public_inputs  = 24
+public_bytes   = 96
+security_bits_conjectured_fri      = 128
+security_bits_hash_collision       = 186
+security_bits_combined_lower_bound = 128
+
+[bench_shape]
+description = """
+Identical loop to the M33 dual-q17 sibling. Same proof bytes, same iter count.
+Only the firmware target (riscv32imac-unknown-none-elf) changes.
+
+Operational caveat: serial `cat` started after boot, so the boot line and
+iter [1] were truncated; benchmark window is iters 2..=21 (20 samples), the
+same window size as Phase E.1. Boot-line stack=11000 was visible before the
+truncation.
+"""
+iterations = 20
+sample_window = "iters 2..=21 from raw.log"
+
+[bench.pq_semaphore_dual_verify]
+circuit       = "pq-semaphore-d10-dual, verify both legs in sequence (drop p2 before parsing b3)"
+iterations    = 20
+cycles_min    = 306_063_349
+cycles_max    = 306_228_318
+cycles_median = 306_162_824          # mean of 10th and 11th sorted samples
+us_min        = 2_040_422
+us_max        = 2_041_522
+us_median     = 2_041_085
+range_pct     = 0.054
+result        = "ok"
+
+[compare.cross_isa]
+m33_run                  = "benchmarks/runs/2026-04-30-m33-pq-semaphore-dual-q17"
+m33_us                   = 1_611_439
+rv32_us                  = 2_041_085
+ratio                    = 1.267
+note = """
+Cross-ISA ratio 1.267 — identical to Phase E.1 (1.267×). The Phase F query-PoW
+bump adds one extra trailing-zero hash check per query stage, which is
+amortised across both ISAs at the same relative cost. The hash-bound shape of
+the verifier is unchanged: Poseidon2 leg field-arithmetic-bound (1.19× cross-
+ISA), Blake3 leg ARX-rotate-bound (1.42× cross-ISA), composite ratio
+preserved.
+"""
+
+[predictions_phase_f]
+predicted_rv32_us_low     = 2_041_000   # ≤ +1% over Phase E.1 (2041775 µs)
+predicted_rv32_us_high    = 2_062_000   # +1% upper bound
+phase_e1_baseline_us      = 2_041_775   # benchmarks/runs/2026-04-30-rv32-pq-semaphore-dual
+verdict                   = "INSIDE BAND, AT FLOOR: measured 2041.085 ms RV32 — predicted ≤ 2062 ms. Δ vs Phase E.1: −690 µs (−0.034 %, fractionally faster, well within run-to-run noise). Same as the M33 sibling: +1 query-PoW bit is below measurement noise on the verifier side. The Hazard3 rotate emulation tax that widens the Blake3 leg does not amplify the PoW check, which uses a single hash compare per query stage."
+
+predicted_combined_security = 128
+measured_combined_security  = 128
+verdict_security            = "ON TARGET: 128 conjectured bits per leg, dual-hash composition unchanged."
+
+[result_summary]
+status                    = "Phase F landed on Hazard3, identical metrics to Phase E.1 within noise; 128 conjectured bits/leg"
+rv32_dual_q17_ms_median   = 2_041.085
+rv32_vs_phase_e1_pct      = -0.034     # (2041.085 - 2041.775) / 2041.775 * 100
+takeaway                  = "The cross-ISA portability story is unchanged: 1.267× M33 → Hazard3 at 128 conjectured bits per leg, 384 KB heap, 337 KB total proof. The +1 grinding bit lift is free at verify time on both microarchitectures, confirming that Phase A's 'grinding ≈ 0 verifier cost' result generalises to the dual-hash variant."

@@ -27,8 +27,9 @@
 //! - `Challenger = SerializingChallenger32<Val, HashChallenger<u8, Blake3, 32>>`
 //!   — Fiat-Shamir transcript serialised as bytes, hashed with Blake3.
 //!
-//! The same FRI parameters as Phase B (LOG_BLOWUP=1, NUM_QUERIES=64,
-//! COMMIT_POW_BITS=16, QUERY_POW_BITS=16) hold here.
+//! The same FRI parameters as the Poseidon2 leg (LOG_BLOWUP=1,
+//! NUM_QUERIES=64, COMMIT_POW_BITS=16, QUERY_POW_BITS=17) hold here —
+//! 128 conjectured bits per leg after Phase F.
 
 #![allow(clippy::doc_markdown)]
 
@@ -67,7 +68,7 @@ pub type Proof = p3_uni_stark::Proof<Config>;
 const LOG_BLOWUP: usize = 1;
 const NUM_QUERIES: usize = 64;
 const COMMIT_POW_BITS: usize = 16;
-const QUERY_POW_BITS: usize = 16;
+const QUERY_POW_BITS: usize = 17;
 const LOG_FINAL_POLY_LEN: usize = 0;
 const MAX_LOG_ARITY: usize = 1;
 

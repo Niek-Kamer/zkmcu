@@ -197,12 +197,12 @@ pub type Config = StarkConfig<Pcs, Challenge, Challenger>;
 pub type Proof = p3_uni_stark::Proof<Config>;
 
 // FRI parameters. 64 queries is the canonical 95-bit count for
-// `BabyBear × Quartic × log_blowup=1`; the 16+16 grinding bits stack
-// to ~127 conjectured (Phase A of the 128-bit plan).
+// `BabyBear × Quartic × log_blowup=1`; the 16+17 grinding bits stack
+// to 128 conjectured (Phase F: tighten to literal 128 classical).
 const LOG_BLOWUP: usize = 1;
 const NUM_QUERIES: usize = 64;
 const COMMIT_POW_BITS: usize = 16;
-const QUERY_POW_BITS: usize = 16;
+const QUERY_POW_BITS: usize = 17;
 const LOG_FINAL_POLY_LEN: usize = 0;
 const MAX_LOG_ARITY: usize = 1;
 

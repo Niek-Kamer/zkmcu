@@ -1,8 +1,20 @@
-# Security claim table for the Phase A-E PQ-Semaphore writeup
+# Security claim table for the Phase A-F PQ-Semaphore writeup
 
-**Status:** draft v1, 2026-04-30. Source-of-truth for the security section
+**Status:** draft v1.1, 2026-04-30. Source-of-truth for the security section
 of the headline writeup + ePrint submission. Numbers come from the per-
 phase `result.toml` files under `benchmarks/runs/2026-04-{29,30}-*`.
+
+> **Phase F update (2026-04-30, end of day):** the body of this document
+> was written when the headline was Phase E.1 (127 conj. FRI per leg).
+> Phase F bumped `QUERY_POW_BITS` 16 → 17 in both legs, lifting per-leg
+> conjectured FRI security from 127 to **128** at zero verifier cost
+> (Δ ≈ ±0.03 % on both ISAs vs E.1; see
+> `benchmarks/runs/2026-04-30-{m33,rv32}-pq-semaphore-dual-q17/`).
+> The phase-by-phase narrative below is correct as journal — phases A–E.1
+> truly landed at 127 conj. FRI. The current headline is **128 conjectured
+> FRI bits per leg**. The "lead with 127" prescription in § 1 below is
+> superseded by "lead with 128 (Phase F)" everywhere the writeup quotes a
+> current bit count.
 
 The point of this document is to be precise about three different things
 that often get conflated in ZK marketing:
