@@ -390,7 +390,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "bench-rp2350-m33-pq-semaphore-ct-reject"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "zkmcu-vectors",
+ "zkmcu-verifier-plonky3",
+]
+
+[[package]]
 name = "bench-rp2350-m33-pq-semaphore-dual"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "cortex-m-rt",
+ "heapless 0.9.2",
+ "panic-halt",
+ "rp235x-hal",
+ "zkmcu-verifier-plonky3",
+]
+
+[[package]]
+name = "bench-rp2350-m33-pq-semaphore-dual-ct"
 version = "0.1.0"
 dependencies = [
  "bench-core",
@@ -551,7 +576,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "bench-rp2350-rv32-pq-semaphore-ct-reject"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "heapless 0.9.2",
+ "panic-halt",
+ "riscv",
+ "riscv-rt",
+ "rp235x-hal",
+ "zkmcu-vectors",
+ "zkmcu-verifier-plonky3",
+]
+
+[[package]]
 name = "bench-rp2350-rv32-pq-semaphore-dual"
+version = "0.1.0"
+dependencies = [
+ "bench-core",
+ "heapless 0.9.2",
+ "panic-halt",
+ "riscv",
+ "riscv-rt",
+ "rp235x-hal",
+ "zkmcu-verifier-plonky3",
+]
+
+[[package]]
+name = "bench-rp2350-rv32-pq-semaphore-dual-ct"
 version = "0.1.0"
 dependencies = [
  "bench-core",
